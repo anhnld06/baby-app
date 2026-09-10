@@ -523,7 +523,8 @@ export async function saveToothAction(formData: FormData) {
     update: { eruptedAt: data.eruptedAt, notes: data.notes },
   });
   revalidatePath("/", "layout");
-  redirect("/tracking/teeth");
+  revalidatePath("/tracking/teeth");
+  redirect(`/tracking/teeth?position=${data.position}`);
 }
 
 export async function deleteToothAction(formData: FormData) {
@@ -531,5 +532,6 @@ export async function deleteToothAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   await db.toothRecord.deleteMany({ where: { id, baby: { userId: user.id } } });
   revalidatePath("/", "layout");
+  revalidatePath("/tracking/teeth");
   redirect("/tracking/teeth");
 }

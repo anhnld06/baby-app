@@ -101,12 +101,24 @@
     -webkit-tap-highlight-color: transparent;
   }
   input:is([type="date"], [type="time"], [type="datetime-local"]) {
+    display: block;
+    width: 100%;
     min-width: 0;
     max-width: 100%;
+    overflow: hidden;
+    appearance: none;
+  }
+  input:is([type="date"], [type="time"], [type="datetime-local"])::-webkit-date-and-time-value {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    text-align: left;
   }
   input:is([type="date"], [type="time"], [type="datetime-local"])::-webkit-datetime-edit {
+    display: block;
     min-width: 0;
     overflow: hidden;
+    padding: 0;
   }
 }
 

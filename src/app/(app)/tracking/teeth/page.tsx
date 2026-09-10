@@ -7,6 +7,9 @@ import { ToothChart } from "@/components/tooth-chart";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   LOWER_TOOTH_ORDER,
+  TOOTH_ERUPTION_INFO,
+  toothJaw,
+  toothSide,
   toothTypeLabelKey,
   UPPER_TOOTH_ORDER,
 } from "@/features/teeth/teeth";
@@ -43,6 +46,7 @@ export default async function TeethPage({
     ? (params.position as ToothPosition)
     : undefined;
   const selectedRecord = selectedPosition ? byPosition.get(selectedPosition) : undefined;
+  const selectedInfo = selectedPosition ? TOOTH_ERUPTION_INFO[selectedPosition] : undefined;
 
   return (
     <>
@@ -52,28 +56,57 @@ export default async function TeethPage({
         backHref="/"
       />
       <Card className="border-0 shadow-sm">
-        <CardContent className="p-5">
-          <p className="mb-3 text-center text-xs font-medium text-muted-foreground">
-            {t.tracking.upperJaw}
-          </p>
+        <CardContent className="p-3 sm:p-5">
+          <div className="mb-5 text-center">
+            <h2 className="text-base font-semibold">{t.tracking.toothDiagram}</h2>
+            <p className="mt-1 text-xs text-muted-foreground">{t.tracking.selectTooth}</p>
+          </div>
           <ToothChart
             href={(position) => `/tracking/teeth?position=${position}`}
             eruptedPositions={eruptedPositions}
             selectedPosition={selectedPosition}
             labels={t.tracking}
           />
-          <p className="mt-3 text-center text-xs font-medium text-muted-foreground">
-            {t.tracking.lowerJaw}
-          </p>
+          <div className="mt-5 rounded-2xl bg-muted/60 px-3 py-2.5 text-center text-[11px] leading-relaxed text-muted-foreground">
+            <p>{t.tracking.timingVaries}</p>
+            <a
+              href="https://www.mouthhealthy.org/all-topics-a-z/eruption-charts/"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 inline-block font-medium text-primary underline-offset-2 hover:underline"
+            >
+              {t.tracking.eruptionSource}
+            </a>
+          </div>
         </CardContent>
       </Card>
-      {selectedPosition ? (
+      {selectedPosition && selectedInfo ? (
         <Card className="mt-4 border-0 shadow-sm">
           <CardContent className="space-y-4 p-5">
-            <p className="text-sm font-medium">
-              {t.tracking[toothTypeLabelKey(selectedPosition)]}
-            </p>
-            <form id="tooth-form" action={saveToothAction} className="space-y-4">
+            <div>
+              <h2 className="font-semibold">
+                {t.tracking.primaryTooth} {selectedInfo.fdiNumber}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t.tracking[toothTypeLabelKey(selectedPosition)]} · {toothJaw(selectedPosition) === "upper" ? t.tracking.upperJaw : t.tracking.lowerJaw} · {toothSide(selectedPosition) === "right" ? t.tracking.right : t.tracking.left}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-secondary px-3 py-2.5">
+                <span className="block text-[11px] text-muted-foreground">{t.tracking.expectedEruption}</span>
+                <strong className="mt-0.5 block text-sm">{selectedInfo.expectedMonths[0]}–{selectedInfo.expectedMonths[1]} {t.tracking.monthShort}</strong>
+              </div>
+              <div className="rounded-2xl bg-secondary px-3 py-2.5">
+                <span className="block text-[11px] text-muted-foreground">{t.tracking.eruptionOrder}</span>
+                <strong className="mt-0.5 block text-sm">#{selectedInfo.eruptionOrder}</strong>
+              </div>
+            </div>
+            <form
+              key={selectedPosition}
+              id="tooth-form"
+              action={saveToothAction}
+              className="space-y-4"
+            >
               <input type="hidden" name="babyId" value={baby.id} />
               <input type="hidden" name="position" value={selectedPosition} />
               <Field

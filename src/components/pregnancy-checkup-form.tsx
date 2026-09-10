@@ -25,6 +25,14 @@ function toDateInput(value: unknown) {
   return /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : value;
 }
 
+function toRecognizedDateTime(value: unknown, current: string) {
+  const date = toDateInput(value);
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return current;
+
+  const currentTime = /^\d{4}-\d{2}-\d{2}T(\d{2}:\d{2})/.exec(current)?.[1] ?? "09:00";
+  return `${date}T${currentTime}`;
+}
+
 export function PregnancyCheckupForm({
   pregnancyId,
   editing,
@@ -80,7 +88,7 @@ export function PregnancyCheckupForm({
         onExtract={(data) => {
           setSource("OCR");
           setValues((current) => ({
-            checkedAt: current.checkedAt,
+            checkedAt: toRecognizedDateTime(data.checkedAt, current.checkedAt),
             gestationalWeek: typeof data.gestationalWeek === "number" ? String(data.gestationalWeek) : current.gestationalWeek,
             weightKg: typeof data.weightKg === "number" ? String(data.weightKg) : current.weightKg,
             bloodPressure: typeof data.bloodPressure === "string" ? data.bloodPressure : current.bloodPressure,

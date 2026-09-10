@@ -5,7 +5,6 @@ import {
   PregnancyStatus,
   PrismaClient,
   SleepType,
-  ToothPosition,
 } from "@prisma/client";
 import { curatedArticles } from "../src/features/knowledge/articles";
 import { curatedStories } from "../src/features/stories/stories";
@@ -146,13 +145,6 @@ async function main() {
               { medicineName: "Vitamin D3", dosage: "400 IU", frequency: "1 lần/ngày", durationDays: 30 },
             ],
           },
-        },
-      }),
-      prisma.toothRecord.create({
-        data: {
-          babyId: baby.id,
-          position: ToothPosition.LOWER_LEFT_CENTRAL_INCISOR,
-          eruptedAt: hoursAgo(48),
         },
       }),
     ]);
