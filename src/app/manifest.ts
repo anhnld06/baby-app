@@ -11,6 +11,10 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#e34d78",
     orientation: "portrait-primary",
     lang: "vi",
-    icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" }],
+    icons: [
+      { src: "/icons/vani-family-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icons/vani-family-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icons/vani-family-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+    ],
   };
 }

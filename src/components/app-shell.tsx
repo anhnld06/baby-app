@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Baby, BookHeart, Bot, HeartPulse, House, Sprout, UserRound } from "lucide-react";
+import { Baby, BookHeart, Bot, HeartPulse, House, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Labels = {
@@ -35,7 +36,13 @@ export function AppShell({
     <div className="mx-auto min-h-dvh w-full max-w-7xl overflow-x-clip bg-background lg:flex lg:border-x lg:border-border/60">
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-border/70 bg-card/60 p-4 lg:flex">
         <Link href="/" className="mb-7 flex items-center gap-3 px-2 py-2">
-          <span className="grid size-10 place-items-center rounded-2xl bg-primary text-primary-foreground"><Sprout className="size-5" /></span>
+          <Image
+            src="/icons/vani-family-192.png"
+            alt=""
+            width={40}
+            height={40}
+            className="size-10 rounded-2xl object-cover shadow-sm"
+          />
           <span><strong className="block text-lg">{appName}</strong><span className="text-xs text-muted-foreground">Nhật ký gia đình</span></span>
         </Link>
         <nav className="space-y-1" aria-label="Điều hướng chính">
