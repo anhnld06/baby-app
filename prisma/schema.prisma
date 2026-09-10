@@ -23,6 +23,23 @@ enum PregnancyStatus {
   ENDED
 }
 
+enum PregnancyCheckupType {
+  PRENATAL_VISIT
+  ULTRASOUND
+  COMBINED
+}
+
+enum FetalMovementStatus {
+  PRESENT
+  ABSENT
+}
+
+enum OvulationTestResult {
+  NEGATIVE
+  POSITIVE
+  PEAK
+}
+
 enum FeedingType {
   BREASTFEEDING
   BOTTLE_BREAST_MILK
@@ -135,6 +152,9 @@ model Mother {
   prePregnancyWeightKg Float?
   bloodType            String?
   notes                String?
+  cycleLengthDays      Int                       @default(28)
+  periodLengthDays     Int                       @default(5)
+  lutealPhaseDays      Int                       @default(14)
   createdAt            DateTime                  @default(now())
   updatedAt            DateTime                  @updatedAt
   user                 User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -232,6 +252,7 @@ model MotherDailyHealthLog {
   discharge         String?
   sleepHours        Float?
   basalTemperatureC Float?
+  ovulationTest     OvulationTestResult?
   weightKg          Float?
   waterGlasses      Int?
   notes             String?
@@ -244,23 +265,42 @@ model MotherDailyHealthLog {
 }
 
 model PregnancyCheckup {
-  id              String       @id @default(cuid())
-  pregnancyId     String
-  checkedAt       DateTime
-  gestationalWeek Int?
-  weightKg        Float?
-  bloodPressure   String?
-  fetalHeartRate  Int?
-  fundalHeightCm  Float?
-  facility        String?
-  doctor          String?
-  findings        String?
-  nextCheckupAt   DateTime?    @db.Date
-  notes           String?
-  source          RecordSource @default(MANUAL)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  pregnancy       Pregnancy    @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+  id                    String                @id @default(cuid())
+  pregnancyId           String
+  visitType             PregnancyCheckupType  @default(COMBINED)
+  checkedAt             DateTime
+  gestationalWeek       Int?
+  gestationalDay        Int                   @default(0)
+  weightKg              Float?
+  bloodPressure         String?
+  fundalHeightCm        Float?
+  fetusCount            Int?
+  fetalPresentation     String?
+  fetalMovement         FetalMovementStatus?
+  fetalHeartRate        Int?
+  crlMm                 Float?
+  ntMm                  Float?
+  bpdMm                 Float?
+  hcMm                  Float?
+  acMm                  Float?
+  flMm                  Float?
+  estimatedFetalWeightG Float?
+  placentaPosition      String?
+  placentaGrade         Int?
+  amnioticFluid         String?
+  cervicalLengthMm      Float?
+  ultrasoundDueDate     DateTime?             @db.Date
+  fetalAnatomy          String?
+  otherFindings         String?
+  facility              String?
+  doctor                String?
+  findings              String?
+  nextCheckupAt         DateTime?             @db.Date
+  notes                 String?
+  source                RecordSource          @default(MANUAL)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  pregnancy             Pregnancy             @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
 
   @@index([pregnancyId, checkedAt])
 }

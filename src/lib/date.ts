@@ -10,6 +10,40 @@ export function toDateInputValue(date: Date = new Date()) {
   return new Date(date.getTime() - offset).toISOString().slice(0, 10);
 }
 
+export function formatDateInputDisplay(value: string, includeTime = false) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/.exec(value);
+  if (!match) return "";
+  const date = `${match[3]}/${match[2]}/${match[1]}`;
+  return includeTime && match[4] && match[5] ? `${date} ${match[4]}:${match[5]}` : date;
+}
+
+export function parseDateInputDisplay(value: string, includeTime = false) {
+  const pattern = includeTime
+    ? /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/
+    : /^(\d{2})\/(\d{2})\/(\d{4})$/;
+  const match = pattern.exec(value.trim());
+  if (!match) return undefined;
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const candidate = new Date(Date.UTC(year, month - 1, day));
+  if (
+    year < 1900 ||
+    year > 2100 ||
+    candidate.getUTCFullYear() !== year ||
+    candidate.getUTCMonth() !== month - 1 ||
+    candidate.getUTCDate() !== day
+  ) return undefined;
+
+  const isoDate = `${match[3]}-${match[2]}-${match[1]}`;
+  if (!includeTime) return isoDate;
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  if (hour > 23 || minute > 59) return undefined;
+  return `${isoDate}T${match[4]}:${match[5]}`;
+}
+
 export function formatDuration(totalMinutes: number, locale = "vi") {
   const minutes = Math.max(0, Math.round(totalMinutes));
   const hours = Math.floor(minutes / 60);

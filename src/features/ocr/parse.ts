@@ -54,14 +54,26 @@ function datesIn(value: string) {
   return dates;
 }
 
-function findDate(lines: string[], labels: RegExp[]) {
+function findDate(lines: string[], labels: RegExp[], fallback = true) {
   for (const line of lines) {
     const normalized = fold(line);
     if (!labels.some((label) => label.test(normalized))) continue;
     const date = datesIn(line)[0];
     if (date) return date;
   }
-  return datesIn(lines.join("\n")).at(-1);
+  return fallback ? datesIn(lines.join("\n")).at(-1) : undefined;
+}
+
+function findCheckupDate(lines: string[]) {
+  const labeled = findDate(lines, [/ngay (kham|sieu am|thuc hien)/], false);
+  if (labeled) return labeled;
+  for (const line of [...lines].reverse()) {
+    if (!/^ngay\b/.test(fold(line))) continue;
+    const date = datesIn(line)[0];
+    if (date) return date;
+  }
+  const candidates = lines.filter((line) => !/\b(sdd|du sinh)\b/.test(fold(line)));
+  return datesIn(candidates.join("\n")).at(-1);
 }
 
 function valueAfterLabel(lines: string[], labels: string[]) {
@@ -131,7 +143,7 @@ function findDoctor(lines: string[]) {
   for (const line of lines) {
     if (/phong kham/.test(fold(line))) continue;
     const labeled = valueAfterLabel([line], labels);
-    if (labeled) return labeled;
+    if (labeled && !/^sieu am\b/.test(fold(labeled))) return labeled;
   }
   return [...lines]
     .reverse()
@@ -155,14 +167,15 @@ function parsePregnancyCheckup(text: string): ExtractedFields {
     /\b(tai kham|luu y|chu y|ngay \d+ thang|bac si|bs\.)\b/,
   );
   const diagnosisLines = lines.filter((line) => /\b(chan doan|tuan|weeks?)\b/.test(fold(line)));
-  const gestationalText = [...conclusion, ...diagnosisLines].join(" ");
-  const gestationalWeek = numberFrom(
-    gestationalText,
-    /(?:thai\s*)?(?:khoang\s*)?(\d{1,2})\s*(?:tuan|weeks?|w)\b/,
+  const gestationalText = [...conclusion, ...diagnosisLines, ...lines.filter((line) => /crl/.test(fold(line)))].join(" ");
+  const gestationalMatch = /(?:thai\s*)?(?:khoang\s*)?(\d{1,2})\s*(?:tuan|weeks?|w)\s*(?:(\d)\s*ngay)?\b/.exec(
+    fold(gestationalText),
   );
+  const gestationalWeek = gestationalMatch ? Number(gestationalMatch[1]) : undefined;
+  const gestationalDay = gestationalMatch?.[2] ? Number(gestationalMatch[2]) : undefined;
   const fetalHeartRate = numberFrom(
     lines.join("\n"),
-    /(?:tim thai|fhr)\s*[:;.-]?\s*(\d{2,3})\s*(?:lan\s*\/\s*phut|bpm)?/,
+    /(?:tim thai(?: deu)?|fhr)\s*[:;.-]?\s*(\d{2,3})\s*(?:lan\s*\/\s*phut|bpm)?/,
   );
   const bloodPressureMatch = /(?:huyet ap|\bha\b)\s*[:;.-]?\s*(\d{2,3}\s*\/\s*\d{2,3})/.exec(
     fold(lines.join("\n")),
@@ -171,22 +184,87 @@ function parsePregnancyCheckup(text: string): ExtractedFields {
     lines.join("\n"),
     /(?:be cao tu cung|fundal height)\s*[:;.-]?\s*(\d+(?:[.,]\d+)?)/,
   );
-  const measurementLines = lines.filter((line) =>
-    /\b(bpd|crl|hc|ac|fl)\b|trong luong thai|tim thai|vi tri nhau|nhau bam|nuoc oi|buong tu cung|yolk sac/.test(
-      fold(line),
-    ),
+  const fullText = lines.join("\n");
+  const measurement = (label: string) => numberFrom(
+    fullText,
+    new RegExp(`\\b${label}\\s*[:=.-]?\\s*(\\d+(?:[.,]\\d+)?)\\s*mm\\b`),
   );
+  const fetusCount = /\b(?:don thai|01\s*thai|1\s*thai)\b/.test(fold(fullText))
+    ? 1
+    : numberFrom(fullText, /(?:so luong thai)\s*[:;.-]?\s*(\d{1,2})/);
+  const fetalPresentation = valueAfterLabel(lines, ["ngôi thai", "tư thế thai"]);
+  const movementLine = firstMatchingLine(lines, /\bcu dong thai\b/);
+  const fetalMovement = movementLine
+    ? /(?:\(\s*\+\s*\)|\bco\b)/.test(fold(movementLine))
+      ? "PRESENT"
+      : /(?:\(\s*-\s*\)|\bkhong\b)/.test(fold(movementLine))
+        ? "ABSENT"
+        : undefined
+    : undefined;
+  const crlMm = measurement("crl");
+  const ntMm = measurement("nt");
+  const bpdMm = measurement("bpd");
+  const hcMm = measurement("hc");
+  const acMm = measurement("ac");
+  const flMm = measurement("fl");
+  const estimatedFetalWeightG = numberFrom(
+    fullText,
+    /(?:trong luong thai|efw)\s*[:;=.-]?\s*(\d+(?:[.,]\d+)?)\s*(?:gr|g|gram)?/,
+  );
+  const placentaLine = valueAfterLabel(lines, ["vị trí nhau bám", "nhau bám", "vị trí bánh nhau"]);
+  const placentaGrade = placentaLine
+    ? numberFrom(placentaLine, /(?:do|grade)\s*[:;.-]?\s*([0-3])\b/)
+    : undefined;
+  const placentaPosition = placentaLine
+    ?.replace(/[,;]?\s*(?:độ|do|grade)\s*[:;.-]?\s*[0-3]\b.*$/i, "")
+    .trim();
+  const amnioticFluid = valueAfterLabel(lines, ["lượng nước ối", "nước ối"]);
+  const cervicalLengthMm = numberFrom(
+    fullText,
+    /(?:do dai kenh co tu cung|chieu dai co tu cung|cervical length)\s*[:;=.-]?\s*(\d+(?:[.,]\d+)?)\s*mm/,
+  );
+  const ultrasoundDueDate = findDate(lines, [/\b(sdd|du sinh)\b/], false);
+  const fetalAnatomy = uniqueText([
+    ...sectionAfter(lines, /\bcau truc thai nhi\b/, /\b(cac dau hieu cua me|ket luan)\b/, 12),
+    ...sectionAfter(lines, /\bcac co quan khac\b/, /\b(cac yeu to cua thai phu|chu y|ket luan)\b/, 8),
+  ]);
+  const otherFindings = uniqueText([
+    ...sectionAfter(lines, /\bcac dau hieu cua me\b/, /\bket luan\b/, 8),
+    ...sectionAfter(lines, /\bcac yeu to cua thai phu\b/, /\b(chu y|ket luan)\b/, 5),
+    ...sectionAfter(lines, /^(?:\d+[.)]?\s*)?tu cung\b/, /\bphan phu\b/, 8),
+    ...sectionAfter(lines, /^(?:\d+[.)]?\s*)?phan phu\b/, /\b(dich tui cung|ghi nhan khac|ket luan)\b/, 5),
+    ...lines.filter((line) => /\b(tu cung|buong trung|dich tui cung|ghi nhan khac|yolk\s*sac)\b/.test(fold(line))),
+  ]);
   const fields: ExtractedFields = {};
-  const checkedAt = findDate(lines, [/ngay (kham|sieu am)/, /ngay thuc hien/]);
+  const checkedAt = findCheckupDate(lines);
   const facility = findFacility(lines);
   const doctor = findDoctor(lines);
-  const findings = uniqueText([...conclusion, ...measurementLines]);
+  const findings = uniqueText(conclusion);
 
+  fields.visitType = "ULTRASOUND";
   if (checkedAt) fields.checkedAt = checkedAt;
   if (gestationalWeek !== undefined && gestationalWeek <= 45) fields.gestationalWeek = gestationalWeek;
+  if (gestationalDay !== undefined && gestationalDay <= 6) fields.gestationalDay = gestationalDay;
+  if (fetusCount !== undefined && fetusCount > 0 && fetusCount <= 10) fields.fetusCount = fetusCount;
+  if (fetalPresentation) fields.fetalPresentation = fetalPresentation;
+  if (fetalMovement) fields.fetalMovement = fetalMovement;
   if (fetalHeartRate !== undefined && fetalHeartRate >= 50 && fetalHeartRate <= 250) fields.fetalHeartRate = fetalHeartRate;
   if (bloodPressureMatch) fields.bloodPressure = bloodPressureMatch[1].replace(/\s/g, "");
   if (fundalHeightCm !== undefined && fundalHeightCm <= 60) fields.fundalHeightCm = fundalHeightCm;
+  if (crlMm !== undefined) fields.crlMm = crlMm;
+  if (ntMm !== undefined) fields.ntMm = ntMm;
+  if (bpdMm !== undefined) fields.bpdMm = bpdMm;
+  if (hcMm !== undefined) fields.hcMm = hcMm;
+  if (acMm !== undefined) fields.acMm = acMm;
+  if (flMm !== undefined) fields.flMm = flMm;
+  if (estimatedFetalWeightG !== undefined) fields.estimatedFetalWeightG = estimatedFetalWeightG;
+  if (placentaPosition) fields.placentaPosition = placentaPosition;
+  if (placentaGrade !== undefined) fields.placentaGrade = placentaGrade;
+  if (amnioticFluid) fields.amnioticFluid = amnioticFluid;
+  if (cervicalLengthMm !== undefined) fields.cervicalLengthMm = cervicalLengthMm;
+  if (ultrasoundDueDate) fields.ultrasoundDueDate = ultrasoundDueDate;
+  if (fetalAnatomy) fields.fetalAnatomy = fetalAnatomy;
+  if (otherFindings) fields.otherFindings = otherFindings;
   if (facility) fields.facility = facility;
   if (doctor) fields.doctor = doctor;
   if (findings) fields.findings = findings;

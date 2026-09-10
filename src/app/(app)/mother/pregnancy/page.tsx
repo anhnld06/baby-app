@@ -20,6 +20,17 @@ const LEVEL_STYLE = {
   URGENT: { icon: ShieldAlert, label: "Cần khám sớm", className: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300" },
 } as const;
 
+const VISIT_TYPE_LABEL = {
+  PRENATAL_VISIT: "Khám thai",
+  ULTRASOUND: "Siêu âm",
+  COMBINED: "Khám thai và siêu âm",
+} as const;
+
+function gestationalAgeLabel(week: number | null, day: number | null) {
+  if (week === null) return undefined;
+  return `${week} tuần${day !== null ? ` ${day} ngày` : ""}`;
+}
+
 export default async function PregnancyTrackingPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   const [user, locale, params] = await Promise.all([requireUser(), getLocale(), searchParams]);
   const mother = await db.mother.findUnique({ where: { userId: user.id }, include: { pregnancies: { orderBy: { createdAt: "desc" }, take: 1 } } });
@@ -112,8 +123,49 @@ export default async function PregnancyTrackingPage({ searchParams }: { searchPa
         </CardContent></Card>
         <FormActionBar formId="checkup-form" saveAction={savePregnancyCheckupAction} saveLabel={editing ? "Cập nhật" : "Lưu lần khám"} cancelHref={editing ? "/mother/pregnancy" : undefined} cancelLabel="Hủy" deleteAction={editing ? deletePregnancyCheckupAction : undefined} deleteId={editing?.id} deleteLabel="Xóa" />
       </CollapsibleRecordForm>
-      <h2 className="mb-3 mt-7 text-lg font-semibold">Các lần khám thai</h2>
-      <div className="space-y-2">{items.map((item) => <div key={item.id} className="flex items-start gap-3 rounded-2xl bg-card p-3 shadow-sm"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300"><CalendarCheck className="size-5" /></span><div className="min-w-0 flex-1"><p className="font-medium">{item.gestationalWeek !== null ? `Tuần ${item.gestationalWeek}` : "Khám thai"}</p><p className="text-xs text-muted-foreground">{new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long", year: "numeric" }).format(item.checkedAt)}{item.facility ? ` · ${item.facility}` : ""}</p>{(item.weightKg || item.bloodPressure || item.fetalHeartRate) && <p className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground"><Scale className="size-3" />{[item.weightKg && `${item.weightKg} kg`, item.bloodPressure && `HA ${item.bloodPressure}`, item.fetalHeartRate && `Tim thai ${item.fetalHeartRate}`].filter(Boolean).join(" · ")}</p>}{item.findings && <p className="mt-1 line-clamp-2 text-sm">{item.findings}</p>}</div><RecordActions id={item.id} editHref={`/mother/pregnancy?edit=${item.id}`} deleteAction={deletePregnancyCheckupAction} editLabel="Sửa" deleteLabel="Xóa" /></div>)}{!items.length && <p className="rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground">Chưa có lần khám thai nào.</p>}</div>
+      <h2 className="mb-3 mt-7 text-lg font-semibold">Các lần khám và siêu âm</h2>
+      <div className="space-y-2">
+        {items.map((item) => {
+          const ageLabel = gestationalAgeLabel(item.gestationalWeek, item.gestationalDay);
+          const metrics = [
+            item.weightKg !== null ? `Mẹ ${item.weightKg} kg` : undefined,
+            item.bloodPressure ? `HA ${item.bloodPressure}` : undefined,
+            item.fetalHeartRate !== null ? `Tim thai ${item.fetalHeartRate}` : undefined,
+            item.estimatedFetalWeightG !== null ? `Thai ~${item.estimatedFetalWeightG} g` : undefined,
+          ].filter(Boolean);
+          const ultrasoundSummary = [
+            item.placentaPosition ? `Nhau: ${item.placentaPosition}` : undefined,
+            item.amnioticFluid ? `Ối: ${item.amnioticFluid}` : undefined,
+          ].filter(Boolean);
+
+          return (
+            <div key={item.id} className="flex items-start gap-3 rounded-2xl bg-card p-3 shadow-sm">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+                <CalendarCheck className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">
+                  {VISIT_TYPE_LABEL[item.visitType]}{ageLabel ? ` · ${ageLabel}` : ""}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long", year: "numeric" }).format(item.checkedAt)}
+                  {item.facility ? ` · ${item.facility}` : ""}
+                </p>
+                {metrics.length > 0 && (
+                  <p className="mt-1 flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <Scale className="mt-0.5 size-3 shrink-0" />
+                    <span>{metrics.join(" · ")}</span>
+                  </p>
+                )}
+                {ultrasoundSummary.length > 0 && <p className="mt-1 text-xs text-muted-foreground">{ultrasoundSummary.join(" · ")}</p>}
+                {item.findings && <p className="mt-1 line-clamp-2 text-sm">{item.findings}</p>}
+              </div>
+              <RecordActions id={item.id} editHref={`/mother/pregnancy?edit=${item.id}`} deleteAction={deletePregnancyCheckupAction} editLabel="Sửa" deleteLabel="Xóa" />
+            </div>
+          );
+        })}
+        {!items.length && <p className="rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground">Chưa có lần khám hoặc siêu âm nào.</p>}
+      </div>
     </>
   );
 }

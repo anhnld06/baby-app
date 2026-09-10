@@ -19,11 +19,76 @@ describe("parseHealthDocument", () => {
     `;
 
     expect(parseHealthDocument(text, "pregnancyCheckup")).toMatchObject({
+      visitType: "ULTRASOUND",
       checkedAt: "2026-03-30",
       gestationalWeek: 17,
+      gestationalDay: 5,
+      fetusCount: 1,
       fetalHeartRate: 147,
+      bpdMm: 40,
+      hcMm: 146,
+      acMm: 129,
+      flMm: 22,
+      estimatedFetalWeightG: 200,
+      placentaPosition: "đáy thân mặt trước",
+      placentaGrade: 1,
       facility: "PHÒNG KHÁM BÁC SĨ TUYẾT",
       doctor: "THS.BSNT LÊ THỊ ÁNH TUYẾT",
+    });
+  });
+
+  it("extracts first-trimester dating and nuchal translucency", () => {
+    const text = `
+      PHÒNG KHÁM BÁC SĨ TUYẾT
+      Chẩn đoán: ĐO ĐỘ MỜ DA GÁY
+      SỐ LƯỢNG THAI: đơn thai
+      Cử động thai: (+)
+      Tim thai đều: 147 lần/phút
+      CRL = 53 mm (12 tuần 4 ngày), NT = 1.6 mm
+      Lượng nước ối: bình thường
+      Vị trí nhau bám: đáy thân mặt trước, độ 0
+      III. KẾT LUẬN
+      ĐƠN THAI SỐNG TRONG BUỒNG TỬ CUNG KHOẢNG 12 TUẦN 4 NGÀY
+      ngày 22 tháng 2 năm 2026
+      Bác sĩ siêu âm
+    `;
+
+    expect(parseHealthDocument(text, "pregnancyCheckup")).toMatchObject({
+      checkedAt: "2026-02-22",
+      gestationalWeek: 12,
+      gestationalDay: 4,
+      fetusCount: 1,
+      fetalMovement: "PRESENT",
+      fetalHeartRate: 147,
+      crlMm: 53,
+      ntMm: 1.6,
+      placentaPosition: "đáy thân mặt trước",
+      placentaGrade: 0,
+      amnioticFluid: "bình thường",
+    });
+  });
+
+  it("keeps ultrasound due date separate from examination date", () => {
+    const text = `
+      PHÒNG KHÁM BÁC SĨ TUYẾT
+      Chẩn đoán: THAI KHOẢNG 10 TUẦN 3 NGÀY
+      Lòng tử cung: Có 01 túi thai
+      Yolksac (+)
+      CRL = 34 mm (tương đương 10 tuần 3 ngày), SDD (2/9/2026)
+      Tim thai: 140 lần/phút
+      III. KẾT LUẬN
+      ĐƠN THAI SỐNG TRONG BUỒNG TỬ CUNG KHOẢNG 10 TUẦN 3 NGÀY.
+      ngày 22 tháng 1 năm 2026
+    `;
+
+    expect(parseHealthDocument(text, "pregnancyCheckup")).toMatchObject({
+      checkedAt: "2026-01-22",
+      ultrasoundDueDate: "2026-09-02",
+      gestationalWeek: 10,
+      gestationalDay: 3,
+      fetusCount: 1,
+      fetalHeartRate: 140,
+      crlMm: 34,
     });
   });
 

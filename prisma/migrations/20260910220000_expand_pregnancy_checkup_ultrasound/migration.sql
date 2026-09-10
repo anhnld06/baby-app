@@ -1,0 +1,23 @@
+CREATE TYPE "PregnancyCheckupType" AS ENUM ('PRENATAL_VISIT', 'ULTRASOUND', 'COMBINED');
+CREATE TYPE "FetalMovementStatus" AS ENUM ('PRESENT', 'ABSENT');
+
+ALTER TABLE "PregnancyCheckup"
+ADD COLUMN "visitType" "PregnancyCheckupType" NOT NULL DEFAULT 'COMBINED',
+ADD COLUMN "gestationalDay" INTEGER,
+ADD COLUMN "fetusCount" INTEGER,
+ADD COLUMN "fetalPresentation" TEXT,
+ADD COLUMN "fetalMovement" "FetalMovementStatus",
+ADD COLUMN "crlMm" DOUBLE PRECISION,
+ADD COLUMN "ntMm" DOUBLE PRECISION,
+ADD COLUMN "bpdMm" DOUBLE PRECISION,
+ADD COLUMN "hcMm" DOUBLE PRECISION,
+ADD COLUMN "acMm" DOUBLE PRECISION,
+ADD COLUMN "flMm" DOUBLE PRECISION,
+ADD COLUMN "estimatedFetalWeightG" DOUBLE PRECISION,
+ADD COLUMN "placentaPosition" TEXT,
+ADD COLUMN "placentaGrade" INTEGER,
+ADD COLUMN "amnioticFluid" TEXT,
+ADD COLUMN "cervicalLengthMm" DOUBLE PRECISION,
+ADD COLUMN "ultrasoundDueDate" DATE,
+ADD COLUMN "fetalAnatomy" TEXT,
+ADD COLUMN "otherFindings" TEXT;

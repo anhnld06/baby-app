@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { averageCycleLength, estimatedFertileWindow, estimatedNextPeriod, gestationalAge, periodStartsFromFlowLogs } from "@/features/mother/insights";
+import { analyzeCycles, averageCycleLength, estimatedFertileWindow, estimatedNextPeriod, gestationalAge, periodStartsFromFlowLogs } from "@/features/mother/insights";
 
 describe("mother tracking insights", () => {
   it("calculates average cycle length and ignores implausible gaps", () => {
@@ -22,5 +22,24 @@ describe("mother tracking insights", () => {
     expect(window?.ovulation.toISOString().slice(0, 10)).toBe("2026-01-18");
     expect(window?.start.toISOString().slice(0, 10)).toBe("2026-01-13");
     expect(window?.end.toISOString().slice(0, 10)).toBe("2026-01-19");
+  });
+
+  it("uses personal settings for a prediction after the first recorded period", () => {
+    const starts = [new Date("2026-01-01T00:00:00Z")];
+    expect(estimatedNextPeriod(starts, 30)?.toISOString().slice(0, 10)).toBe("2026-01-31");
+  });
+
+  it("flags cycle-length variation of eight days or more", () => {
+    const starts = ["2026-01-01", "2026-01-27", "2026-03-02", "2026-03-30"].map((date) => new Date(`${date}T00:00:00Z`));
+    expect(analyzeCycles(starts)).toMatchObject({ variationDays: 8, irregular: true, confidence: "LOW" });
+  });
+
+  it("adjusts estimated ovulation after a positive ovulation test", () => {
+    const window = estimatedFertileWindow(
+      new Date("2026-02-01T00:00:00Z"),
+      14,
+      new Date("2026-01-16T00:00:00Z"),
+    );
+    expect(window?.ovulation.toISOString().slice(0, 10)).toBe("2026-01-17");
   });
 });

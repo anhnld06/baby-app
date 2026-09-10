@@ -10,6 +10,7 @@ import {
   babySchema,
   babyInsuranceSchema,
   babyMedicalVisitSchema,
+  cycleSettingsSchema,
   diaperSchema,
   feedingSchema,
   growthSchema,
@@ -160,6 +161,20 @@ export async function deleteMenstrualCycleAction(formData: FormData) {
   revalidatePath("/mother/cycle");
 }
 
+export async function saveCycleSettingsAction(formData: FormData) {
+  const user = await requireUser();
+  const data = cycleSettingsSchema.parse(values(formData));
+  await db.mother.updateMany({
+    where: { id: data.motherId, userId: user.id },
+    data: {
+      cycleLengthDays: data.cycleLengthDays,
+      periodLengthDays: data.periodLengthDays,
+      lutealPhaseDays: data.lutealPhaseDays,
+    },
+  });
+  revalidatePath("/mother/cycle");
+}
+
 export async function saveMotherDailyHealthLogAction(formData: FormData) {
   const user = await requireUser();
   const data = motherDailyHealthLogSchema.parse({
@@ -182,6 +197,7 @@ export async function saveMotherDailyHealthLogAction(formData: FormData) {
       discharge: data.discharge,
       sleepHours: data.sleepHours,
       basalTemperatureC: data.basalTemperatureC,
+      ovulationTest: data.ovulationTest,
       weightKg: data.weightKg,
       waterGlasses: data.waterGlasses,
       notes: data.notes,

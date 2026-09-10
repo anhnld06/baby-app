@@ -56,6 +56,13 @@ export const menstrualCycleSchema = z.object({
   path: ["periodEnd"],
 });
 
+export const cycleSettingsSchema = z.object({
+  motherId: z.string().min(1),
+  cycleLengthDays: z.preprocess(Number, z.number().int().min(15).max(60)),
+  periodLengthDays: z.preprocess(Number, z.number().int().min(1).max(15)),
+  lutealPhaseDays: z.preprocess(Number, z.number().int().min(7).max(20)),
+});
+
 export const motherDailyHealthLogSchema = z.object({
   motherId: z.string().min(1),
   loggedAt: dateValue,
@@ -68,6 +75,10 @@ export const motherDailyHealthLogSchema = z.object({
   discharge: optionalText,
   sleepHours: optionalNumber.refine((value) => value === undefined || value <= 24, "Số giờ ngủ không hợp lệ"),
   basalTemperatureC: optionalNumber.refine((value) => value === undefined || (value >= 30 && value <= 45), "Nhiệt độ không hợp lệ"),
+  ovulationTest: z.preprocess(
+    (value) => value === "" || value === null ? undefined : value,
+    z.enum(["NEGATIVE", "POSITIVE", "PEAK"]).optional(),
+  ),
   weightKg: optionalNumber,
   waterGlasses: optionalInteger.refine((value) => value === undefined || value <= 100, "Lượng nước không hợp lệ"),
   notes: optionalText,
@@ -76,12 +87,37 @@ export const motherDailyHealthLogSchema = z.object({
 export const pregnancyCheckupSchema = z.object({
   id: optionalText,
   pregnancyId: z.string().min(1),
+  visitType: z.enum(["PRENATAL_VISIT", "ULTRASOUND", "COMBINED"]),
   checkedAt: dateValue,
-  gestationalWeek: optionalInteger,
+  gestationalWeek: optionalInteger.refine((value) => value === undefined || value <= 45, "Tuá»•i thai khÃ´ng há»£p lá»‡"),
+  gestationalDay: z.preprocess(
+    (value) => value === "" || value === null || value === undefined ? 0 : Number(value),
+    z.number().int().min(0).max(6, "Số ngày thai phải từ 0 đến 6"),
+  ),
   weightKg: optionalNumber,
   bloodPressure: optionalText,
-  fetalHeartRate: optionalInteger,
+  fetalHeartRate: optionalInteger.refine((value) => value === undefined || value <= 300, "Nhá»‹p tim thai khÃ´ng há»£p lá»‡"),
   fundalHeightCm: optionalNumber,
+  fetusCount: optionalInteger.refine((value) => value === undefined || value <= 10, "Sá»‘ lÆ°á»£ng thai khÃ´ng há»£p lá»‡"),
+  fetalPresentation: optionalText,
+  fetalMovement: z.preprocess(
+    (value) => value === "" || value === null ? undefined : value,
+    z.enum(["PRESENT", "ABSENT"]).optional(),
+  ),
+  crlMm: optionalNumber,
+  ntMm: optionalNumber,
+  bpdMm: optionalNumber,
+  hcMm: optionalNumber,
+  acMm: optionalNumber,
+  flMm: optionalNumber,
+  estimatedFetalWeightG: optionalNumber,
+  placentaPosition: optionalText,
+  placentaGrade: optionalInteger.refine((value) => value === undefined || value <= 3, "Äá»™ trÆ°á»Ÿng thÃ nh nhau khÃ´ng há»£p lá»‡"),
+  amnioticFluid: optionalText,
+  cervicalLengthMm: optionalNumber,
+  ultrasoundDueDate: optionalDate,
+  fetalAnatomy: optionalText,
+  otherFindings: optionalText,
   facility: optionalText,
   doctor: optionalText,
   findings: optionalText,

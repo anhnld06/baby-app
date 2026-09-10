@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Save, Sparkles, Trash2 } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Printer, Save, Sparkles, Trash2 } from "lucide-react";
 import { deleteMotherDailyHealthLogAction, saveMotherDailyHealthLogAction } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ type DailyLog = {
   discharge?: string;
   sleepHours?: number;
   basalTemperatureC?: number;
+  ovulationTest?: "NEGATIVE" | "POSITIVE" | "PEAK";
   weightKg?: number;
   waterGlasses?: number;
   notes?: string;
@@ -60,9 +61,13 @@ export function CycleDashboard({
   averageCycle,
   currentCycleDay,
   nextPeriod,
+  predictedPeriodDays,
   fertileStart,
   fertileEnd,
   ovulation,
+  predictionConfidence,
+  predictionUnavailable,
+  cycleLengths,
   periodRanges,
   logs,
 }: {
@@ -70,9 +75,13 @@ export function CycleDashboard({
   averageCycle?: number;
   currentCycleDay?: number;
   nextPeriod?: string;
+  predictedPeriodDays: number;
   fertileStart?: string;
   fertileEnd?: string;
   ovulation?: string;
+  predictionConfidence: "LOW" | "MEDIUM" | "HIGH";
+  predictionUnavailable: boolean;
+  cycleLengths: number[];
   periodRanges: { start: string; end: string }[];
   logs: DailyLog[];
 }) {
@@ -95,7 +104,9 @@ export function CycleDashboard({
   const status = todayIsPeriod ? "Đang trong kỳ kinh" : todayInFertile ? "Cửa sổ dễ thụ thai ước tính" : currentCycleDay ? `Ngày ${currentCycleDay} của chu kỳ` : "Bắt đầu bằng cách ghi kỳ kinh";
   const progress = averageCycle && currentCycleDay ? Math.min(100, Math.max(3, (currentCycleDay / averageCycle) * 100)) : 4;
   const daysToPeriod = nextPeriod ? Math.ceil((parseDate(nextPeriod).getTime() - parseDate(todayKey).getTime()) / 86_400_000) : undefined;
-  const predictionText = daysToPeriod === undefined
+  const predictionText = predictionUnavailable
+    ? "Tạm ẩn dự báo rụng trứng vì chu kỳ đang trễ hoặc nằm ngoài khoảng dự báo an toàn"
+    : daysToPeriod === undefined
     ? "Ghi ít nhất 2 kỳ để có dự báo cá nhân"
     : daysToPeriod < 0
       ? `Đã qua ngày dự kiến ${Math.abs(daysToPeriod)} ngày`
@@ -130,14 +141,35 @@ export function CycleDashboard({
           const inMonth = date.getMonth() === visibleMonth.getMonth();
           const log = logsByDate.get(key);
           const actualPeriod = Boolean(log?.flow) || periodRanges.some((range) => inRange(key, range.start, range.end));
-          const predictedPeriod = !actualPeriod && nextPeriod ? inRange(key, nextPeriod, dateKey(addDays(parseDate(nextPeriod), 4))) : false;
+          const predictedPeriod = !actualPeriod && nextPeriod ? inRange(key, nextPeriod, dateKey(addDays(parseDate(nextPeriod), predictedPeriodDays - 1))) : false;
           const fertile = !actualPeriod && inRange(key, fertileStart, fertileEnd);
           const ovulationDay = key === ovulation;
           return <button type="button" key={key} onClick={() => setSelected(key)} className={cn("relative mx-auto grid size-10 place-items-center rounded-full text-sm transition-colors", !inMonth && "text-muted-foreground/35", key === selected && "ring-2 ring-primary ring-offset-2 ring-offset-card", actualPeriod && "bg-rose-500 font-semibold text-white", predictedPeriod && "border border-dashed border-rose-400 bg-rose-50 text-rose-700 dark:bg-rose-950", fertile && "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200", ovulationDay && "ring-2 ring-teal-500", key === todayKey && !actualPeriod && "font-bold text-primary")}>
-            {date.getDate()}{log && <span className={cn("absolute -bottom-0.5 size-1 rounded-full bg-primary", actualPeriod && "bg-white")} />}
+            {date.getDate()}{log && <span className={cn("absolute -bottom-0.5 size-1 rounded-full bg-primary", actualPeriod && "bg-white", (log.ovulationTest === "POSITIVE" || log.ovulationTest === "PEAK") && "size-1.5 bg-teal-600")} />}
           </button>;
         })}</div>
         <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t pt-3 text-[11px] text-muted-foreground"><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-full bg-rose-500" />Kỳ kinh đã ghi</span><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-full border border-dashed border-rose-500" />Kỳ dự kiến</span><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-full bg-teal-200" />Dễ thụ thai ước tính</span></div>
+      </section>
+
+      <section className="mb-5 rounded-3xl bg-card p-4 shadow-sm">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-semibold">Xu hướng độ dài chu kỳ</h2>
+            <p className="mt-1 text-xs text-muted-foreground">{cycleLengths.length ? `${cycleLengths.length} chu kỳ gần nhất · độ tin cậy ${predictionConfidence === "HIGH" ? "cao" : predictionConfidence === "MEDIUM" ? "trung bình" : "thấp"}` : "Chưa đủ dữ liệu lịch sử"}</p>
+          </div>
+          <Button type="button" variant="outline" size="sm" className="print:hidden" onClick={() => window.print()}><Printer className="size-4" />In báo cáo</Button>
+        </div>
+        {cycleLengths.length > 0 && (
+          <div className="mt-5 flex h-36 items-end gap-2 border-b border-l px-2 pt-3" aria-label="Biểu đồ độ dài chu kỳ">
+            {cycleLengths.map((length, index) => (
+              <div key={`${index}-${length}`} className="flex h-full min-w-0 flex-1 flex-col justify-end text-center">
+                <span className="mb-1 text-[10px] font-medium">{length}</span>
+                <span className={cn("mx-auto w-full max-w-10 rounded-t-lg", length < 21 || length > 35 ? "bg-amber-400" : "bg-rose-400")} style={{ height: `${Math.max(18, Math.min(100, (length / 45) * 100))}%` }} />
+                <span className="mt-1 text-[9px] text-muted-foreground">K{index + 1}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="rounded-3xl bg-card p-5 shadow-sm">
@@ -148,6 +180,7 @@ export function CycleDashboard({
           <ChipGroup name="symptoms" title="Triệu chứng" options={symptomOptions} selected={selectedLog?.symptoms ?? []} />
           <ChipGroup name="moods" title="Tâm trạng" options={moodOptions} selected={selectedLog?.moods ?? []} />
           <div className="space-y-2"><Label htmlFor="discharge">Dịch âm đạo</Label><select id="discharge" name="discharge" defaultValue={selectedLog?.discharge ?? ""} className="h-11 w-full rounded-xl border bg-background px-3 text-sm"><option value="">Không ghi</option><option value="DRY">Khô / ít</option><option value="CREAMY">Dạng kem</option><option value="WATERY">Loãng</option><option value="EGG_WHITE">Trong, dai như lòng trắng trứng</option><option value="UNUSUAL">Khác thường</option></select></div>
+          <div className="space-y-2"><Label htmlFor="ovulationTest">Que thử rụng trứng (LH)</Label><select id="ovulationTest" name="ovulationTest" defaultValue={selectedLog?.ovulationTest ?? ""} className="h-11 w-full rounded-xl border bg-background px-3 text-sm"><option value="">Chưa thử / không ghi</option><option value="NEGATIVE">Âm tính</option><option value="POSITIVE">Dương tính</option><option value="PEAK">Đỉnh LH</option></select><p className="text-[11px] leading-4 text-muted-foreground">Kết quả dương tính hoặc đỉnh LH sẽ điều chỉnh ngày rụng trứng ước tính của chu kỳ hiện tại.</p></div>
           <div className="grid grid-cols-2 gap-3"><MetricField name="sleepHours" label="Ngủ (giờ)" step="0.1" max="24" value={selectedLog?.sleepHours} /><MetricField name="basalTemperatureC" label="Nhiệt độ cơ bản (°C)" step="0.01" min="30" max="45" value={selectedLog?.basalTemperatureC} /><MetricField name="weightKg" label="Cân nặng (kg)" step="0.1" value={selectedLog?.weightKg} /><MetricField name="waterGlasses" label="Nước (ly)" step="1" max="100" value={selectedLog?.waterGlasses} /></div>
           <div className="space-y-2"><Label htmlFor="daily-notes">Ghi chú</Label><Textarea id="daily-notes" name="notes" className="min-h-20 rounded-xl bg-background" defaultValue={selectedLog?.notes ?? ""} placeholder="Điều gì đáng chú ý hôm nay?" /></div>
           <div className="flex gap-2"><SaveDailyButton />{selectedLog && <Button type="submit" formAction={deleteMotherDailyHealthLogAction} name="id" value={selectedLog.id} variant="destructive" className="h-11 rounded-xl" aria-label="Xóa nhật ký ngày"><Trash2 className="size-4" /></Button>}</div>
