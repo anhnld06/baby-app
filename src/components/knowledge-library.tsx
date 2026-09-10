@@ -11,6 +11,7 @@ import {
   Footprints,
   Heart,
   HeartPulse,
+  MessagesSquare,
   Puzzle,
   Search,
   Smile,
@@ -247,6 +248,25 @@ export function KnowledgeLibrary({
           </div>
         </>
       )}
+
+      <Link
+        href="/knowledge/social"
+        className="group mt-5 flex items-center gap-3 overflow-hidden rounded-3xl border border-fuchsia-200 bg-gradient-to-r from-fuchsia-50 to-violet-50 p-4 shadow-sm transition-transform active:scale-[.99] dark:border-fuchsia-900 dark:from-fuchsia-950/60 dark:to-violet-950/60"
+      >
+        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-fuchsia-600 to-violet-600 text-white shadow-md shadow-fuchsia-500/20">
+          <MessagesSquare className="size-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.12em] text-fuchsia-700 dark:text-fuchsia-300">
+            15 chủ đề · Facebook · TikTok · Threads
+          </span>
+          <strong className="mt-1 block leading-5">Cha mẹ đang quan tâm</strong>
+          <span className="mt-0.5 line-clamp-2 block text-xs leading-5 text-muted-foreground">
+            Xem câu hỏi đang được chia sẻ và câu trả lời đã đối chiếu nguồn.
+          </span>
+        </span>
+        <ChevronRight className="size-5 shrink-0 text-fuchsia-600 transition-transform group-hover:translate-x-0.5 dark:text-fuchsia-300" />
+      </Link>
     </>
   );
 }
