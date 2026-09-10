@@ -15,6 +15,7 @@ import { requireUser } from "@/lib/auth";
 import { formatAge, formatDateOfBirth } from "@/lib/date";
 import { db } from "@/lib/db";
 import { getDictionary, getLocale } from "@/lib/i18n";
+import { profileCoverUrl } from "@/lib/profile-cover";
 import { cn } from "@/lib/utils";
 
 export default async function ProfilePage() {
@@ -26,19 +27,32 @@ export default async function ProfilePage() {
   const [mother, babies] = await Promise.all([
     db.mother.findUnique({
       where: { userId: user.id },
+      include: { coverImage: { select: { updatedAt: true } } },
     }),
     db.baby.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "asc" },
+      include: { coverImage: { select: { updatedAt: true } } },
     }),
   ]);
   const primaryBaby = babies[0];
+  const primaryBabyCover = primaryBaby?.coverImage
+    ? profileCoverUrl("baby", primaryBaby.id, primaryBaby.coverImage.updatedAt)
+    : undefined;
   return (
     <>
       <PageHeader title={t.profile.title} subtitle={t.profile.subtitle} />
       {primaryBaby && (
-        <section className="relative mb-7 overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-fuchsia-500 p-5 text-primary-foreground shadow-lg shadow-primary/15">
-          <div className="absolute -right-8 -top-10 size-36 rounded-full bg-white/10" />
+        <section
+          className={cn(
+            "relative mb-7 overflow-hidden rounded-3xl p-5 text-primary-foreground shadow-lg shadow-primary/15",
+            primaryBabyCover ? "bg-cover bg-center" : "bg-gradient-to-br from-primary to-fuchsia-500",
+          )}
+          style={primaryBabyCover
+            ? { backgroundImage: `linear-gradient(90deg, rgb(62 24 52 / 82%), rgb(110 35 89 / 48%)), url(${JSON.stringify(primaryBabyCover)})` }
+            : undefined}
+        >
+          {!primaryBabyCover && <div className="absolute -right-8 -top-10 size-36 rounded-full bg-white/10" />}
           <p className="text-xs font-medium uppercase tracking-[.18em] opacity-75">
             {t.profile.family}
           </p>
@@ -66,6 +80,9 @@ export default async function ProfilePage() {
           icon={UserRound}
           title={t.profile.mother}
           value={mother?.name ?? t.profile.notAdded}
+          imageUrl={mother?.coverImage
+            ? profileCoverUrl("mother", mother.id, mother.coverImage.updatedAt)
+            : undefined}
           detail={
             mother?.bloodType
               ? `${t.profile.bloodType}: ${mother.bloodType}`
@@ -97,6 +114,9 @@ export default async function ProfilePage() {
               title={baby.nickname ?? baby.name}
               value={baby.name}
               detail={formatDateOfBirth(baby.dateOfBirth)}
+              imageUrl={baby.coverImage
+                ? profileCoverUrl("baby", baby.id, baby.coverImage.updatedAt)
+                : undefined}
             />
           ))}
         </div>
@@ -151,20 +171,25 @@ function ProfileLink({
   title,
   value,
   detail,
+  imageUrl,
 }: {
   href: string;
   icon: typeof UserRound;
   title: string;
   value: string;
   detail?: string;
+  imageUrl?: string;
 }) {
   return (
     <Link
       href={href}
       className="flex min-w-0 items-center gap-3 rounded-2xl bg-card p-4 shadow-sm transition-transform active:scale-[.99]"
     >
-      <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-primary">
-        <Icon className="size-5" />
+      <span
+        className="grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary bg-cover bg-center text-primary"
+        style={imageUrl ? { backgroundImage: `url(${JSON.stringify(imageUrl)})` } : undefined}
+      >
+        {!imageUrl && <Icon className="size-5" />}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-xs text-muted-foreground">{title}</span>

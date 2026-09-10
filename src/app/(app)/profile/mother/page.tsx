@@ -2,10 +2,12 @@ import { deleteMotherAction, saveMotherAction } from "@/app/actions";
 import { Field, SelectField, TextAreaField } from "@/components/form-fields";
 import { FormActionBar } from "@/components/form-action-bar";
 import { PageHeader } from "@/components/page-header";
+import { ProfileCoverUpload } from "@/components/profile-cover-upload";
 import { Card, CardContent } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getDictionary } from "@/lib/i18n";
+import { profileCoverUrl } from "@/lib/profile-cover";
 
 function dateInput(date?: Date | null) {
   return date?.toISOString().slice(0, 10) ?? "";
@@ -13,7 +15,10 @@ function dateInput(date?: Date | null) {
 
 export default async function MotherProfilePage() {
   const [user, t] = await Promise.all([requireUser(), getDictionary()]);
-  const mother = await db.mother.findUnique({ where: { userId: user.id } });
+  const mother = await db.mother.findUnique({
+    where: { userId: user.id },
+    include: { coverImage: { select: { updatedAt: true } } },
+  });
   return (
     <>
       <PageHeader
@@ -29,6 +34,11 @@ export default async function MotherProfilePage() {
             className="space-y-5"
           >
             {mother && <input type="hidden" name="id" value={mother.id} />}
+            <ProfileCoverUpload
+              currentImageUrl={mother?.coverImage
+                ? profileCoverUrl("mother", mother.id, mother.coverImage.updatedAt)
+                : undefined}
+            />
             <Field
               name="name"
               required

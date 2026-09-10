@@ -7,6 +7,7 @@ import { getSelectedBabyId, listBabies, pickSelectedBaby } from "@/lib/data";
 import { formatAge } from "@/lib/date";
 import { db } from "@/lib/db";
 import { getLocale } from "@/lib/i18n";
+import { profileCoverUrl } from "@/lib/profile-cover";
 
 export default async function BabyHubPage() {
   const [user, locale] = await Promise.all([requireUser(), getLocale()]);
@@ -15,12 +16,25 @@ export default async function BabyHubPage() {
   if (!baby) return <><PageHeader title="Của bé" /><FeatureLink href="/profile/baby/new" icon={Baby} title="Thêm hồ sơ bé" description="Tạo hồ sơ để bắt đầu nhật ký riêng cho bé." tone="blue" /></>;
   const counts = await db.baby.findUnique({
     where: { id: baby.id },
-    select: { _count: { select: { medicalVisits: true, insurancePolicies: true } } },
+    select: {
+      _count: { select: { medicalVisits: true, insurancePolicies: true } },
+      coverImage: { select: { updatedAt: true } },
+    },
   });
+  const coverImageUrl = counts?.coverImage
+    ? profileCoverUrl("baby", baby.id, counts.coverImage.updatedAt)
+    : undefined;
   return (
     <>
       <PageHeader title="Của bé" subtitle={`${baby.name} · ${formatAge(baby.dateOfBirth, new Date(), locale)}`} />
       <BabySwitcher babies={babies} selectedBabyId={baby.id} addLabel="Thêm bé" />
+      {coverImageUrl && (
+        <section
+          aria-label={`Ảnh nền hồ sơ của ${baby.name}`}
+          className="mt-4 aspect-[16/7] rounded-3xl bg-muted bg-cover bg-center shadow-sm"
+          style={{ backgroundImage: `url(${JSON.stringify(coverImageUrl)})` }}
+        />
+      )}
       <h2 className="mb-3 mt-6 text-sm font-semibold uppercase tracking-[.14em] text-muted-foreground">Chăm sóc hằng ngày</h2>
       <div className="grid gap-3 min-[520px]:grid-cols-2">
         <FeatureLink href="/tracking/feeding" icon={Baby} title="Bú và ăn" description="Theo dõi cữ bú, loại sữa và lượng ăn." tone="amber" />

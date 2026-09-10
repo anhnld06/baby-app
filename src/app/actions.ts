@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { parseProfileCoverUpdate } from "@/lib/profile-cover";
 import {
   babySchema,
   babyInsuranceSchema,
@@ -69,18 +70,33 @@ export async function setSelectedBabyAction(formData: FormData) {
 export async function saveMotherAction(formData: FormData) {
   const user = await requireUser();
   const data = motherSchema.parse(values(formData));
+  const coverImage = parseProfileCoverUpdate(formData);
   const existing = await db.mother.findUnique({ where: { userId: user.id } });
+  let motherId: string;
   if (existing) {
-    await db.mother.update({
+    const mother = await db.mother.update({
       where: { id: existing.id },
       data: { ...data, id: undefined },
+      select: { id: true },
     });
+    motherId = mother.id;
   } else {
-    await db.mother.create({
+    const mother = await db.mother.create({
       data: { ...data, id: undefined, userId: user.id },
+      select: { id: true },
+    });
+    motherId = mother.id;
+  }
+  if (coverImage === null) {
+    await db.motherProfileCover.deleteMany({ where: { motherId } });
+  } else if (coverImage) {
+    await db.motherProfileCover.upsert({
+      where: { motherId },
+      create: { motherId, ...coverImage },
+      update: coverImage,
     });
   }
-  revalidatePath("/profile");
+  revalidatePath("/", "layout");
   redirect("/profile");
 }
 
@@ -313,13 +329,30 @@ export async function deleteBabyInsuranceAction(formData: FormData) {
 export async function saveBabyAction(formData: FormData) {
   const user = await requireUser();
   const data = babySchema.parse(values(formData));
+  const coverImage = parseProfileCoverUpdate(formData);
+  let babyId: string;
   if (data.id) {
-    await db.baby.updateMany({
+    const result = await db.baby.updateMany({
       where: { id: data.id, userId: user.id },
       data: { ...data, id: undefined },
     });
+    if (result.count === 0) throw new Error("Baby not found");
+    babyId = data.id;
   } else {
-    await db.baby.create({ data: { ...data, id: undefined, userId: user.id } });
+    const baby = await db.baby.create({
+      data: { ...data, id: undefined, userId: user.id },
+      select: { id: true },
+    });
+    babyId = baby.id;
+  }
+  if (coverImage === null) {
+    await db.babyProfileCover.deleteMany({ where: { babyId } });
+  } else if (coverImage) {
+    await db.babyProfileCover.upsert({
+      where: { babyId },
+      create: { babyId, ...coverImage },
+      update: coverImage,
+    });
   }
   revalidatePath("/", "layout");
   redirect("/profile");

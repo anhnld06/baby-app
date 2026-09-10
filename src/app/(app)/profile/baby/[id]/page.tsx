@@ -3,10 +3,12 @@ import { deleteBabyAction, saveBabyAction } from "@/app/actions";
 import { Field, SelectField, TextAreaField } from "@/components/form-fields";
 import { FormActionBar } from "@/components/form-action-bar";
 import { PageHeader } from "@/components/page-header";
+import { ProfileCoverUpload } from "@/components/profile-cover-upload";
 import { Card, CardContent } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getDictionary } from "@/lib/i18n";
+import { profileCoverUrl } from "@/lib/profile-cover";
 
 function dateInput(date?: Date | null) {
   return date?.toISOString().slice(0, 10) ?? "";
@@ -25,7 +27,10 @@ export default async function BabyProfilePage({
   const baby =
     id === "new"
       ? null
-      : await db.baby.findFirst({ where: { id, userId: user.id } });
+      : await db.baby.findFirst({
+          where: { id, userId: user.id },
+          include: { coverImage: { select: { updatedAt: true } } },
+        });
   if (id !== "new" && !baby) notFound();
   return (
     <>
@@ -38,6 +43,11 @@ export default async function BabyProfilePage({
         <CardContent className="p-5">
           <form id="baby-form" action={saveBabyAction} className="space-y-5">
             {baby && <input type="hidden" name="id" value={baby.id} />}
+            <ProfileCoverUpload
+              currentImageUrl={baby?.coverImage
+                ? profileCoverUrl("baby", baby.id, baby.coverImage.updatedAt)
+                : undefined}
+            />
             <Field
               name="name"
               required

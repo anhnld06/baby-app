@@ -144,6 +144,15 @@ model Mother {
   medicalVisits        MotherMedicalVisit[]
   insurancePolicies    MotherInsurancePolicy[]
   vaccinationRecords   MotherVaccinationRecord[]
+  coverImage           MotherProfileCover?
+}
+
+model MotherProfileCover {
+  motherId  String   @id
+  data      Bytes
+  mimeType  String   @db.VarChar(32)
+  updatedAt DateTime @updatedAt
+  mother    Mother   @relation(fields: [motherId], references: [id], onDelete: Cascade)
 }
 
 model Pregnancy {
@@ -185,8 +194,17 @@ model Baby {
   toothRecords             ToothRecord[]
   medicalVisits            BabyMedicalVisit[]
   insurancePolicies        BabyInsurancePolicy[]
+  coverImage               BabyProfileCover?
 
   @@index([userId])
+}
+
+model BabyProfileCover {
+  babyId    String   @id
+  data      Bytes
+  mimeType  String   @db.VarChar(32)
+  updatedAt DateTime @updatedAt
+  baby      Baby     @relation(fields: [babyId], references: [id], onDelete: Cascade)
 }
 
 model MenstrualCycle {
