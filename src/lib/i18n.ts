@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 
 export const dictionaries = {
   vi: {
-    appName: "Mầm",
+    appName: "Vani Family",
     tagline: "Nhật ký nhỏ cho hành trình lớn",
     nav: {
       home: "Hôm nay",
@@ -201,6 +201,10 @@ export const dictionaries = {
       logBaby: "Ghi mũi của bé",
       dashboardCount: "mũi cần chú ý",
       allDone: "Không có mũi nào đến hạn",
+      free: "Miễn phí (TCMR)",
+      paid: "Dịch vụ (trả phí)",
+      core: "Khuyến nghị cho mọi trẻ",
+      supplementary: "Bổ sung theo nguy cơ",
     },
     assistant: {
       title: "Hỏi trợ lý",
@@ -221,7 +225,7 @@ export const dictionaries = {
     },
   },
   en: {
-    appName: "Sprout",
+    appName: "Vani Family",
     tagline: "A little journal for a big journey",
     nav: {
       home: "Today",
@@ -419,6 +423,10 @@ export const dictionaries = {
       logBaby: "Log baby's dose",
       dashboardCount: "need attention",
       allDone: "Nothing due right now",
+      free: "Free (national program)",
+      paid: "Paid (private service)",
+      core: "Recommended for all children",
+      supplementary: "Supplementary / risk-based",
     },
     assistant: {
       title: "Ask the assistant",

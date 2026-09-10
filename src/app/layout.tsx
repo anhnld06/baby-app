@@ -5,10 +5,10 @@ import "./globals.css";
 const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin", "vietnamese"] });
 
 export const metadata: Metadata = {
-  title: { default: "Mầm — Nhật ký mẹ và bé", template: "%s · Mầm" },
+  title: { default: "Vani Family — Nhật ký mẹ và bé", template: "%s · Vani Family" },
   description: "Nhật ký riêng tư, nhẹ nhàng cho mẹ và bé.",
-  applicationName: "Mầm",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "Mầm" },
+  applicationName: "Vani Family",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Vani Family" },
   formatDetection: { telephone: false },
 };
 

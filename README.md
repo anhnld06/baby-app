@@ -1,4 +1,4 @@
-# Mầm — nhật ký mẹ và bé
+# Vani Family — nhật ký mẹ và bé
 
 Ứng dụng mobile-first để quản lý hành trình làm mẹ và chăm sóc bé trong hai không gian dữ liệu tách biệt, kèm cẩm nang có nguồn và trợ lý AI có lớp an toàn.
 

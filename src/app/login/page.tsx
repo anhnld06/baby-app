@@ -17,7 +17,7 @@ export default async function LoginPage() {
         <div className="mb-5 grid size-16 place-items-center rounded-[1.6rem] bg-primary text-primary-foreground shadow-lg shadow-primary/25">
           <Sprout className="size-8" />
         </div>
-        <h1 className="text-center text-3xl font-semibold tracking-tight">Mầm</h1>
+        <h1 className="text-center text-3xl font-semibold tracking-tight">Vani Family</h1>
         <p className="mb-7 mt-2 max-w-sm text-center text-sm leading-6 text-muted-foreground">
           Không gian riêng để lưu hành trình của mẹ và bé.
         </p>
