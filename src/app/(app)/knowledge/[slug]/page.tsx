@@ -59,7 +59,11 @@ export default async function ArticlePage({
       <article className="rounded-3xl bg-card p-5 text-[15px] leading-7 shadow-sm">
         <p className="text-base font-medium leading-7">{article.summary}</p>
         <hr className="my-5 border-border/70" />
-        <ArticleContent content={article.content} />
+        <ArticleContent
+          category={article.category}
+          content={article.content}
+          slug={article.slug}
+        />
       </article>
       <div className="mt-4 flex gap-2 rounded-2xl bg-secondary/60 p-3 text-xs leading-5 text-muted-foreground">
         <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />

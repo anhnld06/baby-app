@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
@@ -12,7 +13,6 @@ import {
   HeartPulse,
   Puzzle,
   Search,
-  ShieldAlert,
   Smile,
   Sparkles,
   Utensils,
@@ -24,6 +24,7 @@ import {
   knowledgeTypeLabels,
   stageLabels,
 } from "@/features/knowledge/labels";
+import { getKnowledgeVisual } from "@/features/knowledge/visuals";
 import { cn } from "@/lib/utils";
 
 type LibraryArticle = {
@@ -83,8 +84,16 @@ export function KnowledgeLibrary({
 
   return (
     <>
-      <section className="mb-5 overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-cyan-700 p-5 text-primary-foreground shadow-lg shadow-primary/15">
-        <div className="flex items-start gap-3">
+      <section className="relative mb-5 min-h-52 overflow-hidden rounded-3xl bg-primary p-5 text-primary-foreground shadow-lg shadow-primary/15">
+        <Image
+          alt=""
+          className="object-cover"
+          fill
+          sizes="(max-width: 768px) 100vw, 672px"
+          src={getKnowledgeVisual("ALL")}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/75 to-primary/10" />
+        <div className="relative flex max-w-sm items-start gap-3">
           <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white/15">
             <BookHeart className="size-5" />
           </span>
@@ -120,24 +129,42 @@ export function KnowledgeLibrary({
             Chọn giai đoạn để xem bài liên quan
           </h2>
           <div className="grid grid-cols-3 gap-2">
-            {STAGE_TILES.map(({ value, icon: Icon, className }) => (
-              <button
-                type="button"
-                key={value}
-                onClick={() => setStage(value)}
-                className="group relative flex min-h-24 min-w-0 flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl bg-card px-1 text-xs font-medium shadow-sm transition-transform active:scale-95"
-              >
-                <span className={cn("relative grid size-11 place-items-center rounded-2xl", className)}>
-                  <Icon className="size-5" />
-                  {currentStage === value && (
-                    <Sparkles className="absolute -right-1 -top-1 size-4 rounded-full bg-card p-0.5 text-primary" />
-                  )}
-                </span>
-                <span className="max-w-full truncate px-1">
-                  {value === "ALL" ? "Tất cả" : stageLabels[value]}
-                </span>
-              </button>
-            ))}
+            {STAGE_TILES.map(({ value, icon: Icon, className }) => {
+              const visual = getKnowledgeVisual(value);
+              return (
+                <button
+                  type="button"
+                  key={value}
+                  onClick={() => setStage(value)}
+                  className="group min-w-0 overflow-hidden rounded-2xl bg-card text-xs font-medium shadow-sm transition-transform active:scale-95"
+                >
+                  <span className="relative block h-16 overflow-hidden bg-muted">
+                    <Image
+                      alt=""
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      fill
+                      sizes="(max-width: 768px) 33vw, 210px"
+                      src={visual}
+                    />
+                    <span className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
+                    <span
+                      className={cn(
+                        "absolute bottom-1.5 left-1.5 grid size-8 place-items-center rounded-xl shadow-sm",
+                        className,
+                      )}
+                    >
+                      <Icon className="size-4" />
+                      {currentStage === value && (
+                        <Sparkles className="absolute -right-1 -top-1 size-4 rounded-full bg-card p-0.5 text-primary" />
+                      )}
+                    </span>
+                  </span>
+                  <span className="block truncate px-1.5 py-2">
+                    {value === "ALL" ? "Tất cả" : stageLabels[value]}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </>
       )}
@@ -173,19 +200,6 @@ export function KnowledgeLibrary({
                     warning && "border-red-200 dark:border-red-900",
                   )}
                 >
-                  <span
-                    className={cn(
-                      "grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-primary",
-                      warning && "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
-                      folk && "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
-                    )}
-                  >
-                    {warning ? (
-                      <ShieldAlert className="size-5" />
-                    ) : (
-                      <BookHeart className="size-5" />
-                    )}
-                  </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex flex-wrap gap-1.5">
                       <Badge variant={warning ? "destructive" : "secondary"}>

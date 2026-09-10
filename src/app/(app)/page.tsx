@@ -205,7 +205,10 @@ export default async function DashboardPage() {
               <Clock3 className="size-3.5 shrink-0" />
               {formatDateTime(now, user.timezone, locale)}
             </span>
-            <WeatherBadge unavailableLabel={t.dashboard.weatherUnavailable} />
+            <WeatherBadge
+              currentLocationLabel={t.dashboard.currentLocation}
+              unavailableLabel={t.dashboard.weatherUnavailable}
+            />
           </div>
         }
       />

@@ -46,31 +46,14 @@ const WEATHER_ICON: Record<number, typeof Sun> = {
   99: CloudLightning,
 };
 
-function formatCoords(latitude: number, longitude: number) {
-  return `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
-}
-
 async function reverseGeocode(latitude: number, longitude: number): Promise<string | null> {
   try {
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=14&accept-language=vi`,
+      `/api/location?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`,
     );
     if (!response.ok) return null;
-    const data = (await response.json()) as { address?: Record<string, string | undefined> };
-    const address = data.address;
-    if (!address) return null;
-    const place =
-      address.suburb ??
-      address.quarter ??
-      address.neighbourhood ??
-      address.city_district ??
-      address.town ??
-      address.city ??
-      address.county;
-    const region = address.state ?? address.city;
-    return (
-      [place, region].filter((part, index, all) => part && all.indexOf(part) === index).join(", ") || null
-    );
+    const data = (await response.json()) as { name?: unknown };
+    return typeof data.name === "string" && data.name.trim() ? data.name : null;
   } catch {
     return null;
   }
@@ -85,10 +68,15 @@ type WeatherState =
       humidity: number;
       weatherCode: number;
       locationName: string | null;
-      coords: { latitude: number; longitude: number };
     };
 
-export function WeatherBadge({ unavailableLabel }: { unavailableLabel?: string }) {
+export function WeatherBadge({
+  unavailableLabel,
+  currentLocationLabel = "Current location",
+}: {
+  unavailableLabel?: string;
+  currentLocationLabel?: string;
+}) {
   const [state, setState] = useState<WeatherState>({ status: "loading" });
 
   useEffect(() => {
@@ -123,7 +111,6 @@ export function WeatherBadge({ unavailableLabel }: { unavailableLabel?: string }
           humidity: Math.round(humidity),
           weatherCode,
           locationName,
-          coords: { latitude, longitude },
         });
       } catch {
         if (!cancelled) setState({ status: "unavailable" });
@@ -157,7 +144,7 @@ export function WeatherBadge({ unavailableLabel }: { unavailableLabel?: string }
   }
 
   const Icon = (state.weatherCode != null && WEATHER_ICON[state.weatherCode]) || Cloud;
-  const shownLocation = state.locationName ?? formatCoords(state.coords.latitude, state.coords.longitude);
+  const shownLocation = state.locationName ?? currentLocationLabel;
 
   return (
     <span className="inline-flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
@@ -173,6 +160,16 @@ export function WeatherBadge({ unavailableLabel }: { unavailableLabel?: string }
         <Droplets className="size-3.5 shrink-0" />
         {state.humidity}%
       </span>
+      {state.locationName ? (
+        <a
+          className="underline-offset-2 hover:underline"
+          href="https://www.openstreetmap.org/copyright"
+          rel="noreferrer"
+          target="_blank"
+        >
+          © OpenStreetMap
+        </a>
+      ) : null}
     </span>
   );
 }
