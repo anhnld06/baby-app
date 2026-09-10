@@ -105,7 +105,7 @@ export default async function DiaperPage({
               label={t.tracking.changedAt}
               defaultValue={toDateTimeLocal(editing?.changedAt)}
             />
-            <div className="grid min-w-0 gap-4 min-[430px]:grid-cols-2">
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
               <Field
                 name="stoolColor"
                 label={t.tracking.stoolColor}
@@ -132,6 +132,7 @@ export default async function DiaperPage({
       </Card>
       <FormActionBar
         formId="diaper-form"
+        saveAction={saveDiaperAction}
         saveLabel={editing ? t.common.update : t.common.save}
         cancelHref={editing ? "/tracking/diaper" : undefined}
         cancelLabel={t.common.cancel}

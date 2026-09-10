@@ -38,7 +38,7 @@ export default async function MotherVaccinationPage({ searchParams }: { searchPa
               <input type="hidden" name="motherId" value={mother.id} />
               {editing && <input type="hidden" name="id" value={editing.id} />}
               <Field name="vaccineName" required label="Tên vắc xin" defaultValue={editing?.vaccineName ?? "Uốn ván (VAT)"} />
-              <div className="grid gap-4 min-[430px]:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Field name="doseNumber" type="number" min="1" label="Mũi số" defaultValue={editing?.doseNumber ?? ""} />
                 <Field name="administeredAt" type="date" required label="Ngày tiêm" defaultValue={editing ? toDateInputValue(editing.administeredAt) : toDateInputValue()} />
               </div>
@@ -49,6 +49,7 @@ export default async function MotherVaccinationPage({ searchParams }: { searchPa
         </Card>
         <FormActionBar
           formId="mother-vaccination-form"
+          saveAction={saveMotherVaccinationAction}
           saveLabel={editing ? "Cập nhật" : "Lưu mũi tiêm"}
           cancelHref={editing ? "/mother/vaccination" : undefined}
           cancelLabel="Hủy"

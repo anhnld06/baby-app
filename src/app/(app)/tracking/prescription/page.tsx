@@ -1,5 +1,5 @@
 import { Pill } from "lucide-react";
-import { deletePrescriptionAction } from "@/app/actions";
+import { deletePrescriptionAction, savePrescriptionAction } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { FormActionBar } from "@/components/form-action-bar";
 import { PageHeader } from "@/components/page-header";
@@ -84,6 +84,7 @@ export default async function PrescriptionPage({
       </Card>
       <FormActionBar
         formId="prescription-form"
+        saveAction={savePrescriptionAction}
         saveLabel={editing ? t.common.update : t.common.save}
         cancelHref={editing ? "/tracking/prescription" : undefined}
         cancelLabel={t.common.cancel}

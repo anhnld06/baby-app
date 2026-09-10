@@ -57,12 +57,13 @@ type SpeechWindow = Window & {
 };
 
 const initialActionState: VoiceLogActionState = { status: "idle", message: "" };
+const SILENCE_TIMEOUT_MS = 4_000;
 
 const copy = {
   vi: {
     title: "Ghi nhanh bằng giọng nói",
     description: "Nói một câu, kiểm tra lại rồi lưu vào nhật ký.",
-    listening: "Đang nghe… Chạm để dừng",
+    listening: "Đang nghe… Tự dừng sau 4 giây yên lặng",
     start: "Chạm để nói",
     livePlaceholder: "Hãy nói về cữ bú, giấc ngủ hoặc lần thay tã…",
     placeholder: "Ví dụ: Bé bú mẹ bên trái 10 phút",
@@ -105,7 +106,7 @@ const copy = {
   en: {
     title: "Quick log by voice",
     description: "Say one sentence, review it, then save it to the journal.",
-    listening: "Listening… Tap to stop",
+    listening: "Listening… Stops after 4 seconds of silence",
     start: "Tap to speak",
     livePlaceholder: "Say something about feeding, sleep, or a diaper change…",
     placeholder: "Example: Baby drank 90 ml of formula",
@@ -174,7 +175,7 @@ function DraftFields({ draft, locale }: { draft: VoiceLogDraft; locale: Locale }
           <Field name="startTime" type="datetime-local" required label={t.startTime} defaultValue={draft.startTime} />
           <Field name="endTime" type="datetime-local" label={t.endTime} defaultValue={draft.endTime} />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field name="leftBreastDuration" type="number" min="0" label={t.leftMinutes} defaultValue={draft.leftBreastDuration ?? ""} />
           <Field name="rightBreastDuration" type="number" min="0" label={t.rightMinutes} defaultValue={draft.rightBreastDuration ?? ""} />
         </div>
@@ -240,11 +241,15 @@ export function VoiceQuickLog({ babyId, locale }: { babyId: string; locale: Loca
   const [message, setMessage] = useState("");
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [actionState, setActionState] = useState(initialActionState);
   const [pending, setPending] = useState(false);
 
   useEffect(
     () => () => {
+      if (silenceTimerRef.current !== null) {
+        clearTimeout(silenceTimerRef.current);
+      }
       const recognition = recognitionRef.current;
       if (recognition) {
         recognition.onresult = null;
@@ -255,6 +260,21 @@ export function VoiceQuickLog({ babyId, locale }: { babyId: string; locale: Loca
     },
     [],
   );
+
+  function clearSilenceTimer() {
+    if (silenceTimerRef.current === null) return;
+    clearTimeout(silenceTimerRef.current);
+    silenceTimerRef.current = null;
+  }
+
+  function scheduleSilenceStop(recognition: SpeechRecognitionLike) {
+    clearSilenceTimer();
+    silenceTimerRef.current = setTimeout(() => {
+      silenceTimerRef.current = null;
+      if (recognitionRef.current !== recognition) return;
+      recognition.stop();
+    }, SILENCE_TIMEOUT_MS);
+  }
 
   function interpret(value = transcript) {
     setActionState(initialActionState);
@@ -270,6 +290,7 @@ export function VoiceQuickLog({ babyId, locale }: { babyId: string; locale: Loca
 
   function startListening() {
     if (listening) {
+      clearSilenceTimer();
       recognitionRef.current?.stop();
       return;
     }
@@ -296,8 +317,10 @@ export function VoiceQuickLog({ babyId, locale }: { babyId: string; locale: Loca
         .join(" ")
         .trim();
       setTranscript(captured);
+      scheduleSilenceStop(recognition);
     };
     recognition.onerror = (event) => {
+      clearSilenceTimer();
       recognitionFailed = true;
       setListening(false);
       setMessage(
@@ -307,6 +330,7 @@ export function VoiceQuickLog({ babyId, locale }: { babyId: string; locale: Loca
       );
     };
     recognition.onend = () => {
+      clearSilenceTimer();
       setListening(false);
       recognitionRef.current = null;
       if (captured) interpret(captured);
@@ -320,7 +344,9 @@ export function VoiceQuickLog({ babyId, locale }: { babyId: string; locale: Loca
     setListening(true);
     try {
       recognition.start();
+      scheduleSilenceStop(recognition);
     } catch {
+      clearSilenceTimer();
       recognitionRef.current = null;
       setListening(false);
       setMessage(t.noSpeech);
@@ -328,6 +354,7 @@ export function VoiceQuickLog({ babyId, locale }: { babyId: string; locale: Loca
   }
 
   function reset() {
+    clearSilenceTimer();
     const recognition = recognitionRef.current;
     recognitionRef.current = null;
     if (recognition) {

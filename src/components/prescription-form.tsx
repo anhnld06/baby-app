@@ -113,7 +113,7 @@ export function PrescriptionForm({
           if (extractedItems.length > 0) setItems(extractedItems);
         }}
       />
-      <div className="grid min-w-0 gap-4 min-[430px]:grid-cols-2">
+      <div className="grid min-w-0 gap-4 sm:grid-cols-2">
         <Field
           name="prescribedBy"
           label={labels.prescribedBy}
@@ -161,7 +161,7 @@ export function PrescriptionForm({
                 </Button>
               )}
             </div>
-            <div className="grid min-w-0 gap-3 min-[430px]:grid-cols-2">
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
               <Field
                 name={`items.${index}.dosage`}
                 label={labels.dosage}
@@ -175,7 +175,7 @@ export function PrescriptionForm({
                 onChange={(event) => setItem(index, "frequency", event.target.value)}
               />
             </div>
-            <div className="grid min-w-0 gap-3 min-[430px]:grid-cols-2">
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
               <Field
                 name={`items.${index}.durationDays`}
                 type="number"

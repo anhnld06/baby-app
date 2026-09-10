@@ -133,7 +133,7 @@ export default async function FeedingPage({
                 }
               />
             </div>
-            <div className="grid min-w-0 gap-4 min-[430px]:grid-cols-2">
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
               <Field
                 name="leftBreastDuration"
                 type="number"
@@ -151,7 +151,7 @@ export default async function FeedingPage({
                 defaultValue={editing?.rightBreastDuration ?? ""}
               />
             </div>
-            <div className="grid min-w-0 gap-4 min-[430px]:grid-cols-2">
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
               <Field
                 name="amountMl"
                 type="number"
@@ -186,6 +186,7 @@ export default async function FeedingPage({
       </Card>
       <FormActionBar
         formId="feeding-form"
+        saveAction={saveFeedingAction}
         saveLabel={editing ? t.common.update : t.common.save}
         cancelHref={editing ? "/tracking/feeding" : undefined}
         cancelLabel={t.common.cancel}

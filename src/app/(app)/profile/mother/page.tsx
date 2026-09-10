@@ -45,7 +45,7 @@ export default async function MotherProfilePage() {
               label={t.profile.name}
               defaultValue={mother?.name ?? ""}
             />
-            <div className="grid min-w-0 gap-4 min-[430px]:grid-cols-2">
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
               <Field
                 name="dateOfBirth"
                 type="date"
@@ -67,7 +67,7 @@ export default async function MotherProfilePage() {
                 )}
               </SelectField>
             </div>
-            <div className="grid min-w-0 gap-4 min-[430px]:grid-cols-2">
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
               <Field
                 name="heightCm"
                 type="number"
@@ -97,6 +97,7 @@ export default async function MotherProfilePage() {
       </Card>
       <FormActionBar
         formId="mother-form"
+        saveAction={saveMotherAction}
         saveLabel={t.common.save}
         cancelHref="/profile"
         cancelLabel={t.common.cancel}

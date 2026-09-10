@@ -69,7 +69,7 @@ export default async function CyclePage() {
         <summary className="cursor-pointer font-medium">Chỉnh ngày bắt đầu và kết thúc kỳ kinh</summary>
         <form action={saveMenstrualCycleAction} className="mt-5 space-y-4">
           <input type="hidden" name="motherId" value={mother.id} />
-          <div className="grid gap-4 min-[430px]:grid-cols-2"><Field name="periodStart" type="date" required label="Ngày bắt đầu" /><Field name="periodEnd" type="date" label="Ngày kết thúc" /></div>
+          <div className="grid gap-4 sm:grid-cols-2"><Field name="periodStart" type="date" required label="Ngày bắt đầu" /><Field name="periodEnd" type="date" label="Ngày kết thúc" /></div>
           <SelectField name="flow" label="Lượng kinh thường gặp"><option value="">Chưa ghi</option><option value="SPOTTING">Rỉ ít</option><option value="LIGHT">Ít</option><option value="MEDIUM">Vừa</option><option value="HEAVY">Nhiều</option></SelectField>
           <TextAreaField name="symptoms" label="Triệu chứng nổi bật" />
           <TextAreaField name="notes" label="Ghi chú" />

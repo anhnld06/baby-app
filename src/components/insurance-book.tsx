@@ -36,12 +36,12 @@ export function InsuranceBook({ title, subtitle, backHref, basePath, ownerField,
         <Field name="policyNumber" required label="Mã thẻ / số hợp đồng" defaultValue={editing?.policyNumber ?? ""} />
         <Field name="provider" label="Đơn vị bảo hiểm" defaultValue={editing?.provider ?? ""} />
         <Field name="registeredCare" label="Nơi đăng ký khám ban đầu" defaultValue={editing?.registeredCare ?? ""} />
-        <div className="grid gap-4 min-[430px]:grid-cols-2"><Field name="validFrom" type="date" label="Có hiệu lực từ" defaultValue={dateInput(editing?.validFrom)} /><Field name="validUntil" type="date" label="Có hiệu lực đến" defaultValue={dateInput(editing?.validUntil)} /></div>
+        <div className="grid gap-4 sm:grid-cols-2"><Field name="validFrom" type="date" label="Có hiệu lực từ" defaultValue={dateInput(editing?.validFrom)} /><Field name="validUntil" type="date" label="Có hiệu lực đến" defaultValue={dateInput(editing?.validUntil)} /></div>
         <Field name="contact" label="Hotline / liên hệ" defaultValue={editing?.contact ?? ""} />
         <TextAreaField name="benefits" label="Quyền lợi chính" defaultValue={editing?.benefits ?? ""} />
         <TextAreaField name="notes" label="Ghi chú" defaultValue={editing?.notes ?? ""} />
       </form></CardContent></Card>
-      <FormActionBar formId="insurance-form" saveLabel={editing ? "Cập nhật" : "Lưu bảo hiểm"} cancelHref={editing ? basePath : undefined} cancelLabel="Hủy" deleteAction={editing ? deleteAction : undefined} deleteId={editing?.id} deleteLabel="Xóa" />
+      <FormActionBar formId="insurance-form" saveAction={saveAction} saveLabel={editing ? "Cập nhật" : "Lưu bảo hiểm"} cancelHref={editing ? basePath : undefined} cancelLabel="Hủy" deleteAction={editing ? deleteAction : undefined} deleteId={editing?.id} deleteLabel="Xóa" />
     </CollapsibleRecordForm>
     <h2 className="mb-3 mt-7 text-lg font-semibold">Thẻ và hợp đồng</h2>
     <div className="space-y-2">{items.map((item) => {
@@ -51,4 +51,3 @@ export function InsuranceBook({ title, subtitle, backHref, basePath, ownerField,
     <p className="mt-4 text-xs leading-5 text-muted-foreground">Chỉ lưu thông tin cần thiết. Không ghi mã OTP, mật khẩu hoặc thông tin thanh toán vào ghi chú.</p>
   </>;
 }
-

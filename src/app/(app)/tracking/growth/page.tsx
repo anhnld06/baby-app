@@ -72,7 +72,7 @@ export default async function GrowthPage({
                 label={t.tracking.measuredAt}
                 defaultValue={toDateTimeLocal(editing?.measuredAt)}
               />
-              <div className="grid min-w-0 gap-4 min-[430px]:grid-cols-2">
+              <div className="grid min-w-0 gap-4 sm:grid-cols-2">
                 <Field
                   name="weightKg"
                   type="number"
@@ -111,6 +111,7 @@ export default async function GrowthPage({
         </Card>
         <FormActionBar
           formId="growth-form"
+          saveAction={saveGrowthAction}
           saveLabel={editing ? t.common.update : t.common.save}
           cancelHref={editing ? "/tracking/growth" : undefined}
           cancelLabel={t.common.cancel}

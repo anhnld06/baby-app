@@ -143,6 +143,7 @@ export default async function SleepPage({
       </Card>
       <FormActionBar
         formId="sleep-form"
+        saveAction={saveSleepAction}
         saveLabel={editing ? t.common.update : t.common.save}
         cancelHref={editing ? "/tracking/sleep" : undefined}
         cancelLabel={t.common.cancel}

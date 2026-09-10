@@ -54,7 +54,7 @@ export default async function BabyProfilePage({
               label={t.profile.babyName}
               defaultValue={baby?.name ?? ""}
             />
-            <div className="grid min-w-0 gap-4 min-[430px]:grid-cols-2">
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
               <Field
                 name="nickname"
                 label={t.profile.nickname}
@@ -71,7 +71,7 @@ export default async function BabyProfilePage({
                 <option value="UNDISCLOSED">{t.profile.undisclosed}</option>
               </SelectField>
             </div>
-            <div className="grid min-w-0 gap-4 min-[430px]:grid-cols-2">
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
               <Field
                 name="dateOfBirth"
                 type="date"
@@ -94,7 +94,7 @@ export default async function BabyProfilePage({
               label={t.profile.gestationalAge}
               defaultValue={baby?.gestationalAgeAtBirth ?? ""}
             />
-            <div className="grid min-w-0 gap-4 min-[430px]:grid-cols-2">
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
               <Field
                 name="birthWeightKg"
                 type="number"
@@ -133,6 +133,7 @@ export default async function BabyProfilePage({
       </Card>
       <FormActionBar
         formId="baby-form"
+        saveAction={saveBabyAction}
         saveLabel={baby ? t.common.update : t.common.save}
         cancelHref="/profile"
         cancelLabel={t.common.cancel}

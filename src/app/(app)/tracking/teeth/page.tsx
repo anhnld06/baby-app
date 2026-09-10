@@ -103,6 +103,7 @@ export default async function TeethPage({
       {selectedPosition && (
         <FormActionBar
           formId="tooth-form"
+          saveAction={saveToothAction}
           saveLabel={t.common.save}
           cancelHref="/tracking/teeth"
           cancelLabel={t.common.cancel}

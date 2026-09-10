@@ -62,7 +62,7 @@ export default async function PregnancyProfilePage() {
               <option value="DELIVERED">{t.profile.delivered}</option>
               <option value="ENDED">{t.profile.ended}</option>
             </SelectField>
-            <div className="grid min-w-0 gap-4 min-[430px]:grid-cols-2">
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
               <Field
                 name="lastMenstrualPeriod"
                 type="date"
@@ -92,6 +92,7 @@ export default async function PregnancyProfilePage() {
       </Card>
       <FormActionBar
         formId="pregnancy-form"
+        saveAction={savePregnancyAction}
         saveLabel={t.common.save}
         cancelHref="/profile"
         cancelLabel={t.common.cancel}

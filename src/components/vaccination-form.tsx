@@ -98,7 +98,7 @@ export function VaccinationForm({
         value={values.vaccineName}
         onChange={(event) => set("vaccineName", event.target.value)}
       />
-      <div className="grid min-w-0 gap-4 min-[430px]:grid-cols-2">
+      <div className="grid min-w-0 gap-4 sm:grid-cols-2">
         <Field
           name="doseNumber"
           type="number"
@@ -123,7 +123,7 @@ export function VaccinationForm({
         value={values.facility}
         onChange={(event) => set("facility", event.target.value)}
       />
-      <div className="grid min-w-0 gap-4 min-[430px]:grid-cols-2">
+      <div className="grid min-w-0 gap-4 sm:grid-cols-2">
         <Field
           name="batchNumber"
           label={labels.batchNumber}

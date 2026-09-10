@@ -1,5 +1,5 @@
 import { Syringe } from "lucide-react";
-import { deleteVaccinationAction } from "@/app/actions";
+import { deleteVaccinationAction, saveVaccinationAction } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { FormActionBar } from "@/components/form-action-bar";
 import { PageHeader } from "@/components/page-header";
@@ -78,6 +78,7 @@ export default async function VaccinationPage({
       </Card>
       <FormActionBar
         formId="vaccination-form"
+        saveAction={saveVaccinationAction}
         saveLabel={editing ? t.common.update : t.common.save}
         cancelHref={editing ? "/tracking/vaccination" : undefined}
         cancelLabel={t.common.cancel}

@@ -100,6 +100,14 @@
   textarea {
     -webkit-tap-highlight-color: transparent;
   }
+  input:is([type="date"], [type="time"], [type="datetime-local"]) {
+    min-width: 0;
+    max-width: 100%;
+  }
+  input:is([type="date"], [type="time"], [type="datetime-local"])::-webkit-datetime-edit {
+    min-width: 0;
+    overflow: hidden;
+  }
 }
 
 @layer utilities {
@@ -112,6 +120,14 @@
   @keyframes page-enter {
     from {
       opacity: 0;
+    }
+  }
+  @keyframes loading-bar {
+    from {
+      transform: translateX(-110%);
+    }
+    to {
+      transform: translateX(210%);
     }
   }
 }

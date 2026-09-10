@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AlertTriangle, CalendarCheck, CheckCircle2, HeartPulse, Scale, ShieldAlert } from "lucide-react";
-import { deletePregnancyCheckupAction } from "@/app/actions";
+import { deletePregnancyCheckupAction, savePregnancyCheckupAction } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { FormActionBar } from "@/components/form-action-bar";
 import { PageHeader } from "@/components/page-header";
@@ -110,7 +110,7 @@ export default async function PregnancyTrackingPage({ searchParams }: { searchPa
         <Card className="border-0 shadow-sm"><CardContent className="p-5">
           <PregnancyCheckupForm pregnancyId={pregnancy.id} editing={editing} defaultGestationalWeek={age?.weeks} />
         </CardContent></Card>
-        <FormActionBar formId="checkup-form" saveLabel={editing ? "Cập nhật" : "Lưu lần khám"} cancelHref={editing ? "/mother/pregnancy" : undefined} cancelLabel="Hủy" deleteAction={editing ? deletePregnancyCheckupAction : undefined} deleteId={editing?.id} deleteLabel="Xóa" />
+        <FormActionBar formId="checkup-form" saveAction={savePregnancyCheckupAction} saveLabel={editing ? "Cập nhật" : "Lưu lần khám"} cancelHref={editing ? "/mother/pregnancy" : undefined} cancelLabel="Hủy" deleteAction={editing ? deletePregnancyCheckupAction : undefined} deleteId={editing?.id} deleteLabel="Xóa" />
       </CollapsibleRecordForm>
       <h2 className="mb-3 mt-7 text-lg font-semibold">Các lần khám thai</h2>
       <div className="space-y-2">{items.map((item) => <div key={item.id} className="flex items-start gap-3 rounded-2xl bg-card p-3 shadow-sm"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300"><CalendarCheck className="size-5" /></span><div className="min-w-0 flex-1"><p className="font-medium">{item.gestationalWeek !== null ? `Tuần ${item.gestationalWeek}` : "Khám thai"}</p><p className="text-xs text-muted-foreground">{new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long", year: "numeric" }).format(item.checkedAt)}{item.facility ? ` · ${item.facility}` : ""}</p>{(item.weightKg || item.bloodPressure || item.fetalHeartRate) && <p className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground"><Scale className="size-3" />{[item.weightKg && `${item.weightKg} kg`, item.bloodPressure && `HA ${item.bloodPressure}`, item.fetalHeartRate && `Tim thai ${item.fetalHeartRate}`].filter(Boolean).join(" · ")}</p>}{item.findings && <p className="mt-1 line-clamp-2 text-sm">{item.findings}</p>}</div><RecordActions id={item.id} editHref={`/mother/pregnancy?edit=${item.id}`} deleteAction={deletePregnancyCheckupAction} editLabel="Sửa" deleteLabel="Xóa" /></div>)}{!items.length && <p className="rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground">Chưa có lần khám thai nào.</p>}</div>

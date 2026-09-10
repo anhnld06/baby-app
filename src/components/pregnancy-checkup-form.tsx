@@ -102,7 +102,7 @@ export function PregnancyCheckupForm({
         value={values.checkedAt}
         onChange={(event) => set("checkedAt", event.target.value)}
       />
-      <div className="grid gap-4 min-[430px]:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Field
           name="gestationalWeek"
           type="number"
@@ -122,7 +122,7 @@ export function PregnancyCheckupForm({
           onChange={(event) => set("weightKg", event.target.value)}
         />
       </div>
-      <div className="grid gap-4 min-[430px]:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Field
           name="bloodPressure"
           label="Huyết áp"
@@ -148,7 +148,7 @@ export function PregnancyCheckupForm({
         value={values.fundalHeightCm}
         onChange={(event) => set("fundalHeightCm", event.target.value)}
       />
-      <div className="grid gap-4 min-[430px]:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Field
           name="facility"
           label="Cơ sở khám"

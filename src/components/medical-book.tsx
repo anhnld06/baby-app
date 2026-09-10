@@ -40,7 +40,7 @@ export function MedicalBook({
             <input type="hidden" name={ownerField} value={ownerId} />
             {editing && <input type="hidden" name="id" value={editing.id} />}
             <Field name="visitedAt" type="datetime-local" required label="Ngày giờ khám" defaultValue={toDateTimeLocal(editing?.visitedAt)} />
-            <div className="grid gap-4 min-[430px]:grid-cols-2"><Field name="facility" label="Cơ sở khám" defaultValue={editing?.facility ?? ""} /><Field name="doctor" label="Bác sĩ" defaultValue={editing?.doctor ?? ""} /></div>
+            <div className="grid gap-4 sm:grid-cols-2"><Field name="facility" label="Cơ sở khám" defaultValue={editing?.facility ?? ""} /><Field name="doctor" label="Bác sĩ" defaultValue={editing?.doctor ?? ""} /></div>
             <Field name="specialty" label="Chuyên khoa" placeholder="Sản, nhi, da liễu..." defaultValue={editing?.specialty ?? ""} />
             <TextAreaField name="reason" label="Lý do khám / triệu chứng" defaultValue={editing?.reason ?? ""} />
             <TextAreaField name="diagnosis" label="Chẩn đoán / kết luận" defaultValue={editing?.diagnosis ?? ""} />
@@ -49,7 +49,7 @@ export function MedicalBook({
             <TextAreaField name="notes" label="Ghi chú thêm" defaultValue={editing?.notes ?? ""} />
           </form>
         </CardContent></Card>
-        <FormActionBar formId="medical-visit-form" saveLabel={editing ? "Cập nhật" : "Lưu lượt khám"} cancelHref={editing ? basePath : undefined} cancelLabel="Hủy" deleteAction={editing ? deleteAction : undefined} deleteId={editing?.id} deleteLabel="Xóa" />
+        <FormActionBar formId="medical-visit-form" saveAction={saveAction} saveLabel={editing ? "Cập nhật" : "Lưu lượt khám"} cancelHref={editing ? basePath : undefined} cancelLabel="Hủy" deleteAction={editing ? deleteAction : undefined} deleteId={editing?.id} deleteLabel="Xóa" />
       </CollapsibleRecordForm>
       <h2 className="mb-3 mt-7 text-lg font-semibold">Lịch sử khám bệnh</h2>
       <div className="space-y-2">
@@ -59,4 +59,3 @@ export function MedicalBook({
     </>
   );
 }
-
