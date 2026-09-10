@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Baby, BookHeart, Bot, HeartPulse, House, UserRound } from "lucide-react";
+import { VoiceQuickLog } from "@/components/voice-quick-log";
+import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 type Labels = {
@@ -19,10 +21,12 @@ export function AppShell({
   children,
   labels,
   appName,
+  voiceLog,
 }: {
   children: React.ReactNode;
   labels: Labels;
   appName: string;
+  voiceLog?: { babyId: string; locale: Locale };
 }) {
   const pathname = usePathname();
   const links = [
@@ -56,6 +60,13 @@ export function AppShell({
         </div>
       </aside>
       <main className="page-enter mx-auto min-w-0 w-full max-w-3xl flex-1 px-4 pb-36 pt-5 sm:px-6 lg:pb-20 lg:pt-7">{children}</main>
+      {voiceLog && (
+        <VoiceQuickLog
+          key={voiceLog.babyId}
+          babyId={voiceLog.babyId}
+          locale={voiceLog.locale}
+        />
+      )}
       <nav
         aria-label="Main navigation"
         className="safe-bottom fixed inset-x-0 bottom-0 z-40 mx-auto grid w-full grid-cols-5 border-t border-border/70 bg-card/98 px-1 pt-2 shadow-[0_-8px_24px_-20px_rgba(0,0,0,0.35)] lg:hidden"
