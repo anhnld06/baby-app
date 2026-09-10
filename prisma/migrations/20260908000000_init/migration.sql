@@ -1,0 +1,43 @@
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TYPE "Gender" AS ENUM ('FEMALE', 'MALE', 'OTHER', 'UNDISCLOSED');
+CREATE TYPE "PregnancyStatus" AS ENUM ('PLANNING', 'PREGNANT', 'DELIVERED', 'ENDED');
+CREATE TYPE "FeedingType" AS ENUM ('BREASTFEEDING', 'BOTTLE_BREAST_MILK', 'FORMULA', 'MIXED');
+CREATE TYPE "BreastSide" AS ENUM ('LEFT', 'RIGHT');
+CREATE TYPE "SleepType" AS ENUM ('NAP', 'NIGHT');
+CREATE TYPE "DiaperType" AS ENUM ('WET', 'STOOL', 'BOTH');
+CREATE TYPE "KnowledgeType" AS ENUM ('SCIENTIFIC_GUIDELINE', 'TRADITIONAL_PRACTICE', 'POTENTIALLY_HARMFUL');
+CREATE TYPE "EvidenceLevel" AS ENUM ('STRONG', 'MODERATE', 'LIMITED', 'TRADITIONAL', 'NO_EVIDENCE', 'POTENTIALLY_HARMFUL');
+CREATE TYPE "KnowledgeStage" AS ENUM ('PRECONCEPTION', 'PREGNANCY', 'POSTPARTUM', 'NEWBORN_0_28_DAYS', 'INFANT_1_3_MONTHS', 'INFANT_3_6_MONTHS', 'INFANT_6_12_MONTHS', 'TODDLER');
+
+CREATE TABLE "User" ("id" TEXT PRIMARY KEY, "name" TEXT NOT NULL, "email" TEXT NOT NULL, "timezone" TEXT NOT NULL DEFAULT 'Asia/Bangkok', "locale" TEXT NOT NULL DEFAULT 'vi', "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL);
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE TABLE "Mother" ("id" TEXT PRIMARY KEY, "userId" TEXT NOT NULL, "name" TEXT NOT NULL, "dateOfBirth" DATE, "heightCm" DOUBLE PRECISION, "prePregnancyWeightKg" DOUBLE PRECISION, "bloodType" TEXT, "notes" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL);
+CREATE UNIQUE INDEX "Mother_userId_key" ON "Mother"("userId");
+CREATE TABLE "Pregnancy" ("id" TEXT PRIMARY KEY, "motherId" TEXT NOT NULL, "lastMenstrualPeriod" DATE, "estimatedDueDate" DATE, "actualDeliveryDate" DATE, "pregnancyStatus" "PregnancyStatus" NOT NULL, "notes" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL);
+CREATE TABLE "Baby" ("id" TEXT PRIMARY KEY, "userId" TEXT NOT NULL, "name" TEXT NOT NULL, "nickname" TEXT, "gender" "Gender" NOT NULL DEFAULT 'UNDISCLOSED', "dateOfBirth" DATE NOT NULL, "birthTime" TEXT, "gestationalAgeAtBirth" INTEGER, "birthWeightKg" DOUBLE PRECISION, "birthLengthCm" DOUBLE PRECISION, "birthHeadCircumferenceCm" DOUBLE PRECISION, "notes" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL);
+CREATE INDEX "Baby_userId_idx" ON "Baby"("userId");
+CREATE TABLE "Feeding" ("id" TEXT PRIMARY KEY, "babyId" TEXT NOT NULL, "type" "FeedingType" NOT NULL, "startTime" TIMESTAMP(3) NOT NULL, "endTime" TIMESTAMP(3), "leftBreastDuration" INTEGER, "rightBreastDuration" INTEGER, "firstSide" "BreastSide", "amountMl" DOUBLE PRECISION, "milkType" TEXT, "notes" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL);
+CREATE INDEX "Feeding_babyId_startTime_idx" ON "Feeding"("babyId", "startTime");
+CREATE TABLE "SleepEntry" ("id" TEXT PRIMARY KEY, "babyId" TEXT NOT NULL, "startTime" TIMESTAMP(3) NOT NULL, "endTime" TIMESTAMP(3), "type" "SleepType" NOT NULL, "location" TEXT, "notes" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL);
+CREATE INDEX "SleepEntry_babyId_startTime_idx" ON "SleepEntry"("babyId", "startTime");
+CREATE TABLE "DiaperEntry" ("id" TEXT PRIMARY KEY, "babyId" TEXT NOT NULL, "changedAt" TIMESTAMP(3) NOT NULL, "type" "DiaperType" NOT NULL, "stoolColor" TEXT, "consistency" TEXT, "amount" TEXT, "notes" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL);
+CREATE INDEX "DiaperEntry_babyId_changedAt_idx" ON "DiaperEntry"("babyId", "changedAt");
+CREATE TABLE "GrowthEntry" ("id" TEXT PRIMARY KEY, "babyId" TEXT NOT NULL, "weightKg" DOUBLE PRECISION, "heightCm" DOUBLE PRECISION, "headCircumferenceCm" DOUBLE PRECISION, "measuredAt" TIMESTAMP(3) NOT NULL, "notes" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL);
+CREATE INDEX "GrowthEntry_babyId_measuredAt_idx" ON "GrowthEntry"("babyId", "measuredAt");
+CREATE TABLE "KnowledgeArticle" ("id" TEXT PRIMARY KEY, "title" TEXT NOT NULL, "slug" TEXT NOT NULL, "summary" TEXT NOT NULL, "content" TEXT NOT NULL, "category" TEXT NOT NULL, "stage" "KnowledgeStage" NOT NULL, "minimumAgeDays" INTEGER, "maximumAgeDays" INTEGER, "evidenceLevel" "EvidenceLevel" NOT NULL, "knowledgeType" "KnowledgeType" NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL);
+CREATE UNIQUE INDEX "KnowledgeArticle_slug_key" ON "KnowledgeArticle"("slug");
+CREATE INDEX "KnowledgeArticle_stage_minimumAgeDays_maximumAgeDays_idx" ON "KnowledgeArticle"("stage", "minimumAgeDays", "maximumAgeDays");
+CREATE TABLE "KnowledgeSource" ("id" TEXT PRIMARY KEY, "articleId" TEXT NOT NULL, "organization" TEXT NOT NULL, "title" TEXT NOT NULL, "url" TEXT NOT NULL, "publicationDate" DATE, "evidenceTier" TEXT NOT NULL);
+CREATE TABLE "KnowledgeChunk" ("id" TEXT PRIMARY KEY, "articleId" TEXT NOT NULL, "content" TEXT NOT NULL, "embedding" vector(1536), "metadata" JSONB);
+CREATE INDEX "KnowledgeChunk_articleId_idx" ON "KnowledgeChunk"("articleId");
+
+ALTER TABLE "Mother" ADD CONSTRAINT "Mother_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Pregnancy" ADD CONSTRAINT "Pregnancy_motherId_fkey" FOREIGN KEY ("motherId") REFERENCES "Mother"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Baby" ADD CONSTRAINT "Baby_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Feeding" ADD CONSTRAINT "Feeding_babyId_fkey" FOREIGN KEY ("babyId") REFERENCES "Baby"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "SleepEntry" ADD CONSTRAINT "SleepEntry_babyId_fkey" FOREIGN KEY ("babyId") REFERENCES "Baby"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "DiaperEntry" ADD CONSTRAINT "DiaperEntry_babyId_fkey" FOREIGN KEY ("babyId") REFERENCES "Baby"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "GrowthEntry" ADD CONSTRAINT "GrowthEntry_babyId_fkey" FOREIGN KEY ("babyId") REFERENCES "Baby"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "KnowledgeSource" ADD CONSTRAINT "KnowledgeSource_articleId_fkey" FOREIGN KEY ("articleId") REFERENCES "KnowledgeArticle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "KnowledgeChunk" ADD CONSTRAINT "KnowledgeChunk_articleId_fkey" FOREIGN KEY ("articleId") REFERENCES "KnowledgeArticle"("id") ON DELETE CASCADE ON UPDATE CASCADE;

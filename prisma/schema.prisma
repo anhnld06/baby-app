@@ -1,0 +1,520 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+enum Gender {
+  FEMALE
+  MALE
+  OTHER
+  UNDISCLOSED
+}
+
+enum PregnancyStatus {
+  PLANNING
+  PREGNANT
+  DELIVERED
+  ENDED
+}
+
+enum FeedingType {
+  BREASTFEEDING
+  BOTTLE_BREAST_MILK
+  FORMULA
+  MIXED
+}
+
+enum BreastSide {
+  LEFT
+  RIGHT
+}
+
+enum SleepType {
+  NAP
+  NIGHT
+}
+
+enum DiaperType {
+  WET
+  STOOL
+  BOTH
+}
+
+enum KnowledgeType {
+  SCIENTIFIC_GUIDELINE
+  TRADITIONAL_PRACTICE
+  POTENTIALLY_HARMFUL
+}
+
+enum EvidenceLevel {
+  STRONG
+  MODERATE
+  LIMITED
+  TRADITIONAL
+  NO_EVIDENCE
+  POTENTIALLY_HARMFUL
+}
+
+enum KnowledgeStage {
+  PRECONCEPTION
+  PREGNANCY
+  POSTPARTUM
+  NEWBORN_0_28_DAYS
+  INFANT_1_3_MONTHS
+  INFANT_3_6_MONTHS
+  INFANT_6_12_MONTHS
+  TODDLER
+}
+
+enum RecordSource {
+  MANUAL
+  OCR
+}
+
+enum ToothPosition {
+  UPPER_RIGHT_CENTRAL_INCISOR
+  UPPER_RIGHT_LATERAL_INCISOR
+  UPPER_RIGHT_CANINE
+  UPPER_RIGHT_FIRST_MOLAR
+  UPPER_RIGHT_SECOND_MOLAR
+  UPPER_LEFT_CENTRAL_INCISOR
+  UPPER_LEFT_LATERAL_INCISOR
+  UPPER_LEFT_CANINE
+  UPPER_LEFT_FIRST_MOLAR
+  UPPER_LEFT_SECOND_MOLAR
+  LOWER_LEFT_CENTRAL_INCISOR
+  LOWER_LEFT_LATERAL_INCISOR
+  LOWER_LEFT_CANINE
+  LOWER_LEFT_FIRST_MOLAR
+  LOWER_LEFT_SECOND_MOLAR
+  LOWER_RIGHT_CENTRAL_INCISOR
+  LOWER_RIGHT_LATERAL_INCISOR
+  LOWER_RIGHT_CANINE
+  LOWER_RIGHT_FIRST_MOLAR
+  LOWER_RIGHT_SECOND_MOLAR
+}
+
+model User {
+  id        String    @id @default(cuid())
+  name      String
+  username  String    @unique
+  email     String?   @unique
+  timezone  String    @default("Asia/Bangkok")
+  locale    String    @default("vi")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  sessions  Session[]
+  mother    Mother?
+  babies    Baby[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Mother {
+  id                   String                    @id @default(cuid())
+  userId               String                    @unique
+  name                 String
+  dateOfBirth          DateTime?                 @db.Date
+  heightCm             Float?
+  prePregnancyWeightKg Float?
+  bloodType            String?
+  notes                String?
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+  user                 User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pregnancies          Pregnancy[]
+  menstrualCycles      MenstrualCycle[]
+  dailyHealthLogs      MotherDailyHealthLog[]
+  medicalVisits        MotherMedicalVisit[]
+  insurancePolicies    MotherInsurancePolicy[]
+  vaccinationRecords   MotherVaccinationRecord[]
+}
+
+model Pregnancy {
+  id                  String             @id @default(cuid())
+  motherId            String
+  lastMenstrualPeriod DateTime?          @db.Date
+  estimatedDueDate    DateTime?          @db.Date
+  actualDeliveryDate  DateTime?          @db.Date
+  pregnancyStatus     PregnancyStatus
+  notes               String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  mother              Mother             @relation(fields: [motherId], references: [id], onDelete: Cascade)
+  checkups            PregnancyCheckup[]
+}
+
+model Baby {
+  id                       String                @id @default(cuid())
+  userId                   String
+  name                     String
+  nickname                 String?
+  gender                   Gender                @default(UNDISCLOSED)
+  dateOfBirth              DateTime              @db.Date
+  birthTime                String?
+  gestationalAgeAtBirth    Int?
+  birthWeightKg            Float?
+  birthLengthCm            Float?
+  birthHeadCircumferenceCm Float?
+  notes                    String?
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @updatedAt
+  user                     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feedings                 Feeding[]
+  sleeps                   SleepEntry[]
+  diapers                  DiaperEntry[]
+  growthEntries            GrowthEntry[]
+  vaccinationRecords       VaccinationRecord[]
+  prescriptions            Prescription[]
+  toothRecords             ToothRecord[]
+  medicalVisits            BabyMedicalVisit[]
+  insurancePolicies        BabyInsurancePolicy[]
+
+  @@index([userId])
+}
+
+model MenstrualCycle {
+  id          String    @id @default(cuid())
+  motherId    String
+  periodStart DateTime  @db.Date
+  periodEnd   DateTime? @db.Date
+  flow        String?
+  symptoms    String?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  mother      Mother    @relation(fields: [motherId], references: [id], onDelete: Cascade)
+
+  @@index([motherId, periodStart])
+}
+
+model MotherDailyHealthLog {
+  id                String   @id @default(cuid())
+  motherId          String
+  loggedAt          DateTime @db.Date
+  flow              String?
+  symptoms          String[] @default([])
+  moods             String[] @default([])
+  discharge         String?
+  sleepHours        Float?
+  basalTemperatureC Float?
+  weightKg          Float?
+  waterGlasses      Int?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  mother            Mother   @relation(fields: [motherId], references: [id], onDelete: Cascade)
+
+  @@unique([motherId, loggedAt])
+  @@index([motherId, loggedAt])
+}
+
+model PregnancyCheckup {
+  id              String       @id @default(cuid())
+  pregnancyId     String
+  checkedAt       DateTime
+  gestationalWeek Int?
+  weightKg        Float?
+  bloodPressure   String?
+  fetalHeartRate  Int?
+  fundalHeightCm  Float?
+  facility        String?
+  doctor          String?
+  findings        String?
+  nextCheckupAt   DateTime?    @db.Date
+  notes           String?
+  source          RecordSource @default(MANUAL)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  pregnancy       Pregnancy    @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+
+  @@index([pregnancyId, checkedAt])
+}
+
+model MotherVaccinationRecord {
+  id             String   @id @default(cuid())
+  motherId       String
+  vaccineName    String
+  doseNumber     Int?
+  administeredAt DateTime
+  facility       String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  mother         Mother   @relation(fields: [motherId], references: [id], onDelete: Cascade)
+
+  @@index([motherId, administeredAt])
+}
+
+model MotherMedicalVisit {
+  id          String    @id @default(cuid())
+  motherId    String
+  visitedAt   DateTime
+  facility    String?
+  doctor      String?
+  specialty   String?
+  reason      String?
+  diagnosis   String?
+  treatment   String?
+  nextVisitAt DateTime? @db.Date
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  mother      Mother    @relation(fields: [motherId], references: [id], onDelete: Cascade)
+
+  @@index([motherId, visitedAt])
+}
+
+model BabyMedicalVisit {
+  id          String    @id @default(cuid())
+  babyId      String
+  visitedAt   DateTime
+  facility    String?
+  doctor      String?
+  specialty   String?
+  reason      String?
+  diagnosis   String?
+  treatment   String?
+  nextVisitAt DateTime? @db.Date
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  baby        Baby      @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  @@index([babyId, visitedAt])
+}
+
+model MotherInsurancePolicy {
+  id             String    @id @default(cuid())
+  motherId       String
+  insuranceType  String
+  provider       String?
+  policyNumber   String
+  registeredCare String?
+  validFrom      DateTime? @db.Date
+  validUntil     DateTime? @db.Date
+  contact        String?
+  benefits       String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  mother         Mother    @relation(fields: [motherId], references: [id], onDelete: Cascade)
+
+  @@index([motherId, validUntil])
+}
+
+model BabyInsurancePolicy {
+  id             String    @id @default(cuid())
+  babyId         String
+  insuranceType  String
+  provider       String?
+  policyNumber   String
+  registeredCare String?
+  validFrom      DateTime? @db.Date
+  validUntil     DateTime? @db.Date
+  contact        String?
+  benefits       String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  baby           Baby      @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  @@index([babyId, validUntil])
+}
+
+model Feeding {
+  id                  String      @id @default(cuid())
+  babyId              String
+  type                FeedingType
+  startTime           DateTime
+  endTime             DateTime?
+  leftBreastDuration  Int?
+  rightBreastDuration Int?
+  firstSide           BreastSide?
+  amountMl            Float?
+  milkType            String?
+  notes               String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  baby                Baby        @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  @@index([babyId, startTime])
+}
+
+model SleepEntry {
+  id        String    @id @default(cuid())
+  babyId    String
+  startTime DateTime
+  endTime   DateTime?
+  type      SleepType
+  location  String?
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  baby      Baby      @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  @@index([babyId, startTime])
+}
+
+model DiaperEntry {
+  id          String     @id @default(cuid())
+  babyId      String
+  changedAt   DateTime
+  type        DiaperType
+  stoolColor  String?
+  consistency String?
+  amount      String?
+  notes       String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  baby        Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  @@index([babyId, changedAt])
+}
+
+model GrowthEntry {
+  id                  String   @id @default(cuid())
+  babyId              String
+  weightKg            Float?
+  heightCm            Float?
+  headCircumferenceCm Float?
+  measuredAt          DateTime
+  notes               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  baby                Baby     @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  @@index([babyId, measuredAt])
+}
+
+model VaccinationRecord {
+  id             String       @id @default(cuid())
+  babyId         String
+  vaccineName    String
+  doseNumber     Int?
+  administeredAt DateTime
+  facility       String?
+  batchNumber    String?
+  nextDueAt      DateTime?    @db.Date
+  notes          String?
+  source         RecordSource @default(MANUAL)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  baby           Baby         @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  @@index([babyId, administeredAt])
+}
+
+model Prescription {
+  id           String             @id @default(cuid())
+  babyId       String
+  prescribedBy String?
+  diagnosis    String?
+  issuedAt     DateTime
+  notes        String?
+  source       RecordSource       @default(MANUAL)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  baby         Baby               @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  items        PrescriptionItem[]
+
+  @@index([babyId, issuedAt])
+}
+
+model PrescriptionItem {
+  id             String       @id @default(cuid())
+  prescriptionId String
+  medicineName   String
+  dosage         String?
+  frequency      String?
+  durationDays   Int?
+  instructions   String?
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+}
+
+model ToothRecord {
+  id        String        @id @default(cuid())
+  babyId    String
+  position  ToothPosition
+  eruptedAt DateTime      @db.Date
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  baby      Baby          @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  @@unique([babyId, position])
+  @@index([babyId])
+}
+
+model Story {
+  id              String          @id @default(cuid())
+  title           String
+  slug            String          @unique
+  category        String
+  stage           KnowledgeStage?
+  summary         String
+  content         String
+  durationMinutes Int?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([stage])
+}
+
+model KnowledgeArticle {
+  id             String            @id @default(cuid())
+  title          String
+  slug           String            @unique
+  summary        String
+  content        String
+  category       String
+  stage          KnowledgeStage
+  minimumAgeDays Int?
+  maximumAgeDays Int?
+  evidenceLevel  EvidenceLevel
+  knowledgeType  KnowledgeType
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  sources        KnowledgeSource[]
+  chunks         KnowledgeChunk[]
+
+  @@index([stage, minimumAgeDays, maximumAgeDays])
+}
+
+model KnowledgeSource {
+  id              String           @id @default(cuid())
+  articleId       String
+  organization    String
+  title           String
+  url             String
+  publicationDate DateTime?        @db.Date
+  evidenceTier    String
+  article         KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+}
+
+model KnowledgeChunk {
+  id        String                       @id @default(cuid())
+  articleId String
+  content   String
+  embedding Unsupported("vector(1536)")?
+  metadata  Json?
+  article   KnowledgeArticle             @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+}

@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: baby_app
+      POSTGRES_USER: baby
+      POSTGRES_PASSWORD: local_password
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - baby_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U baby -d baby_app"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  baby_postgres_data:
