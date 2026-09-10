@@ -51,7 +51,7 @@ export function AppShell({
       <main className="page-enter mx-auto min-w-0 w-full max-w-3xl flex-1 px-4 pb-36 pt-5 sm:px-6 lg:pb-20 lg:pt-7">{children}</main>
       <nav
         aria-label="Main navigation"
-        className="safe-bottom fixed inset-x-0 bottom-0 z-40 mx-auto grid w-full grid-cols-5 border-t border-border/70 bg-card/90 px-1 pt-2 backdrop-blur-xl lg:hidden"
+        className="safe-bottom fixed inset-x-0 bottom-0 z-40 mx-auto grid w-full grid-cols-5 border-t border-border/70 bg-card/98 px-1 pt-2 shadow-[0_-8px_24px_-20px_rgba(0,0,0,0.35)] lg:hidden"
       >
         {links.map(({ href, label, icon: Icon, paths }) => {
           const active = paths.some((path) => path === "/" ? pathname === "/" : pathname.startsWith(path));
@@ -59,8 +59,10 @@ export function AppShell({
             <Link
               key={href}
               href={href}
+              prefetch
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-0.5 text-[10px] font-medium text-muted-foreground transition-colors",
+                "flex min-h-14 min-w-0 touch-manipulation flex-col items-center justify-center gap-1 rounded-2xl px-0.5 text-[10px] font-medium text-muted-foreground transition-[color,background-color,transform] duration-100 active:scale-95",
                 active && "bg-secondary text-primary",
               )}
             >
