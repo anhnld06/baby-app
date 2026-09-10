@@ -35,6 +35,11 @@ export const dictionaries = {
     },
     dashboard: {
       hello: "Chào ngày mới",
+      helloMorning: "Chào buổi sáng",
+      helloNoon: "Chào buổi trưa",
+      helloAfternoon: "Chào buổi chiều",
+      helloEvening: "Chào buổi tối",
+      weatherUnavailable: "Chưa lấy được thời tiết",
       age: "Tuổi của bé",
       quickAdd: "Ghi nhanh",
       overview: "Tổng quan hôm nay",
@@ -256,6 +261,11 @@ export const dictionaries = {
     },
     dashboard: {
       hello: "A gentle new day",
+      helloMorning: "Good morning",
+      helloNoon: "Good midday",
+      helloAfternoon: "Good afternoon",
+      helloEvening: "Good evening",
+      weatherUnavailable: "Weather unavailable",
       age: "Baby's age",
       quickAdd: "Quick log",
       overview: "Today's overview",

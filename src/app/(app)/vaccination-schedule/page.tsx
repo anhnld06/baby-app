@@ -19,11 +19,15 @@ function DueList({
   items,
   statusLabels,
   dueByLabel,
+  programLabels,
+  tierLabels,
   locale,
 }: {
   items: DueItem[];
   statusLabels: Record<DueStatus, string>;
   dueByLabel: string;
+  programLabels: { free: string; paid: string };
+  tierLabels: { core: string; supplementary: string };
   locale: string;
 }) {
   return (
@@ -32,19 +36,41 @@ function DueList({
         const style = STATUS_STYLE[item.status];
         const Icon = style.icon;
         return (
-          <div key={item.key} className="flex items-center gap-3 rounded-2xl bg-card p-3 shadow-sm">
-            <span className={`grid size-10 shrink-0 place-items-center rounded-2xl ${style.className}`}>
-              <Icon className="size-4.5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">{item.label}</p>
-              <p className="text-xs text-muted-foreground">
-                {dueByLabel}: {new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", year: "numeric" }).format(item.dueDate)}
-              </p>
+          <div key={item.key} className="flex flex-col gap-2 rounded-2xl bg-card p-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <span className={`grid size-10 shrink-0 place-items-center rounded-2xl ${style.className}`}>
+                <Icon className="size-4.5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{item.label}</p>
+                <p className="text-xs text-muted-foreground">
+                  {dueByLabel}: {new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", year: "numeric" }).format(item.dueDate)}
+                </p>
+              </div>
+              <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${style.className}`}>
+                {statusLabels[item.status]}
+              </span>
             </div>
-            <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${style.className}`}>
-              {statusLabels[item.status]}
-            </span>
+            <div className="flex flex-wrap items-center gap-1.5 pl-[52px]">
+              <span
+                className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                  item.program === "free"
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                    : "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300"
+                }`}
+              >
+                {item.program === "free" ? programLabels.free : programLabels.paid}
+              </span>
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                {item.tier === "core" ? tierLabels.core : tierLabels.supplementary}
+              </span>
+              {item.priceRangeVnd && (
+                <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                  {item.priceRangeVnd}
+                </span>
+              )}
+            </div>
+            {item.note && <p className="pl-[52px] text-xs text-muted-foreground">{item.note}</p>}
           </div>
         );
       })}
@@ -73,6 +99,8 @@ export default async function VaccinationSchedulePage() {
     UPCOMING: t.vaccinationSchedule.upcoming,
     DONE: t.vaccinationSchedule.done,
   };
+  const programLabels = { free: t.vaccinationSchedule.free, paid: t.vaccinationSchedule.paid };
+  const tierLabels = { core: t.vaccinationSchedule.core, supplementary: t.vaccinationSchedule.supplementary };
 
   return (
     <>
@@ -85,7 +113,14 @@ export default async function VaccinationSchedulePage() {
               {t.vaccinationSchedule.logMother}
             </Link>
           </div>
-          <DueList items={motherDue} statusLabels={statusLabels} dueByLabel={t.vaccinationSchedule.dueBy} locale={locale} />
+          <DueList
+            items={motherDue}
+            statusLabels={statusLabels}
+            dueByLabel={t.vaccinationSchedule.dueBy}
+            programLabels={programLabels}
+            tierLabels={tierLabels}
+            locale={locale}
+          />
         </section>
       )}
       {baby && (
@@ -96,7 +131,14 @@ export default async function VaccinationSchedulePage() {
               {t.vaccinationSchedule.logBaby}
             </Link>
           </div>
-          <DueList items={babyDue} statusLabels={statusLabels} dueByLabel={t.vaccinationSchedule.dueBy} locale={locale} />
+          <DueList
+            items={babyDue}
+            statusLabels={statusLabels}
+            dueByLabel={t.vaccinationSchedule.dueBy}
+            programLabels={programLabels}
+            tierLabels={tierLabels}
+            locale={locale}
+          />
         </section>
       )}
       {!motherDue.length && !babyDue.length && (

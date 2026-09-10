@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -6,10 +7,12 @@ export function PageHeader({
   title,
   subtitle,
   backHref,
+  meta,
 }: {
   title: string;
   subtitle?: string;
   backHref?: string;
+  meta?: ReactNode;
 }) {
   return (
     <header className="mb-6 flex items-start justify-between gap-3">
@@ -23,11 +26,12 @@ export function PageHeader({
             <ArrowLeft className="size-5" />
           </Link>
         )}
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           {subtitle && (
             <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
           )}
+          {meta}
         </div>
       </div>
       <ThemeToggle />

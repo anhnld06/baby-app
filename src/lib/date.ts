@@ -31,6 +31,29 @@ export function formatDateOfBirth(date: Date) {
   return format(date, "dd/MM/yyyy");
 }
 
+export type GreetingPeriod = "morning" | "noon" | "afternoon" | "evening";
+
+export function greetingPeriod(date: Date, timeZone: string): GreetingPeriod {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", hourCycle: "h23" }).format(date),
+  );
+  if (hour >= 5 && hour < 11) return "morning";
+  if (hour >= 11 && hour < 13) return "noon";
+  if (hour >= 13 && hour < 18) return "afternoon";
+  return "evening";
+}
+
+export function formatDateTime(date: Date, timeZone: string, locale: "vi" | "en" = "vi") {
+  return new Intl.DateTimeFormat(locale === "vi" ? "vi-VN" : "en-US", {
+    timeZone,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export function ageInDays(dateOfBirth: Date, now = new Date()) {
   return Math.max(0, differenceInCalendarDays(now, dateOfBirth));
 }

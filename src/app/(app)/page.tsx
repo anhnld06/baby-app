@@ -19,14 +19,17 @@ import { BabySwitcher } from "@/components/baby-switcher";
 import { PageHeader } from "@/components/page-header";
 import { TimelineList } from "@/components/timeline-list";
 import { Card, CardContent } from "@/components/ui/card";
+import { WeatherBadge } from "@/components/weather-badge";
 import { buildTimeline } from "@/features/timeline/timeline";
 import { computeBabyDue, computeMotherDue } from "@/features/vaccination/due";
 import { requireUser } from "@/lib/auth";
 import { getSelectedBabyId, listBabies, pickSelectedBaby } from "@/lib/data";
 import {
   formatAge,
+  formatDateTime,
   formatDuration,
   getLocalDayRange,
+  greetingPeriod,
 } from "@/lib/date";
 import { db } from "@/lib/db";
 import { getDictionary, getLocale } from "@/lib/i18n";
@@ -185,9 +188,27 @@ export default async function DashboardPage() {
       className: "bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300",
     },
   ];
+  const greetingLabel = {
+    morning: t.dashboard.helloMorning,
+    noon: t.dashboard.helloNoon,
+    afternoon: t.dashboard.helloAfternoon,
+    evening: t.dashboard.helloEvening,
+  }[greetingPeriod(now, user.timezone)];
   return (
     <>
-      <PageHeader title={`${t.dashboard.hello} 🌿`} subtitle={user.name} />
+      <PageHeader
+        title={`${greetingLabel} 🌿`}
+        subtitle={user.name}
+        meta={
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground">
+              <Clock3 className="size-3.5 shrink-0" />
+              {formatDateTime(now, user.timezone, locale)}
+            </span>
+            <WeatherBadge unavailableLabel={t.dashboard.weatherUnavailable} />
+          </div>
+        }
+      />
       <BabySwitcher
         babies={babies}
         selectedBabyId={baby.id}

@@ -1,4 +1,4 @@
-import { BABY_SCHEDULE, MOTHER_PRENATAL_SCHEDULE } from "@/features/vaccination/schedule";
+import { BABY_SCHEDULE, MOTHER_PRENATAL_SCHEDULE, type VaccineProgram, type VaccineTier } from "@/features/vaccination/schedule";
 
 export type DueStatus = "UPCOMING" | "DUE" | "OVERDUE" | "DONE";
 
@@ -7,6 +7,10 @@ export type DueItem = {
   label: string;
   dueDate: Date;
   status: DueStatus;
+  program: VaccineProgram;
+  tier: VaccineTier;
+  priceRangeVnd?: string;
+  note?: string;
 };
 
 const dayMs = 86_400_000;
@@ -19,8 +23,9 @@ function statusFor(dueDate: Date, done: boolean, now: Date): DueStatus {
   return "UPCOMING";
 }
 
-function matches(vaccineName: string, doseNumber: number | null, matchName: string, entryDose: number) {
-  const nameMatches = vaccineName.toLowerCase().includes(matchName);
+function matches(vaccineName: string, doseNumber: number | null, matchNames: string[], entryDose: number) {
+  const normalized = vaccineName.toLowerCase();
+  const nameMatches = matchNames.some((name) => normalized.includes(name));
   const doseMatches = doseNumber === entryDose || (doseNumber === null && entryDose === 1);
   return nameMatches && doseMatches;
 }
@@ -33,8 +38,17 @@ export function computeMotherDue(
   if (!lastMenstrualPeriod) return [];
   return MOTHER_PRENATAL_SCHEDULE.map((entry) => {
     const dueDate = new Date(lastMenstrualPeriod.getTime() + entry.dueByWeek * 7 * dayMs);
-    const done = records.some((record) => matches(record.vaccineName, record.doseNumber, entry.matchName, entry.doseNumber));
-    return { key: entry.key, label: entry.label, dueDate, status: statusFor(dueDate, done, now) };
+    const done = records.some((record) => matches(record.vaccineName, record.doseNumber, entry.matchNames, entry.doseNumber));
+    return {
+      key: entry.key,
+      label: entry.label,
+      dueDate,
+      status: statusFor(dueDate, done, now),
+      program: entry.program,
+      tier: entry.tier,
+      priceRangeVnd: entry.priceRangeVnd,
+      note: entry.note,
+    };
   });
 }
 
@@ -45,7 +59,16 @@ export function computeBabyDue(
 ): DueItem[] {
   return BABY_SCHEDULE.map((entry) => {
     const dueDate = new Date(dateOfBirth.getTime() + entry.dueAgeDays * dayMs);
-    const done = records.some((record) => matches(record.vaccineName, record.doseNumber, entry.matchName, entry.doseNumber));
-    return { key: entry.key, label: entry.label, dueDate, status: statusFor(dueDate, done, now) };
+    const done = records.some((record) => matches(record.vaccineName, record.doseNumber, entry.matchNames, entry.doseNumber));
+    return {
+      key: entry.key,
+      label: entry.label,
+      dueDate,
+      status: statusFor(dueDate, done, now),
+      program: entry.program,
+      tier: entry.tier,
+      priceRangeVnd: entry.priceRangeVnd,
+      note: entry.note,
+    };
   });
 }
