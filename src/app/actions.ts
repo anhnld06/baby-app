@@ -4,7 +4,9 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { zonedDateTimeToUtc } from "@/lib/date";
 import { db } from "@/lib/db";
+import { refreshWhoGrowthAssessment } from "@/features/growth/who-anthro";
 import { parseProfileCoverUpdate } from "@/lib/profile-cover";
 import {
   babySchema,
@@ -29,8 +31,16 @@ import {
   vaccinationSchema,
 } from "@/lib/validation";
 
-function values(formData: FormData) {
-  return Object.fromEntries(formData.entries());
+function values(formData: FormData, timeZone?: string, dateTimeFields: string[] = []) {
+  const result = Object.fromEntries(formData.entries());
+  if (!timeZone) return result;
+  for (const field of dateTimeFields) {
+    const value = result[field];
+    if (typeof value === "string" && value.includes("T")) {
+      result[field] = zonedDateTimeToUtc(value, timeZone) as never;
+    }
+  }
+  return result;
 }
 
 async function requireOwnedBaby(babyId: string, userId: string) {
@@ -40,16 +50,6 @@ async function requireOwnedBaby(babyId: string, userId: string) {
   });
   if (!baby) throw new Error("Baby not found");
   return baby;
-}
-
-export async function setLocaleAction(formData: FormData) {
-  const locale = formData.get("locale") === "en" ? "en" : "vi";
-  (await cookies()).set("locale", locale, {
-    sameSite: "lax",
-    path: "/",
-    maxAge: 31_536_000,
-  });
-  revalidatePath("/", "layout");
 }
 
 export async function setSelectedBabyAction(formData: FormData) {
@@ -116,12 +116,22 @@ export async function savePregnancyAction(formData: FormData) {
     select: { id: true },
   });
   if (!mother) throw new Error("Mother profile not found");
-  if (data.id)
-    await db.pregnancy.updateMany({
-      where: { id: data.id, motherId: mother.id },
-      data: { ...data, id: undefined },
-    });
-  else await db.pregnancy.create({ data: { ...data, id: undefined } });
+  await db.$transaction(async (transaction) => {
+    if (data.pregnancyStatus === "PREGNANT") {
+      await transaction.pregnancy.updateMany({
+        where: { motherId: mother.id, pregnancyStatus: "PREGNANT", ...(data.id ? { id: { not: data.id } } : {}) },
+        data: { pregnancyStatus: "ENDED" },
+      });
+    }
+    if (data.id) {
+      await transaction.pregnancy.updateMany({
+        where: { id: data.id, motherId: mother.id },
+        data: { ...data, id: undefined },
+      });
+    } else {
+      await transaction.pregnancy.create({ data: { ...data, id: undefined } });
+    }
+  });
   revalidatePath("/profile");
   redirect("/profile");
 }
@@ -217,7 +227,7 @@ export async function deleteMotherDailyHealthLogAction(formData: FormData) {
 
 export async function savePregnancyCheckupAction(formData: FormData) {
   const user = await requireUser();
-  const data = pregnancyCheckupSchema.parse(values(formData));
+  const data = pregnancyCheckupSchema.parse(values(formData, user.timezone, ["checkedAt"]));
   const pregnancy = await db.pregnancy.findFirst({
     where: { id: data.pregnancyId, mother: { userId: user.id } },
     select: { id: true },
@@ -270,7 +280,7 @@ export async function deleteMotherVaccinationAction(formData: FormData) {
 
 export async function saveMotherMedicalVisitAction(formData: FormData) {
   const user = await requireUser();
-  const data = motherMedicalVisitSchema.parse(values(formData));
+  const data = motherMedicalVisitSchema.parse(values(formData, user.timezone, ["visitedAt"]));
   const mother = await db.mother.findFirst({ where: { id: data.motherId, userId: user.id }, select: { id: true } });
   if (!mother) throw new Error("Mother profile not found");
   if (data.id)
@@ -289,7 +299,7 @@ export async function deleteMotherMedicalVisitAction(formData: FormData) {
 
 export async function saveBabyMedicalVisitAction(formData: FormData) {
   const user = await requireUser();
-  const data = babyMedicalVisitSchema.parse(values(formData));
+  const data = babyMedicalVisitSchema.parse(values(formData, user.timezone, ["visitedAt"]));
   await requireOwnedBaby(data.babyId, user.id);
   if (data.id)
     await db.babyMedicalVisit.updateMany({ where: { id: data.id, babyId: data.babyId }, data: { ...data, id: undefined } });
@@ -384,7 +394,7 @@ export async function deleteBabyAction(formData: FormData) {
 
 export async function saveFeedingAction(formData: FormData) {
   const user = await requireUser();
-  const data = feedingSchema.parse(values(formData));
+  const data = feedingSchema.parse(values(formData, user.timezone, ["startTime", "endTime"]));
   await requireOwnedBaby(data.babyId, user.id);
   if (data.id) {
     await db.feeding.updateMany({
@@ -407,7 +417,7 @@ export async function deleteFeedingAction(formData: FormData) {
 
 export async function saveSleepAction(formData: FormData) {
   const user = await requireUser();
-  const data = sleepSchema.parse(values(formData));
+  const data = sleepSchema.parse(values(formData, user.timezone, ["startTime", "endTime"]));
   await requireOwnedBaby(data.babyId, user.id);
   if (data.id)
     await db.sleepEntry.updateMany({
@@ -428,7 +438,7 @@ export async function deleteSleepAction(formData: FormData) {
 
 export async function saveDiaperAction(formData: FormData) {
   const user = await requireUser();
-  const data = diaperSchema.parse(values(formData));
+  const data = diaperSchema.parse(values(formData, user.timezone, ["changedAt"]));
   await requireOwnedBaby(data.babyId, user.id);
   if (data.id)
     await db.diaperEntry.updateMany({
@@ -449,14 +459,24 @@ export async function deleteDiaperAction(formData: FormData) {
 
 export async function saveGrowthAction(formData: FormData) {
   const user = await requireUser();
-  const data = growthSchema.parse(values(formData));
+  const data = growthSchema.parse(values(formData, user.timezone, ["measuredAt"]));
   await requireOwnedBaby(data.babyId, user.id);
-  if (data.id)
+  let growthEntryId: string;
+  if (data.id) {
     await db.growthEntry.updateMany({
       where: { id: data.id, babyId: data.babyId },
       data: { ...data, id: undefined },
     });
-  else await db.growthEntry.create({ data: { ...data, id: undefined } });
+    growthEntryId = data.id;
+  } else {
+    const created = await db.growthEntry.create({
+      data: { ...data, id: undefined },
+      select: { id: true },
+    });
+    growthEntryId = created.id;
+  }
+  await db.growthAssessment.deleteMany({ where: { growthEntryId } });
+  await refreshWhoGrowthAssessment(growthEntryId).catch(() => undefined);
   revalidatePath("/", "layout");
   redirect("/tracking/growth");
 }
@@ -466,6 +486,19 @@ export async function deleteGrowthAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   await db.growthEntry.deleteMany({ where: { id, baby: { userId: user.id } } });
   revalidatePath("/", "layout");
+}
+
+export async function recalculateLatestGrowthAction(formData: FormData) {
+  const user = await requireUser();
+  const babyId = String(formData.get("babyId") ?? "");
+  await requireOwnedBaby(babyId, user.id);
+  const entry = await db.growthEntry.findFirst({
+    where: { babyId },
+    orderBy: { measuredAt: "desc" },
+    select: { id: true },
+  });
+  if (entry) await refreshWhoGrowthAssessment(entry.id).catch(() => undefined);
+  revalidatePath("/tracking/growth");
 }
 
 function recordSource(formData: FormData) {

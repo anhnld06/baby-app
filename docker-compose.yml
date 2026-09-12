@@ -15,5 +15,14 @@ services:
       timeout: 5s
       retries: 10
 
+  who-anthro:
+    build:
+      context: ./services/who-anthro
+    environment:
+      WHO_ANTHRO_TOKEN: "${WHO_ANTHRO_TOKEN:-change-this-token}"
+    ports:
+      - "${WHO_ANTHRO_PORT:-8082}:8082"
+    restart: unless-stopped
+
 volumes:
   baby_postgres_data:

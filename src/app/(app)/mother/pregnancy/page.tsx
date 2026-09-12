@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getAIProvider } from "@/features/ai/provider";
 import { assessCheckup } from "@/features/mother/checkup-assessment";
 import { gestationalAge } from "@/features/mother/insights";
+import { selectRelevantPregnancy } from "@/features/mother/pregnancy";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getLocale } from "@/lib/i18n";
@@ -26,15 +27,15 @@ const VISIT_TYPE_LABEL = {
   COMBINED: "Khám thai và siêu âm",
 } as const;
 
-function gestationalAgeLabel(week: number | null, day: number | null) {
-  if (week === null) return undefined;
-  return `${week} tuần${day !== null ? ` ${day} ngày` : ""}`;
+function gestationalAgeLabel(week: number | null | undefined, day: number | null | undefined) {
+  if (week == null) return undefined;
+  return `${week} tuần${day != null ? ` ${day} ngày` : ""}`;
 }
 
 export default async function PregnancyTrackingPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   const [user, locale, params] = await Promise.all([requireUser(), getLocale(), searchParams]);
-  const mother = await db.mother.findUnique({ where: { userId: user.id }, include: { pregnancies: { orderBy: { createdAt: "desc" }, take: 1 } } });
-  const pregnancy = mother?.pregnancies[0];
+  const mother = await db.mother.findUnique({ where: { userId: user.id }, include: { pregnancies: { orderBy: { createdAt: "desc" } } } });
+  const pregnancy = selectRelevantPregnancy(mother?.pregnancies ?? []);
   if (!mother || !pregnancy) return <><PageHeader title="Theo dõi thai kỳ" backHref="/mother" /><div className="rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground">Hãy thêm thông tin thai kỳ trong Hồ sơ trước.<Link href="/profile/pregnancy" className="mt-3 block font-medium text-primary">Thêm thai kỳ</Link></div></>;
   const [items, editing] = await Promise.all([
     db.pregnancyCheckup.findMany({ where: { pregnancyId: pregnancy.id }, orderBy: { checkedAt: "desc" }, take: 30 }),
@@ -119,7 +120,7 @@ export default async function PregnancyTrackingPage({ searchParams }: { searchPa
       )}
       <CollapsibleRecordForm key={`${editing?.id ?? "new"}-${items.length}`} defaultOpen={!!editing} addLabel="Thêm lần khám mới" closeLabel="Hủy">
         <Card className="border-0 shadow-sm"><CardContent className="p-5">
-          <PregnancyCheckupForm pregnancyId={pregnancy.id} editing={editing} defaultGestationalWeek={age?.weeks} />
+          <PregnancyCheckupForm pregnancyId={pregnancy.id} editing={editing} defaultGestationalWeek={age?.weeks} timeZone={user.timezone} />
         </CardContent></Card>
         <FormActionBar formId="checkup-form" saveAction={savePregnancyCheckupAction} saveLabel={editing ? "Cập nhật" : "Lưu lần khám"} cancelHref={editing ? "/mother/pregnancy" : undefined} cancelLabel="Hủy" deleteAction={editing ? deletePregnancyCheckupAction : undefined} deleteId={editing?.id} deleteLabel="Xóa" />
       </CollapsibleRecordForm>
@@ -128,10 +129,10 @@ export default async function PregnancyTrackingPage({ searchParams }: { searchPa
         {items.map((item) => {
           const ageLabel = gestationalAgeLabel(item.gestationalWeek, item.gestationalDay);
           const metrics = [
-            item.weightKg !== null ? `Mẹ ${item.weightKg} kg` : undefined,
+            item.weightKg != null ? `Mẹ ${item.weightKg} kg` : undefined,
             item.bloodPressure ? `HA ${item.bloodPressure}` : undefined,
-            item.fetalHeartRate !== null ? `Tim thai ${item.fetalHeartRate}` : undefined,
-            item.estimatedFetalWeightG !== null ? `Thai ~${item.estimatedFetalWeightG} g` : undefined,
+            item.fetalHeartRate != null ? `Tim thai ${item.fetalHeartRate}` : undefined,
+            item.estimatedFetalWeightG != null ? `Thai ~${item.estimatedFetalWeightG} g` : undefined,
           ].filter(Boolean);
           const ultrasoundSummary = [
             item.placentaPosition ? `Nhau: ${item.placentaPosition}` : undefined,
@@ -145,7 +146,7 @@ export default async function PregnancyTrackingPage({ searchParams }: { searchPa
               </span>
               <div className="min-w-0 flex-1">
                 <p className="font-medium">
-                  {VISIT_TYPE_LABEL[item.visitType]}{ageLabel ? ` · ${ageLabel}` : ""}
+                  {VISIT_TYPE_LABEL[item.visitType] ?? "Lần khám"}{ageLabel ? ` · ${ageLabel}` : ""}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long", year: "numeric" }).format(item.checkedAt)}

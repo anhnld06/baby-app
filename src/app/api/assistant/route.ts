@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getAIProvider } from "@/features/ai/provider";
 import { retrieveKnowledge } from "@/features/ai/retrieval";
 import { assessSafety } from "@/features/ai/rule-engine";
+import { selectRelevantPregnancy } from "@/features/mother/pregnancy";
 import type { AssistantContext } from "@/features/ai/types";
 import { getCurrentUser } from "@/lib/auth";
 import { ageInDays } from "@/lib/date";
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
         userId: user.id,
         ...(input.motherId ? { id: input.motherId } : {}),
       },
-      include: { pregnancies: { orderBy: { createdAt: "desc" }, take: 1 } },
+      include: { pregnancies: { orderBy: { createdAt: "desc" } } },
     });
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const [growth, feedings, sleeps, diapers] = baby
@@ -69,19 +70,39 @@ export async function POST(request: Request) {
       stoolDiapers24h: diapers.filter(
         (item) => item.type === "STOOL" || item.type === "BOTH",
       ).length,
-      postpartum: mother?.pregnancies[0]?.pregnancyStatus === "DELIVERED",
+      postpartum: selectRelevantPregnancy(mother?.pregnancies ?? [])?.pregnancyStatus === "DELIVERED",
     };
-    const retrieved = await retrieveKnowledge(
-      input.question,
-      context.babyAgeDays,
-    );
+    const safety = assessSafety(input.question, { babyAgeDays: context.babyAgeDays });
+    if (safety.level === "EMERGENCY" || safety.level === "URGENT") {
+      const isVietnamese = input.locale === "vi";
+      return NextResponse.json({
+        answer: isVietnamese
+          ? safety.level === "EMERGENCY"
+            ? "Dấu hiệu bạn mô tả có thể là tình huống cấp cứu. Hãy gọi dịch vụ cấp cứu tại nơi bạn sống hoặc đưa người bệnh đến khoa cấp cứu ngay. Đừng chờ câu trả lời trực tuyến."
+            : "Với trẻ sơ sinh, dấu hiệu bạn mô tả cần được nhân viên y tế đánh giá khẩn. Hãy liên hệ cơ sở y tế hoặc đưa bé đi khám ngay."
+          : safety.level === "EMERGENCY"
+            ? "The signs you described may be an emergency. Call your local emergency service or go to an emergency department now. Do not wait for an online answer."
+            : "For a newborn, the sign you described needs urgent medical assessment. Contact a medical service or take the baby for care now.",
+        evidenceLevel: "STRONG",
+        sources: [{
+          title: safety.level === "EMERGENCY" ? "When to get urgent medical help for babies and children under 5" : "Newborn mortality: danger signs",
+          organization: safety.level === "EMERGENCY" ? "NHS" : "WHO",
+          url: safety.level === "EMERGENCY"
+            ? "https://www.nhs.uk/baby/health/when-to-get-urgent-medical-help-for-babies-and-children-under-5/"
+            : "https://www.who.int/news-room/fact-sheets/detail/newborn-mortality",
+          evidenceLevel: "STRONG",
+        }],
+        safetyLevel: safety.level,
+        shouldSeekMedicalCare: true,
+      });
+    }
+    const retrieved = await retrieveKnowledge(input.question, context.babyAgeDays);
     const providerAnswer = await getAIProvider().answer({
       question: input.question,
       context,
       locale: input.locale,
       ...retrieved,
     });
-    const safety = assessSafety(input.question);
     const knowledgeFallback = providerAnswer.evidenceLevel === "INSUFFICIENT";
     return NextResponse.json({
       ...providerAnswer,

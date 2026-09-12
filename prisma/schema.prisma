@@ -57,6 +57,11 @@ enum SleepType {
   NIGHT
 }
 
+enum MeasurementPosition {
+  RECUMBENT
+  STANDING
+}
+
 enum DiaperType {
   WET
   STOOL
@@ -118,17 +123,19 @@ enum ToothPosition {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  name      String
-  username  String    @unique
-  email     String?   @unique
-  timezone  String    @default("Asia/Bangkok")
-  locale    String    @default("vi")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  sessions  Session[]
-  mother    Mother?
-  babies    Baby[]
+  id                      String                   @id @default(cuid())
+  name                    String
+  username                String                   @unique
+  email                   String?                  @unique
+  timezone                String                   @default("Asia/Bangkok")
+  locale                  String                   @default("vi")
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  sessions                Session[]
+  mother                  Mother?
+  babies                  Baby[]
+  pushSubscriptions       PushSubscription[]
+  offlineMutationReceipts OfflineMutationReceipt[]
 }
 
 model Session {
@@ -243,12 +250,12 @@ model MenstrualCycle {
 }
 
 model MotherDailyHealthLog {
-  id                String   @id @default(cuid())
+  id                String               @id @default(cuid())
   motherId          String
-  loggedAt          DateTime @db.Date
+  loggedAt          DateTime             @db.Date
   flow              String?
-  symptoms          String[] @default([])
-  moods             String[] @default([])
+  symptoms          String[]             @default([])
+  moods             String[]             @default([])
   discharge         String?
   sleepHours        Float?
   basalTemperatureC Float?
@@ -256,21 +263,21 @@ model MotherDailyHealthLog {
   weightKg          Float?
   waterGlasses      Int?
   notes             String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  mother            Mother   @relation(fields: [motherId], references: [id], onDelete: Cascade)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  mother            Mother               @relation(fields: [motherId], references: [id], onDelete: Cascade)
 
   @@unique([motherId, loggedAt])
   @@index([motherId, loggedAt])
 }
 
 model PregnancyCheckup {
-  id                    String                @id @default(cuid())
+  id                    String               @id @default(cuid())
   pregnancyId           String
-  visitType             PregnancyCheckupType  @default(COMBINED)
+  visitType             PregnancyCheckupType @default(COMBINED)
   checkedAt             DateTime
   gestationalWeek       Int?
-  gestationalDay        Int                   @default(0)
+  gestationalDay        Int                  @default(0)
   weightKg              Float?
   bloodPressure         String?
   fundalHeightCm        Float?
@@ -289,18 +296,18 @@ model PregnancyCheckup {
   placentaGrade         Int?
   amnioticFluid         String?
   cervicalLengthMm      Float?
-  ultrasoundDueDate     DateTime?             @db.Date
+  ultrasoundDueDate     DateTime?            @db.Date
   fetalAnatomy          String?
   otherFindings         String?
   facility              String?
   doctor                String?
   findings              String?
-  nextCheckupAt         DateTime?             @db.Date
+  nextCheckupAt         DateTime?            @db.Date
   notes                 String?
-  source                RecordSource          @default(MANUAL)
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
-  pregnancy             Pregnancy             @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+  source                RecordSource         @default(MANUAL)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  pregnancy             Pregnancy            @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
 
   @@index([pregnancyId, checkedAt])
 }
@@ -447,18 +454,72 @@ model DiaperEntry {
 }
 
 model GrowthEntry {
-  id                  String   @id @default(cuid())
+  id                  String               @id @default(cuid())
   babyId              String
   weightKg            Float?
   heightCm            Float?
   headCircumferenceCm Float?
+  measurementPosition MeasurementPosition?
   measuredAt          DateTime
   notes               String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  baby                Baby     @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  baby                Baby                 @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  assessment          GrowthAssessment?
 
   @@index([babyId, measuredAt])
+}
+
+model GrowthAssessment {
+  id            String      @id @default(cuid())
+  growthEntryId String      @unique
+  standard      String      @default("WHO_2006")
+  engineVersion String
+  weightAgeZ    Float?
+  heightAgeZ    Float?
+  weightHeightZ Float?
+  bmiAgeZ       Float?
+  headAgeZ      Float?
+  flags         String[]    @default([])
+  computedAt    DateTime    @default(now())
+  growthEntry   GrowthEntry @relation(fields: [growthEntryId], references: [id], onDelete: Cascade)
+}
+
+model PushSubscription {
+  id         String             @id @default(cuid())
+  userId     String
+  endpoint   String             @unique
+  p256dh     String
+  auth       String
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries ReminderDelivery[]
+
+  @@index([userId])
+}
+
+model ReminderDelivery {
+  id             String           @id @default(cuid())
+  subscriptionId String
+  reminderKey    String
+  scheduledAt    DateTime
+  sentAt         DateTime?
+  createdAt      DateTime         @default(now())
+  subscription   PushSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, reminderKey])
+  @@index([scheduledAt, sentAt])
+}
+
+model OfflineMutationReceipt {
+  id        String   @id
+  userId    String
+  resultId  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 model VaccinationRecord {

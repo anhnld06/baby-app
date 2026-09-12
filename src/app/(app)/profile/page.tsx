@@ -2,15 +2,15 @@ import Link from "next/link";
 import {
   Baby as BabyIcon,
   ChevronRight,
-  Languages,
-  LogOut,
   Plus,
   UserRound,
 } from "lucide-react";
-import { setLocaleAction } from "@/app/actions";
 import { logoutAction } from "@/app/auth-actions";
 import { PageHeader } from "@/components/page-header";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { LogoutButton } from "@/components/logout-button";
+import { OfflineStorageSettings } from "@/components/offline-storage-settings";
+import { PushNotificationSettings } from "@/components/push-notification-settings";
+import { buttonVariants } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
 import { formatAge, formatDateOfBirth } from "@/lib/date";
 import { db } from "@/lib/db";
@@ -122,45 +122,18 @@ export default async function ProfilePage() {
         </div>
       </section>
 
-      <section className="mt-7 rounded-2xl bg-card p-4 shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="grid size-11 place-items-center rounded-2xl bg-secondary text-primary">
-              <Languages className="size-5" />
-            </span>
-            <span className="font-medium">{t.profile.language}</span>
-          </div>
-          <form action={setLocaleAction}>
-            <input
-              type="hidden"
-              name="locale"
-              value={locale === "vi" ? "en" : "vi"}
-            />
-            <Button
-              type="submit"
-              variant="secondary"
-              className="h-10 rounded-xl"
-            >
-              {locale === "vi" ? "English" : "Tiếng Việt"}
-            </Button>
-          </form>
-        </div>
-      </section>
-
       <section className="mt-3 rounded-2xl bg-card p-4 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Tên đăng nhập</p>
             <p className="truncate font-medium">@{user.username}</p>
           </div>
-          <form action={logoutAction}>
-            <Button type="submit" variant="outline" className="h-10 rounded-xl">
-              <LogOut className="size-4" />
-              {t.profile.signOut}
-            </Button>
-          </form>
+          <LogoutButton action={logoutAction} label={t.profile.signOut} />
         </div>
       </section>
+
+      <PushNotificationSettings publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY} />
+      <OfflineStorageSettings />
     </>
   );
 }

@@ -24,12 +24,12 @@ type MedicalVisitView = {
 const dateInput = (date?: Date | null) => date?.toISOString().slice(0, 10) ?? "";
 
 export function MedicalBook({
-  title, subtitle, backHref, basePath, ownerField, ownerId, items, editing, saveAction, deleteAction, locale,
+  title, subtitle, backHref, basePath, ownerField, ownerId, items, editing, saveAction, deleteAction, locale, timeZone,
 }: {
   title: string; subtitle: string; backHref: string; basePath: string;
   ownerField: "motherId" | "babyId"; ownerId: string;
   items: MedicalVisitView[]; editing: MedicalVisitView | null;
-  saveAction: FormAction; deleteAction: FormAction; locale: string;
+  saveAction: FormAction; deleteAction: FormAction; locale: string; timeZone: string;
 }) {
   return (
     <>
@@ -39,7 +39,7 @@ export function MedicalBook({
           <form id="medical-visit-form" action={saveAction} className="space-y-4">
             <input type="hidden" name={ownerField} value={ownerId} />
             {editing && <input type="hidden" name="id" value={editing.id} />}
-            <Field name="visitedAt" type="datetime-local" required label="Ngày giờ khám" defaultValue={toDateTimeLocal(editing?.visitedAt)} />
+            <Field name="visitedAt" type="datetime-local" required label="Ngày giờ khám" defaultValue={toDateTimeLocal(editing?.visitedAt, timeZone)} />
             <div className="grid gap-4 sm:grid-cols-2"><Field name="facility" label="Cơ sở khám" defaultValue={editing?.facility ?? ""} /><Field name="doctor" label="Bác sĩ" defaultValue={editing?.doctor ?? ""} /></div>
             <Field name="specialty" label="Chuyên khoa" placeholder="Sản, nhi, da liễu..." defaultValue={editing?.specialty ?? ""} />
             <TextAreaField name="reason" label="Lý do khám / triệu chứng" defaultValue={editing?.reason ?? ""} />

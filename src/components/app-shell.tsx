@@ -68,7 +68,7 @@ export function AppShell({
         />
       )}
       <nav
-        aria-label="Main navigation"
+        aria-label="Điều hướng chính"
         className="safe-bottom fixed inset-x-0 bottom-0 z-40 mx-auto grid w-full grid-cols-5 border-t border-border/70 bg-card/98 px-1 pt-2 shadow-[0_-8px_24px_-20px_rgba(0,0,0,0.35)] lg:hidden"
       >
         {links.map(({ href, label, icon: Icon, paths }) => {

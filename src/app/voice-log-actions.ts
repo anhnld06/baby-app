@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
+import { zonedDateTimeToUtc } from "@/lib/date";
 import { db } from "@/lib/db";
 
 export type VoiceLogActionState = {
@@ -101,7 +102,13 @@ export async function saveVoiceLogAction(
   formData: FormData,
 ): Promise<VoiceLogActionState> {
   const user = await requireUser();
-  const raw = Object.fromEntries(formData.entries());
+  const raw: Record<string, unknown> = Object.fromEntries(formData.entries());
+  for (const field of ["startTime", "endTime", "changedAt"]) {
+    const value = raw[field];
+    if (typeof value === "string" && value.includes("T")) {
+      raw[field] = zonedDateTimeToUtc(value, user.timezone);
+    }
+  }
 
   try {
     const babyId = String(raw.babyId ?? "");

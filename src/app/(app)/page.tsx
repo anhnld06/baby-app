@@ -17,10 +17,12 @@ import {
 } from "lucide-react";
 import { BabySwitcher } from "@/components/baby-switcher";
 import { PageHeader } from "@/components/page-header";
+import { QuickTimers } from "@/components/quick-timers";
 import { TimelineList } from "@/components/timeline-list";
 import { Card, CardContent } from "@/components/ui/card";
 import { WeatherBadge } from "@/components/weather-badge";
 import { buildTimeline } from "@/features/timeline/timeline";
+import { selectRelevantPregnancy } from "@/features/mother/pregnancy";
 import { computeBabyDue, computeMotherDue } from "@/features/vaccination/due";
 import { requireUser } from "@/lib/auth";
 import { getSelectedBabyId, listBabies, pickSelectedBaby } from "@/lib/data";
@@ -33,7 +35,7 @@ import {
 } from "@/lib/date";
 import { db } from "@/lib/db";
 import { getDictionary, getLocale } from "@/lib/i18n";
-import { totalDurationMinutes } from "@/lib/metrics";
+import { totalDurationWithinRangeMinutes } from "@/lib/metrics";
 
 export default async function DashboardPage() {
   const [user, t, locale] = await Promise.all([
@@ -65,14 +67,18 @@ export default async function DashboardPage() {
       </>
     );
   const now = new Date();
-  const { start, end } = getLocalDayRange(now);
-  const [feedings, sleeps, diapers, growth, vaccinations, prescriptions, toothRecords] = await Promise.all([
+  const { start, end } = getLocalDayRange(now, user.timezone);
+  const [feedings, sleeps, diapers, growth, vaccinations, prescriptions, toothRecords, openFeeding] = await Promise.all([
     db.feeding.findMany({
       where: { babyId: baby.id, startTime: { gte: start, lt: end } },
       orderBy: { startTime: "desc" },
     }),
     db.sleepEntry.findMany({
-      where: { babyId: baby.id, startTime: { gte: start, lt: end } },
+      where: {
+        babyId: baby.id,
+        startTime: { lt: end },
+        OR: [{ endTime: null }, { endTime: { gt: start } }],
+      },
       orderBy: { startTime: "desc" },
     }),
     db.diaperEntry.findMany({
@@ -100,12 +106,16 @@ export default async function DashboardPage() {
       orderBy: { eruptedAt: "desc" },
       take: 3,
     }),
+    db.feeding.findFirst({
+      where: { babyId: baby.id, endTime: null },
+      orderBy: { startTime: "desc" },
+    }),
   ]);
   const [allVaccinations, mother] = await Promise.all([
     db.vaccinationRecord.findMany({ where: { babyId: baby.id }, select: { vaccineName: true, doseNumber: true } }),
-    db.mother.findUnique({ where: { userId: user.id }, include: { pregnancies: { orderBy: { createdAt: "desc" }, take: 1 } } }),
+    db.mother.findUnique({ where: { userId: user.id }, include: { pregnancies: { orderBy: { createdAt: "desc" } } } }),
   ]);
-  const pregnancy = mother?.pregnancies[0];
+  const pregnancy = selectRelevantPregnancy(mother?.pregnancies ?? []);
   const motherRecords = mother
     ? await db.motherVaccinationRecord.findMany({ where: { motherId: mother.id }, select: { vaccineName: true, doseNumber: true } })
     : [];
@@ -133,6 +143,7 @@ export default async function DashboardPage() {
     locale,
   ).slice(0, 5);
   const activeSleep = sleeps.find((sleep) => sleep.endTime === null);
+  const activeFeeding = openFeeding;
   const lastFeed = feedings[0];
   const wet = diapers.filter(
     (item) => item.type === "WET" || item.type === "BOTH",
@@ -208,6 +219,7 @@ export default async function DashboardPage() {
             <WeatherBadge
               currentLocationLabel={t.dashboard.currentLocation}
               unavailableLabel={t.dashboard.weatherUnavailable}
+              requestLabel={t.dashboard.weatherRequest}
             />
           </div>
         }
@@ -234,6 +246,12 @@ export default async function DashboardPage() {
           </p>
         </div>
       </section>
+      <QuickTimers
+        babyId={baby.id}
+        locale={locale}
+        activeFeedingStartedAt={activeFeeding?.startTime.toISOString()}
+        activeSleepStartedAt={activeSleep?.startTime.toISOString()}
+      />
       <section className="mt-5 grid grid-cols-2 gap-3">
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
@@ -286,7 +304,9 @@ export default async function DashboardPage() {
         href="/tracking/growth"
         className="mt-3 flex items-center justify-between rounded-2xl bg-card p-4 shadow-sm"
       >
-        <span className="text-sm font-medium">{t.dashboard.growthStandard}</span>
+        <span className="text-sm font-medium">
+          {growth[0] ? t.dashboard.growthStandard : t.dashboard.growthStart}
+        </span>
         <span className="flex shrink-0 items-center gap-1 text-sm font-medium text-primary">
           {t.dashboard.viewDetail}
           <ChevronRight className="size-4" />
@@ -360,7 +380,10 @@ export default async function DashboardPage() {
                 {activeSleep ? t.dashboard.sleeping : t.dashboard.awake}
               </div>
               <p className="mt-3 text-xl font-semibold">
-                {formatDuration(totalDurationMinutes(sleeps, now), locale)}
+                {formatDuration(
+                  totalDurationWithinRangeMinutes(sleeps, start, end, now),
+                  locale,
+                )}
               </p>
               <p className="text-xs text-muted-foreground">
                 {t.dashboard.sleepToday}

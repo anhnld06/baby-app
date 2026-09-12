@@ -2,6 +2,7 @@ import { Pill } from "lucide-react";
 import { deletePrescriptionAction, savePrescriptionAction } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { FormActionBar } from "@/components/form-action-bar";
+import { HistoryLoadMore } from "@/components/history-load-more";
 import { PageHeader } from "@/components/page-header";
 import { PrescriptionForm } from "@/components/prescription-form";
 import { RecordActions } from "@/components/record-actions";
@@ -10,11 +11,12 @@ import { requireUser } from "@/lib/auth";
 import { getSelectedBaby } from "@/lib/data";
 import { db } from "@/lib/db";
 import { getDictionary, getLocale } from "@/lib/i18n";
+import { parseHistoryLimit } from "@/lib/pagination";
 
 export default async function PrescriptionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string }>;
+  searchParams: Promise<{ edit?: string; limit?: string }>;
 }) {
   const [user, t, locale, params] = await Promise.all([
     requireUser(),
@@ -30,12 +32,13 @@ export default async function PrescriptionPage({
         <p>{t.common.noData}</p>
       </>
     );
-  const [items, editing] = await Promise.all([
+  const limit = parseHistoryLimit(params.limit);
+  const [historyItems, editing] = await Promise.all([
     db.prescription.findMany({
       where: { babyId: baby.id },
       orderBy: { issuedAt: "desc" },
       include: { items: true },
-      take: 30,
+      take: limit + 1,
     }),
     params.edit
       ? db.prescription.findFirst({
@@ -44,6 +47,8 @@ export default async function PrescriptionPage({
         })
       : null,
   ]);
+  const hasMore = historyItems.length > limit;
+  const items = historyItems.slice(0, limit);
   return (
     <>
       <PageHeader
@@ -129,6 +134,7 @@ export default async function PrescriptionPage({
           <p className="text-sm text-muted-foreground">{t.common.noData}</p>
         )}
       </div>
+      <HistoryLoadMore href="/tracking/prescription" currentLimit={limit} hasMore={hasMore} />
     </>
   );
 }

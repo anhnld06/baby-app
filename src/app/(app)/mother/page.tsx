@@ -2,6 +2,7 @@ import { Bell, CalendarDays, FileHeart, HeartPulse, ShieldCheck, Syringe, UserRo
 import { FeatureLink } from "@/components/feature-link";
 import { PageHeader } from "@/components/page-header";
 import { gestationalAge } from "@/features/mother/insights";
+import { selectRelevantPregnancy } from "@/features/mother/pregnancy";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { profileCoverUrl } from "@/lib/profile-cover";
@@ -12,7 +13,7 @@ export default async function MotherHubPage() {
   const mother = await db.mother.findUnique({
     where: { userId: user.id },
     include: {
-      pregnancies: { orderBy: { createdAt: "desc" }, take: 1, include: { _count: { select: { checkups: true } } } },
+      pregnancies: { orderBy: { createdAt: "desc" }, include: { _count: { select: { checkups: true } } } },
       _count: { select: { menstrualCycles: true, medicalVisits: true, insurancePolicies: true, vaccinationRecords: true } },
       coverImage: { select: { updatedAt: true } },
     },
@@ -25,7 +26,7 @@ export default async function MotherHubPage() {
       </>
     );
 
-  const pregnancy = mother.pregnancies[0];
+  const pregnancy = selectRelevantPregnancy(mother.pregnancies);
   const age = pregnancy?.pregnancyStatus === "PREGNANT" ? gestationalAge(pregnancy.lastMenstrualPeriod) : undefined;
   const coverImageUrl = mother.coverImage
     ? profileCoverUrl("mother", mother.id, mother.coverImage.updatedAt)

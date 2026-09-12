@@ -1,7 +1,5 @@
 import "server-only";
 
-import { cookies } from "next/headers";
-
 export const dictionaries = {
   vi: {
     appName: "Vani Family",
@@ -40,6 +38,7 @@ export const dictionaries = {
       helloAfternoon: "Chào buổi chiều",
       helloEvening: "Chào buổi tối",
       weatherUnavailable: "Chưa lấy được thời tiết",
+      weatherRequest: "Xem thời tiết",
       currentLocation: "Vị trí hiện tại",
       age: "Tuổi của bé",
       quickAdd: "Ghi nhanh",
@@ -62,9 +61,10 @@ export const dictionaries = {
       latestWeight: "Cân nặng gần nhất",
       knowledgeToday: "Kiến thức cho hôm nay",
       recent: "Hoạt động gần đây",
-      healthy: "Khỏe mạnh",
+      healthy: "Đã ghi",
       viewDetail: "Xem chi tiết",
-      growthStandard: "Chỉ số phát triển của bé đạt chuẩn",
+      growthStandard: "Lịch sử tăng trưởng của bé",
+      growthStart: "Bắt đầu ghi tăng trưởng",
     },
     tracking: {
       newFeeding: "Ghi cữ bú",
@@ -278,6 +278,7 @@ export const dictionaries = {
       helloAfternoon: "Good afternoon",
       helloEvening: "Good evening",
       weatherUnavailable: "Weather unavailable",
+      weatherRequest: "Show weather",
       currentLocation: "Current location",
       age: "Baby's age",
       quickAdd: "Quick log",
@@ -300,9 +301,10 @@ export const dictionaries = {
       latestWeight: "Latest weight",
       knowledgeToday: "Knowledge for today",
       recent: "Recent activity",
-      healthy: "Healthy",
+      healthy: "Recorded",
       viewDetail: "View details",
-      growthStandard: "Baby's growth is on track",
+      growthStandard: "Baby's growth history",
+      growthStart: "Start tracking growth",
     },
     tracking: {
       newFeeding: "Log feeding",
@@ -485,7 +487,7 @@ export const dictionaries = {
 export type Locale = keyof typeof dictionaries;
 
 export async function getLocale(): Promise<Locale> {
-  return (await cookies()).get("locale")?.value === "en" ? "en" : "vi";
+  return "vi";
 }
 
 export async function getDictionary() {

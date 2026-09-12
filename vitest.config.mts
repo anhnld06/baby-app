@@ -3,5 +3,9 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
-  test: { environment: "node", coverage: { reporter: ["text", "json-summary"] } },
+  test: {
+    include: ["src/**/*.test.{ts,tsx}"],
+    environment: "node",
+    coverage: { reporter: ["text", "json-summary"] },
+  },
 });

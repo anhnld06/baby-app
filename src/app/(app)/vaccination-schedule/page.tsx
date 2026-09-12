@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, Clock, Syringe } from "lucide-react";
+import { AlertTriangle, CalendarPlus, CheckCircle2, Clock, Syringe } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { computeBabyDue, computeMotherDue, type DueItem, type DueStatus } from "@/features/vaccination/due";
+import { selectRelevantPregnancy } from "@/features/mother/pregnancy";
 import { requireUser } from "@/lib/auth";
 import { getSelectedBaby } from "@/lib/data";
 import { db } from "@/lib/db";
@@ -82,9 +83,9 @@ export default async function VaccinationSchedulePage() {
   const [user, t, locale] = await Promise.all([requireUser(), getDictionary(), getLocale()]);
   const [baby, mother] = await Promise.all([
     getSelectedBaby(user.id),
-    db.mother.findUnique({ where: { userId: user.id }, include: { pregnancies: { orderBy: { createdAt: "desc" }, take: 1 } } }),
+    db.mother.findUnique({ where: { userId: user.id }, include: { pregnancies: { orderBy: { createdAt: "desc" } } } }),
   ]);
-  const pregnancy = mother?.pregnancies[0];
+  const pregnancy = selectRelevantPregnancy(mother?.pregnancies ?? []);
   const [babyRecords, motherRecords] = await Promise.all([
     baby ? db.vaccinationRecord.findMany({ where: { babyId: baby.id }, select: { vaccineName: true, doseNumber: true } }) : [],
     mother ? db.motherVaccinationRecord.findMany({ where: { motherId: mother.id }, select: { vaccineName: true, doseNumber: true } }) : [],
@@ -105,6 +106,14 @@ export default async function VaccinationSchedulePage() {
   return (
     <>
       <PageHeader title={t.vaccinationSchedule.title} subtitle={t.vaccinationSchedule.subtitle} />
+      <a
+        href="/api/calendar"
+        download
+        className="mb-5 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-secondary px-4 text-sm font-semibold text-primary"
+      >
+        <CalendarPlus className="size-5" />
+        {locale === "vi" ? "Thêm lịch nhắc vào điện thoại" : "Add reminders to your calendar"}
+      </a>
       {motherDue.length > 0 && (
         <section className="mb-6">
           <div className="mb-3 flex items-center justify-between">

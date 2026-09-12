@@ -41,8 +41,10 @@ function PasswordInput(props: React.ComponentProps<"input"> & { label: string })
   const [visible, setVisible] = useState(false);
   const { id, label, ...inputProps } = props;
   return (
-    <label htmlFor={id} className="block space-y-1.5">
-      <span className="text-sm font-medium">{label}</span>
+    <div className="block space-y-1.5">
+      <label htmlFor={id} className="block text-sm font-medium">
+        {label}
+      </label>
       <span className="relative block">
         <Input id={id} type={visible ? "text" : "password"} required maxLength={256} className="h-12 rounded-2xl px-4 pr-12" {...inputProps} />
         <button
@@ -54,7 +56,7 @@ function PasswordInput(props: React.ComponentProps<"input"> & { label: string })
           {visible ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
         </button>
       </span>
-    </label>
+    </div>
   );
 }
 

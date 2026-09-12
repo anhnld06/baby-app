@@ -3,6 +3,7 @@ import { deleteDiaperAction, saveDiaperAction } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { Field, SelectField, TextAreaField } from "@/components/form-fields";
 import { FormActionBar } from "@/components/form-action-bar";
+import { HistoryLoadMore } from "@/components/history-load-more";
 import { MetricGrid } from "@/components/metric-grid";
 import { PageHeader } from "@/components/page-header";
 import { RecordActions } from "@/components/record-actions";
@@ -12,6 +13,7 @@ import { getSelectedBaby } from "@/lib/data";
 import { getLocalDayRange, toDateTimeLocal } from "@/lib/date";
 import { db } from "@/lib/db";
 import { getDictionary, getLocale } from "@/lib/i18n";
+import { parseHistoryLimit } from "@/lib/pagination";
 
 const labels = {
   vi: { WET: "Tã ướt", STOOL: "Đi ngoài", BOTH: "Cả hai" },
@@ -21,7 +23,7 @@ const labels = {
 export default async function DiaperPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string }>;
+  searchParams: Promise<{ edit?: string; limit?: string }>;
 }) {
   const [user, t, locale, params] = await Promise.all([
     requireUser(),
@@ -37,12 +39,17 @@ export default async function DiaperPage({
         <p>{t.common.noData}</p>
       </>
     );
-  const { start, end } = getLocalDayRange();
-  const [items, editing] = await Promise.all([
+  const { start, end } = getLocalDayRange(new Date(), user.timezone);
+  const limit = parseHistoryLimit(params.limit, 40);
+  const [historyItems, today, editing] = await Promise.all([
     db.diaperEntry.findMany({
       where: { babyId: baby.id },
       orderBy: { changedAt: "desc" },
-      take: 40,
+      take: limit + 1,
+    }),
+    db.diaperEntry.findMany({
+      where: { babyId: baby.id, changedAt: { gte: start, lt: end } },
+      orderBy: { changedAt: "desc" },
     }),
     params.edit
       ? db.diaperEntry.findFirst({
@@ -50,9 +57,8 @@ export default async function DiaperPage({
         })
       : null,
   ]);
-  const today = items.filter(
-    (item) => item.changedAt >= start && item.changedAt < end,
-  );
+  const hasMore = historyItems.length > limit;
+  const items = historyItems.slice(0, limit);
   const wet = today.filter(
     (item) => item.type === "WET" || item.type === "BOTH",
   ).length;
@@ -103,7 +109,7 @@ export default async function DiaperPage({
               type="datetime-local"
               required
               label={t.tracking.changedAt}
-              defaultValue={toDateTimeLocal(editing?.changedAt)}
+              defaultValue={toDateTimeLocal(editing?.changedAt, user.timezone)}
             />
             <div className="grid min-w-0 gap-4 sm:grid-cols-2">
               <Field
@@ -139,6 +145,7 @@ export default async function DiaperPage({
         deleteAction={editing ? deleteDiaperAction : undefined}
         deleteId={editing?.id}
         deleteLabel={t.common.delete}
+        offlineMutationType={editing ? undefined : "CREATE_DIAPER"}
       />
       </CollapsibleRecordForm>
       <h2 className="mb-2 mt-7 text-lg font-semibold">{t.tracking.history}</h2>
@@ -176,6 +183,7 @@ export default async function DiaperPage({
           <p className="text-sm text-muted-foreground">{t.common.noData}</p>
         )}
       </div>
+      <HistoryLoadMore href="/tracking/diaper" currentLimit={limit} increment={40} hasMore={hasMore} />
     </>
   );
 }

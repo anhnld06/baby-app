@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Cloud,
   CloudDrizzle,
@@ -60,6 +60,7 @@ async function reverseGeocode(latitude: number, longitude: number): Promise<stri
 }
 
 type WeatherState =
+  | { status: "idle" }
   | { status: "loading" }
   | { status: "unavailable" }
   | {
@@ -73,28 +74,31 @@ type WeatherState =
 export function WeatherBadge({
   unavailableLabel,
   currentLocationLabel = "Current location",
+  requestLabel = "Show weather",
 }: {
   unavailableLabel?: string;
   currentLocationLabel?: string;
+  requestLabel?: string;
 }) {
-  const [state, setState] = useState<WeatherState>({ status: "loading" });
+  const [state, setState] = useState<WeatherState>({ status: "idle" });
 
-  useEffect(() => {
-    let cancelled = false;
+  function requestWeather() {
+    setState({ status: "loading" });
 
     async function loadWeather(latitude: number, longitude: number) {
       try {
+        const roundedLatitude = Number(latitude.toFixed(3));
+        const roundedLongitude = Number(longitude.toFixed(3));
         const [weatherResponse, locationName] = await Promise.all([
           fetch(
-            `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code`,
+            `https://api.open-meteo.com/v1/forecast?latitude=${roundedLatitude}&longitude=${roundedLongitude}&current=temperature_2m,relative_humidity_2m,weather_code`,
           ),
-          reverseGeocode(latitude, longitude),
+          reverseGeocode(roundedLatitude, roundedLongitude),
         ]);
         if (!weatherResponse.ok) throw new Error("weather unavailable");
         const data = (await weatherResponse.json()) as {
           current?: { temperature_2m?: number; relative_humidity_2m?: number; weather_code?: number };
         };
-        if (cancelled) return;
         const temperature = data.current?.temperature_2m;
         const humidity = data.current?.relative_humidity_2m;
         const weatherCode = data.current?.weather_code;
@@ -113,30 +117,36 @@ export function WeatherBadge({
           locationName,
         });
       } catch {
-        if (!cancelled) setState({ status: "unavailable" });
+        setState({ status: "unavailable" });
       }
     }
 
     if (typeof navigator !== "undefined" && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => void loadWeather(position.coords.latitude, position.coords.longitude),
-        () => {
-          if (!cancelled) setState({ status: "unavailable" });
-        },
+        () => setState({ status: "unavailable" }),
         { timeout: 5000 },
       );
     } else {
-      queueMicrotask(() => {
-        if (!cancelled) setState({ status: "unavailable" });
-      });
+      setState({ status: "unavailable" });
     }
+  }
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (state.status === "loading") return null;
+  if (state.status === "idle") {
+    return (
+      <button
+        type="button"
+        onClick={requestWeather}
+        className="inline-flex min-h-11 items-center gap-1 rounded-xl px-2 text-xs font-medium text-muted-foreground hover:bg-muted"
+      >
+        <MapPin className="size-3.5" />
+        {requestLabel}
+      </button>
+    );
+  }
+  if (state.status === "loading") {
+    return <span className="text-xs text-muted-foreground" role="status">…</span>;
+  }
   if (state.status === "unavailable") {
     return unavailableLabel ? (
       <span className="text-xs text-muted-foreground">{unavailableLabel}</span>

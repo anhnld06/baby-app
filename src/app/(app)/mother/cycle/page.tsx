@@ -158,7 +158,7 @@ export default async function CyclePage({ searchParams }: { searchParams: Promis
                 <p className="text-sm font-medium">{new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long", year: "numeric" }).format(cycle.periodStart)}</p>
                 <p className="text-xs text-muted-foreground">{cycle.periodEnd ? `Đến ${new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" }).format(cycle.periodEnd)}` : "Chưa ghi ngày kết thúc"}</p>
               </div>
-              <Link href={`/mother/cycle?edit=${cycle.id}`} aria-label="Sửa kỳ kinh" className="grid size-9 place-items-center rounded-lg text-muted-foreground hover:bg-secondary"><Pencil className="size-4" /></Link>
+              <Link href={`/mother/cycle?edit=${cycle.id}`} aria-label="Sửa kỳ kinh" className="grid size-11 place-items-center rounded-lg text-muted-foreground hover:bg-secondary"><Pencil className="size-4" /></Link>
               <form action={deleteMenstrualCycleAction}>
                 <input type="hidden" name="id" value={cycle.id} />
                 <Button type="submit" variant="ghost" size="icon" className="text-destructive"><Trash2 className="size-4" /></Button>

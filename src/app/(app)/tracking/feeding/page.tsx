@@ -3,6 +3,7 @@ import { deleteFeedingAction, saveFeedingAction } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { Field, SelectField, TextAreaField } from "@/components/form-fields";
 import { FormActionBar } from "@/components/form-action-bar";
+import { HistoryLoadMore } from "@/components/history-load-more";
 import { MetricGrid } from "@/components/metric-grid";
 import { PageHeader } from "@/components/page-header";
 import { RecordActions } from "@/components/record-actions";
@@ -13,6 +14,7 @@ import { formatDuration, getLocalDayRange, toDateTimeLocal } from "@/lib/date";
 import { db } from "@/lib/db";
 import { getDictionary, getLocale } from "@/lib/i18n";
 import { averageGapMinutes, totalDurationMinutes } from "@/lib/metrics";
+import { parseHistoryLimit } from "@/lib/pagination";
 
 const typeLabels = {
   vi: {
@@ -32,7 +34,7 @@ const typeLabels = {
 export default async function FeedingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string }>;
+  searchParams: Promise<{ edit?: string; limit?: string }>;
 }) {
   const [user, t, locale, params] = await Promise.all([
     requireUser(),
@@ -48,20 +50,24 @@ export default async function FeedingPage({
         <p>{t.common.noData}</p>
       </>
     );
-  const { start, end } = getLocalDayRange();
-  const [items, editing] = await Promise.all([
+  const { start, end } = getLocalDayRange(new Date(), user.timezone);
+  const limit = parseHistoryLimit(params.limit);
+  const [historyItems, today, editing] = await Promise.all([
     db.feeding.findMany({
       where: { babyId: baby.id },
       orderBy: { startTime: "desc" },
-      take: 30,
+      take: limit + 1,
+    }),
+    db.feeding.findMany({
+      where: { babyId: baby.id, startTime: { gte: start, lt: end } },
+      orderBy: { startTime: "desc" },
     }),
     params.edit
       ? db.feeding.findFirst({ where: { id: params.edit, babyId: baby.id } })
       : null,
   ]);
-  const today = items.filter(
-    (item) => item.startTime >= start && item.startTime < end,
-  );
+  const hasMore = historyItems.length > limit;
+  const items = historyItems.slice(0, limit);
   const now = new Date();
   const sinceLast = items[0]
     ? Math.max(0, (now.getTime() - items[0].startTime.getTime()) / 60_000)
@@ -122,14 +128,14 @@ export default async function FeedingPage({
                 type="datetime-local"
                 required
                 label={t.tracking.startTime}
-                defaultValue={toDateTimeLocal(editing?.startTime)}
+                defaultValue={toDateTimeLocal(editing?.startTime, user.timezone)}
               />
               <Field
                 name="endTime"
                 type="datetime-local"
                 label={t.tracking.endTime}
                 defaultValue={
-                  editing?.endTime ? toDateTimeLocal(editing.endTime) : ""
+                  editing?.endTime ? toDateTimeLocal(editing.endTime, user.timezone) : ""
                 }
               />
             </div>
@@ -193,6 +199,7 @@ export default async function FeedingPage({
         deleteAction={editing ? deleteFeedingAction : undefined}
         deleteId={editing?.id}
         deleteLabel={t.common.delete}
+        offlineMutationType={editing ? undefined : "CREATE_FEEDING"}
       />
       </CollapsibleRecordForm>
       <h2 className="mb-2 mt-7 text-lg font-semibold">{t.tracking.history}</h2>
@@ -230,6 +237,7 @@ export default async function FeedingPage({
           <p className="text-sm text-muted-foreground">{t.common.noData}</p>
         )}
       </div>
+      <HistoryLoadMore href="/tracking/feeding" currentLimit={limit} hasMore={hasMore} />
     </>
   );
 }

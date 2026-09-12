@@ -11,12 +11,12 @@ export const babySchema = z.object({
   name: z.string().trim().min(1).max(80),
   nickname: optionalText,
   gender: z.enum(["FEMALE", "MALE", "OTHER", "UNDISCLOSED"]),
-  dateOfBirth: dateValue,
+  dateOfBirth: dateValue.refine((value) => value <= new Date(), "Ngày sinh không thể ở tương lai"),
   birthTime: optionalText,
-  gestationalAgeAtBirth: optionalInteger,
-  birthWeightKg: optionalNumber,
-  birthLengthCm: optionalNumber,
-  birthHeadCircumferenceCm: optionalNumber,
+  gestationalAgeAtBirth: optionalInteger.refine((value) => value === undefined || (value >= 20 && value <= 45), "Tuổi thai khi sinh phải từ 20 đến 45 tuần"),
+  birthWeightKg: optionalNumber.refine((value) => value === undefined || value <= 15, "Cân nặng sơ sinh không hợp lệ"),
+  birthLengthCm: optionalNumber.refine((value) => value === undefined || value <= 80, "Chiều dài sơ sinh không hợp lệ"),
+  birthHeadCircumferenceCm: optionalNumber.refine((value) => value === undefined || value <= 60, "Vòng đầu sơ sinh không hợp lệ"),
   notes: optionalText,
 });
 
@@ -24,8 +24,8 @@ export const motherSchema = z.object({
   id: optionalText,
   name: z.string().trim().min(1).max(80),
   dateOfBirth: optionalDate,
-  heightCm: optionalNumber,
-  prePregnancyWeightKg: optionalNumber,
+  heightCm: optionalNumber.refine((value) => value === undefined || (value >= 50 && value <= 250), "Chiều cao không hợp lệ"),
+  prePregnancyWeightKg: optionalNumber.refine((value) => value === undefined || value <= 400, "Cân nặng không hợp lệ"),
   bloodType: optionalText,
   notes: optionalText,
 });
@@ -89,16 +89,16 @@ export const pregnancyCheckupSchema = z.object({
   pregnancyId: z.string().min(1),
   visitType: z.enum(["PRENATAL_VISIT", "ULTRASOUND", "COMBINED"]),
   checkedAt: dateValue,
-  gestationalWeek: optionalInteger.refine((value) => value === undefined || value <= 45, "Tuá»•i thai khÃ´ng há»£p lá»‡"),
+  gestationalWeek: optionalInteger.refine((value) => value === undefined || value <= 45, "Tuổi thai không hợp lệ"),
   gestationalDay: z.preprocess(
     (value) => value === "" || value === null || value === undefined ? 0 : Number(value),
     z.number().int().min(0).max(6, "Số ngày thai phải từ 0 đến 6"),
   ),
   weightKg: optionalNumber,
   bloodPressure: optionalText,
-  fetalHeartRate: optionalInteger.refine((value) => value === undefined || value <= 300, "Nhá»‹p tim thai khÃ´ng há»£p lá»‡"),
+  fetalHeartRate: optionalInteger.refine((value) => value === undefined || value <= 300, "Nhịp tim thai không hợp lệ"),
   fundalHeightCm: optionalNumber,
-  fetusCount: optionalInteger.refine((value) => value === undefined || value <= 10, "Sá»‘ lÆ°á»£ng thai khÃ´ng há»£p lá»‡"),
+  fetusCount: optionalInteger.refine((value) => value === undefined || value <= 10, "Số lượng thai không hợp lệ"),
   fetalPresentation: optionalText,
   fetalMovement: z.preprocess(
     (value) => value === "" || value === null ? undefined : value,
@@ -112,7 +112,7 @@ export const pregnancyCheckupSchema = z.object({
   flMm: optionalNumber,
   estimatedFetalWeightG: optionalNumber,
   placentaPosition: optionalText,
-  placentaGrade: optionalInteger.refine((value) => value === undefined || value <= 3, "Äá»™ trÆ°á»Ÿng thÃ nh nhau khÃ´ng há»£p lá»‡"),
+  placentaGrade: optionalInteger.refine((value) => value === undefined || value <= 3, "Độ trưởng thành nhau không hợp lệ"),
   amnioticFluid: optionalText,
   cervicalLengthMm: optionalNumber,
   ultrasoundDueDate: optionalDate,
@@ -164,12 +164,12 @@ const insuranceFields = {
 export const motherInsuranceSchema = z.object({
   ...insuranceFields,
   motherId: z.string().min(1),
-});
+}).refine((value) => !value.validFrom || !value.validUntil || value.validUntil >= value.validFrom, { message: "Ngày hết hạn phải sau ngày bắt đầu", path: ["validUntil"] });
 
 export const babyInsuranceSchema = z.object({
   ...insuranceFields,
   babyId: z.string().min(1),
-});
+}).refine((value) => !value.validFrom || !value.validUntil || value.validUntil >= value.validFrom, { message: "Ngày hết hạn phải sau ngày bắt đầu", path: ["validUntil"] });
 
 export const feedingSchema = z.object({
   id: optionalText,
@@ -177,13 +177,13 @@ export const feedingSchema = z.object({
   type: z.enum(["BREASTFEEDING", "BOTTLE_BREAST_MILK", "FORMULA", "MIXED"]),
   startTime: dateValue,
   endTime: optionalDate,
-  leftBreastDuration: optionalInteger,
-  rightBreastDuration: optionalInteger,
+  leftBreastDuration: optionalInteger.refine((value) => value === undefined || value <= 1440, "Thời lượng bú không hợp lệ"),
+  rightBreastDuration: optionalInteger.refine((value) => value === undefined || value <= 1440, "Thời lượng bú không hợp lệ"),
   firstSide: z.preprocess((value) => value === "" ? undefined : value, z.enum(["LEFT", "RIGHT"]).optional()),
-  amountMl: optionalNumber,
+  amountMl: optionalNumber.refine((value) => value === undefined || value <= 3000, "Lượng sữa không hợp lệ"),
   milkType: optionalText,
   notes: optionalText,
-}).refine((value) => !value.endTime || value.endTime >= value.startTime, { message: "End time must be after start time", path: ["endTime"] });
+}).refine((value) => !value.endTime || value.endTime >= value.startTime, { message: "Giờ kết thúc phải sau giờ bắt đầu", path: ["endTime"] });
 
 export const sleepSchema = z.object({
   id: optionalText,
@@ -193,7 +193,7 @@ export const sleepSchema = z.object({
   type: z.enum(["NAP", "NIGHT"]),
   location: optionalText,
   notes: optionalText,
-}).refine((value) => !value.endTime || value.endTime >= value.startTime, { message: "End time must be after start time", path: ["endTime"] });
+}).refine((value) => !value.endTime || value.endTime >= value.startTime, { message: "Giờ kết thúc phải sau giờ bắt đầu", path: ["endTime"] });
 
 export const diaperSchema = z.object({
   id: optionalText,
@@ -210,11 +210,15 @@ export const growthSchema = z.object({
   id: optionalText,
   babyId: z.string().min(1),
   measuredAt: dateValue,
-  weightKg: optionalNumber,
-  heightCm: optionalNumber,
-  headCircumferenceCm: optionalNumber,
+  weightKg: optionalNumber.refine((value) => value === undefined || value <= 300, "Cân nặng không hợp lệ"),
+  heightCm: optionalNumber.refine((value) => value === undefined || value <= 250, "Chiều cao không hợp lệ"),
+  headCircumferenceCm: optionalNumber.refine((value) => value === undefined || value <= 100, "Vòng đầu không hợp lệ"),
+  measurementPosition: z.preprocess(
+    (value) => value === "" || value === null ? undefined : value,
+    z.enum(["RECUMBENT", "STANDING"]).optional(),
+  ),
   notes: optionalText,
-}).refine((value) => value.weightKg !== undefined || value.heightCm !== undefined || value.headCircumferenceCm !== undefined, { message: "Enter at least one measurement" });
+}).refine((value) => value.weightKg !== undefined || value.heightCm !== undefined || value.headCircumferenceCm !== undefined, { message: "Hãy nhập ít nhất một số đo" });
 
 export const TOOTH_POSITIONS = [
   "UPPER_RIGHT_CENTRAL_INCISOR",

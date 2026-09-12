@@ -107,14 +107,15 @@ function FormSection({ title, description, children }: { title: string; descript
   );
 }
 
-export function PregnancyCheckupForm({ pregnancyId, editing, defaultGestationalWeek }: {
+export function PregnancyCheckupForm({ pregnancyId, editing, defaultGestationalWeek, timeZone }: {
   pregnancyId: string;
   editing?: EditingCheckup | null;
   defaultGestationalWeek?: number;
+  timeZone: string;
 }) {
   const [values, setValues] = useState<CheckupValues>({
     visitType: editing?.visitType ?? "COMBINED",
-    checkedAt: editing ? toDateTimeLocal(editing.checkedAt) : toDateTimeLocal(),
+    checkedAt: editing ? toDateTimeLocal(editing.checkedAt, timeZone) : toDateTimeLocal(new Date(), timeZone),
     gestationalWeek: editing?.gestationalWeek?.toString() ?? defaultGestationalWeek?.toString() ?? "",
     gestationalDay: editing?.gestationalDay?.toString() ?? "0",
     weightKg: editing?.weightKg?.toString() ?? "",

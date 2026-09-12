@@ -1,6 +1,46 @@
 import { differenceInCalendarDays, differenceInMonths, differenceInYears, format } from "date-fns";
 
-export function toDateTimeLocal(date: Date = new Date()) {
+type DateTimeParts = {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+};
+
+function partsInTimeZone(date: Date, timeZone: string): DateTimeParts {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value);
+  return {
+    year: value("year"),
+    month: value("month"),
+    day: value("day"),
+    hour: value("hour"),
+    minute: value("minute"),
+    second: value("second"),
+  };
+}
+
+function pad(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+export function toDateTimeLocal(date: Date = new Date(), timeZone?: string) {
+  if (timeZone) {
+    const parts = partsInTimeZone(date, timeZone);
+    return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}T${pad(parts.hour)}:${pad(parts.minute)}`;
+  }
   const offset = date.getTimezoneOffset() * 60_000;
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
@@ -92,7 +132,47 @@ export function ageInDays(dateOfBirth: Date, now = new Date()) {
   return Math.max(0, differenceInCalendarDays(now, dateOfBirth));
 }
 
-export function getLocalDayRange(now = new Date()) {
+export function zonedDateTimeToUtc(value: string, timeZone: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value);
+  if (!match) return new Date(value);
+
+  const wanted = Date.UTC(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    Number(match[4]),
+    Number(match[5]),
+    Number(match[6] ?? 0),
+  );
+  let instant = wanted;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const observed = partsInTimeZone(new Date(instant), timeZone);
+    const observedAsUtc = Date.UTC(
+      observed.year,
+      observed.month - 1,
+      observed.day,
+      observed.hour,
+      observed.minute,
+      observed.second,
+    );
+    const correction = wanted - observedAsUtc;
+    instant += correction;
+    if (correction === 0) break;
+  }
+  return new Date(instant);
+}
+
+export function getLocalDayRange(now = new Date(), timeZone?: string) {
+  if (timeZone) {
+    const local = partsInTimeZone(now, timeZone);
+    const startKey = `${local.year}-${pad(local.month)}-${pad(local.day)}`;
+    const nextDate = new Date(Date.UTC(local.year, local.month - 1, local.day + 1));
+    const nextKey = `${nextDate.getUTCFullYear()}-${pad(nextDate.getUTCMonth() + 1)}-${pad(nextDate.getUTCDate())}`;
+    return {
+      start: zonedDateTimeToUtc(`${startKey}T00:00`, timeZone),
+      end: zonedDateTimeToUtc(`${nextKey}T00:00`, timeZone),
+    };
+  }
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);
   const end = new Date(start);

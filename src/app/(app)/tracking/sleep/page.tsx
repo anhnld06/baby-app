@@ -3,6 +3,7 @@ import { deleteSleepAction, saveSleepAction } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { Field, SelectField, TextAreaField } from "@/components/form-fields";
 import { FormActionBar } from "@/components/form-action-bar";
+import { HistoryLoadMore } from "@/components/history-load-more";
 import { MetricGrid } from "@/components/metric-grid";
 import { PageHeader } from "@/components/page-header";
 import { RecordActions } from "@/components/record-actions";
@@ -14,14 +15,16 @@ import { db } from "@/lib/db";
 import { getDictionary, getLocale } from "@/lib/i18n";
 import {
   averageCompletedDurationMinutes,
-  longestDurationMinutes,
-  totalDurationMinutes,
+  durationMinutes,
+  longestDurationWithinRangeMinutes,
+  totalDurationWithinRangeMinutes,
 } from "@/lib/metrics";
+import { parseHistoryLimit } from "@/lib/pagination";
 
 export default async function SleepPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string }>;
+  searchParams: Promise<{ edit?: string; limit?: string }>;
 }) {
   const [user, t, locale, params] = await Promise.all([
     requireUser(),
@@ -37,20 +40,28 @@ export default async function SleepPage({
         <p>{t.common.noData}</p>
       </>
     );
-  const { start, end } = getLocalDayRange();
-  const [items, editing] = await Promise.all([
+  const { start, end } = getLocalDayRange(new Date(), user.timezone);
+  const limit = parseHistoryLimit(params.limit);
+  const [historyItems, today, editing] = await Promise.all([
     db.sleepEntry.findMany({
       where: { babyId: baby.id },
       orderBy: { startTime: "desc" },
-      take: 30,
+      take: limit + 1,
+    }),
+    db.sleepEntry.findMany({
+      where: {
+        babyId: baby.id,
+        startTime: { lt: end },
+        OR: [{ endTime: null }, { endTime: { gt: start } }],
+      },
+      orderBy: { startTime: "desc" },
     }),
     params.edit
       ? db.sleepEntry.findFirst({ where: { id: params.edit, babyId: baby.id } })
       : null,
   ]);
-  const today = items.filter(
-    (item) => item.startTime >= start && item.startTime < end,
-  );
+  const hasMore = historyItems.length > limit;
+  const items = historyItems.slice(0, limit);
   const naps = today.filter((item) => item.type === "NAP");
   const now = new Date();
   const latest = items[0];
@@ -70,7 +81,10 @@ export default async function SleepPage({
         items={[
           {
             label: t.dashboard.sleepToday,
-            value: formatDuration(totalDurationMinutes(today, now), locale),
+            value: formatDuration(
+              totalDurationWithinRangeMinutes(today, start, end, now),
+              locale,
+            ),
           },
           { label: t.tracking.sleepCount, value: String(today.length) },
           {
@@ -82,13 +96,18 @@ export default async function SleepPage({
           },
           {
             label: t.tracking.longestSleep,
-            value: formatDuration(longestDurationMinutes(today, now), locale),
+            value: formatDuration(
+              longestDurationWithinRangeMinutes(today, start, end, now),
+              locale,
+            ),
           },
           {
             label: latest?.endTime ? t.tracking.awakeFor : t.dashboard.sleeping,
             value: latest?.endTime
               ? formatDuration(awakeMinutes, locale)
-              : formatDuration(0, locale),
+              : latest
+                ? formatDuration(durationMinutes(latest.startTime, null, now), locale)
+                : "—",
           },
         ]}
       />
@@ -117,14 +136,14 @@ export default async function SleepPage({
                 type="datetime-local"
                 required
                 label={t.tracking.startTime}
-                defaultValue={toDateTimeLocal(editing?.startTime)}
+                defaultValue={toDateTimeLocal(editing?.startTime, user.timezone)}
               />
               <Field
                 name="endTime"
                 type="datetime-local"
                 label={t.tracking.endTime}
                 defaultValue={
-                  editing?.endTime ? toDateTimeLocal(editing.endTime) : ""
+                  editing?.endTime ? toDateTimeLocal(editing.endTime, user.timezone) : ""
                 }
               />
             </div>
@@ -150,6 +169,7 @@ export default async function SleepPage({
         deleteAction={editing ? deleteSleepAction : undefined}
         deleteId={editing?.id}
         deleteLabel={t.common.delete}
+        offlineMutationType={editing ? undefined : "CREATE_SLEEP"}
       />
       </CollapsibleRecordForm>
       <h2 className="mb-2 mt-7 text-lg font-semibold">{t.tracking.history}</h2>
@@ -196,6 +216,7 @@ export default async function SleepPage({
           <p className="text-sm text-muted-foreground">{t.common.noData}</p>
         )}
       </div>
+      <HistoryLoadMore href="/tracking/sleep" currentLimit={limit} hasMore={hasMore} />
     </>
   );
 }

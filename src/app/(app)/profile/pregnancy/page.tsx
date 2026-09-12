@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { selectRelevantPregnancy } from "@/features/mother/pregnancy";
 import { getDictionary } from "@/lib/i18n";
 
 function dateInput(date?: Date | null) {
@@ -16,7 +17,7 @@ export default async function PregnancyProfilePage() {
   const [user, t] = await Promise.all([requireUser(), getDictionary()]);
   const mother = await db.mother.findUnique({
     where: { userId: user.id },
-    include: { pregnancies: { orderBy: { createdAt: "desc" }, take: 1 } },
+    include: { pregnancies: { orderBy: { createdAt: "desc" } } },
   });
   if (!mother)
     return (
@@ -33,7 +34,7 @@ export default async function PregnancyProfilePage() {
         </div>
       </>
     );
-  const pregnancy = mother.pregnancies[0];
+  const pregnancy = selectRelevantPregnancy(mother.pregnancies);
   return (
     <>
       <PageHeader

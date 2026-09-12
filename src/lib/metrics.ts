@@ -8,6 +8,42 @@ export function totalDurationMinutes(entries: TimedEntry[], now = new Date()) {
   return entries.reduce((total, entry) => total + durationMinutes(entry.startTime, entry.endTime, now), 0);
 }
 
+export function durationWithinRangeMinutes(
+  entry: TimedEntry,
+  rangeStart: Date,
+  rangeEnd: Date,
+  now = new Date(),
+) {
+  const start = Math.max(entry.startTime.getTime(), rangeStart.getTime());
+  const end = Math.min((entry.endTime ?? now).getTime(), rangeEnd.getTime(), now.getTime());
+  return Math.max(0, (end - start) / 60_000);
+}
+
+export function totalDurationWithinRangeMinutes(
+  entries: TimedEntry[],
+  rangeStart: Date,
+  rangeEnd: Date,
+  now = new Date(),
+) {
+  return entries.reduce(
+    (total, entry) => total + durationWithinRangeMinutes(entry, rangeStart, rangeEnd, now),
+    0,
+  );
+}
+
+export function longestDurationWithinRangeMinutes(
+  entries: TimedEntry[],
+  rangeStart: Date,
+  rangeEnd: Date,
+  now = new Date(),
+) {
+  return entries.reduce(
+    (longest, entry) =>
+      Math.max(longest, durationWithinRangeMinutes(entry, rangeStart, rangeEnd, now)),
+    0,
+  );
+}
+
 export function averageCompletedDurationMinutes(entries: TimedEntry[]) {
   const completed = entries.filter((entry): entry is TimedEntry & { endTime: Date } => entry.endTime !== null);
   if (completed.length === 0) return 0;

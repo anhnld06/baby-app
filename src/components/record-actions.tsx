@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Pencil, Trash2 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -23,18 +25,25 @@ export function RecordActions({
         aria-label={editLabel}
         className={cn(
           buttonVariants({ variant: "ghost", size: "icon" }),
-          "size-9",
+          "size-11",
         )}
       >
         <Pencil className="size-4" />
       </Link>
-      <form action={deleteAction}>
+      <form
+        action={deleteAction}
+        onSubmit={(event) => {
+          if (!window.confirm(`${deleteLabel}? Hành động này không thể hoàn tác.`)) {
+            event.preventDefault();
+          }
+        }}
+      >
         <input type="hidden" name="id" value={id} />
         <Button
           type="submit"
           variant="ghost"
           size="icon"
-          className="size-9 text-destructive"
+          className="size-11 text-destructive"
           aria-label={deleteLabel}
         >
           <Trash2 className="size-4" />

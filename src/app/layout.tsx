@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
+import { OfflineBanner } from "@/components/offline-banner";
+import { OfflineManager } from "@/components/offline-manager";
 import "./globals.css";
 
 const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin", "vietnamese"] });
@@ -19,6 +21,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="vi" suppressHydrationWarning className={geist.variable}>
       <body className="min-h-dvh antialiased">
         <script dangerouslySetInnerHTML={{ __html: "try{if(localStorage.theme==='dark'||(!('theme' in localStorage)&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark')}catch(e){}" }} />
+        <OfflineBanner />
+        <OfflineManager />
         {children}
       </body>
     </html>

@@ -14,6 +14,7 @@ export function ThemeToggle() {
       type="button"
       variant="ghost"
       size="icon"
+      className="size-11"
       onClick={toggle}
       aria-label="Toggle dark mode"
     >

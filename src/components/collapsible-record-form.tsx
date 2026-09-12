@@ -36,7 +36,7 @@ export function CollapsibleRecordForm({
           type="button"
           onClick={() => setOpen(false)}
           aria-label={closeLabel}
-          className="absolute right-4 top-4 z-10 grid size-8 place-items-center rounded-full bg-card/90 text-muted-foreground shadow-sm"
+          className="absolute right-4 top-4 z-10 grid size-11 place-items-center rounded-full bg-card/90 text-muted-foreground shadow-sm"
         >
           <X className="size-4" />
         </button>

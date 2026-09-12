@@ -21,7 +21,7 @@ export function PageHeader({
           <Link
             href={backHref}
             aria-label="Back"
-            className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-full bg-card shadow-sm"
+            className="mt-0.5 grid size-11 shrink-0 place-items-center rounded-full bg-card shadow-sm"
           >
             <ArrowLeft className="size-5" />
           </Link>

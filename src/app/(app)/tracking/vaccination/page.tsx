@@ -2,6 +2,7 @@ import { Syringe } from "lucide-react";
 import { deleteVaccinationAction, saveVaccinationAction } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { FormActionBar } from "@/components/form-action-bar";
+import { HistoryLoadMore } from "@/components/history-load-more";
 import { PageHeader } from "@/components/page-header";
 import { RecordActions } from "@/components/record-actions";
 import { VaccinationForm } from "@/components/vaccination-form";
@@ -10,11 +11,12 @@ import { requireUser } from "@/lib/auth";
 import { getSelectedBaby } from "@/lib/data";
 import { db } from "@/lib/db";
 import { getDictionary, getLocale } from "@/lib/i18n";
+import { parseHistoryLimit } from "@/lib/pagination";
 
 export default async function VaccinationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string }>;
+  searchParams: Promise<{ edit?: string; limit?: string }>;
 }) {
   const [user, t, locale, params] = await Promise.all([
     requireUser(),
@@ -30,11 +32,12 @@ export default async function VaccinationPage({
         <p>{t.common.noData}</p>
       </>
     );
-  const [items, editing] = await Promise.all([
+  const limit = parseHistoryLimit(params.limit);
+  const [historyItems, editing] = await Promise.all([
     db.vaccinationRecord.findMany({
       where: { babyId: baby.id },
       orderBy: { administeredAt: "desc" },
-      take: 30,
+      take: limit + 1,
     }),
     params.edit
       ? db.vaccinationRecord.findFirst({
@@ -42,6 +45,8 @@ export default async function VaccinationPage({
         })
       : null,
   ]);
+  const hasMore = historyItems.length > limit;
+  const items = historyItems.slice(0, limit);
   return (
     <>
       <PageHeader
@@ -124,6 +129,7 @@ export default async function VaccinationPage({
           <p className="text-sm text-muted-foreground">{t.common.noData}</p>
         )}
       </div>
+      <HistoryLoadMore href="/tracking/vaccination" currentLimit={limit} hasMore={hasMore} />
     </>
   );
 }

@@ -153,7 +153,7 @@ export function PrescriptionForm({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="size-9 shrink-0 text-destructive"
+                  className="size-11 shrink-0 text-destructive"
                   aria-label={labels.removeMedicine}
                   onClick={() => setItems((current) => current.filter((_, i) => i !== index))}
                 >

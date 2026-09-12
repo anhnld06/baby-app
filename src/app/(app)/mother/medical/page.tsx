@@ -11,6 +11,5 @@ export default async function MotherMedicalPage({ searchParams }: { searchParams
   const mother = await db.mother.findUnique({ where: { userId: user.id } });
   if (!mother) return <FeatureLink href="/profile/mother" icon={UserRound} title="Tạo hồ sơ mẹ" description="Cần hồ sơ mẹ trước khi lưu sổ khám." />;
   const [items, editing] = await Promise.all([db.motherMedicalVisit.findMany({ where: { motherId: mother.id }, orderBy: { visitedAt: "desc" }, take: 50 }), params.edit ? db.motherMedicalVisit.findFirst({ where: { id: params.edit, motherId: mother.id } }) : null]);
-  return <MedicalBook title="Sổ khám bệnh của mẹ" subtitle={mother.name} backHref="/mother" basePath="/mother/medical" ownerField="motherId" ownerId={mother.id} items={items} editing={editing} saveAction={saveMotherMedicalVisitAction} deleteAction={deleteMotherMedicalVisitAction} locale={locale} />;
+  return <MedicalBook title="Sổ khám bệnh của mẹ" subtitle={mother.name} backHref="/mother" basePath="/mother/medical" ownerField="motherId" ownerId={mother.id} items={items} editing={editing} saveAction={saveMotherMedicalVisitAction} deleteAction={deleteMotherMedicalVisitAction} locale={locale} timeZone={user.timezone} />;
 }
-
