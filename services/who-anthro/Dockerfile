@@ -15,4 +15,4 @@ WORKDIR /app
 COPY plumber.R /app/plumber.R
 
 EXPOSE 8082
-CMD ["R", "-e", "api <- plumber::plumb('/app/plumber.R'); api$run(host='0.0.0.0', port=8082)"]
+CMD ["R", "-e", "port <- as.integer(Sys.getenv('PORT', '8082')); api <- plumber::plumb('/app/plumber.R'); api$run(host='0.0.0.0', port=port)"]

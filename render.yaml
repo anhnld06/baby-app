@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: baby-app-who-anthro
+    runtime: docker
+    region: singapore
+    plan: free
+    rootDir: services/who-anthro
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: WHO_ANTHRO_TOKEN
+        sync: false
