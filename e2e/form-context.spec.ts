@@ -69,10 +69,10 @@ test("hồ sơ và phiếu thai kỳ hiện đúng nhóm trường", async ({ pa
   await page.goto("/profile/pregnancy");
   const status = page.locator('[name="pregnancyStatus"]');
   await status.selectOption("PLANNING");
-  await expect(page.locator('[name="estimatedDueDate"]')).toBeHidden();
-  await expect(page.locator('[name="actualDeliveryDate"]')).toBeHidden();
+  await expect(page.locator('#estimatedDueDate')).toBeHidden();
+  await expect(page.locator('#actualDeliveryDate')).toBeHidden();
   await status.selectOption("DELIVERED");
-  await expect(page.locator('[name="actualDeliveryDate"]')).toBeVisible();
+  await expect(page.locator('#actualDeliveryDate')).toBeVisible();
   await status.selectOption("PREGNANT");
   expect(await keys(page, "#pregnancy-form")).not.toContain("actualDeliveryDate");
   await page.goto("/mother/pregnancy");
