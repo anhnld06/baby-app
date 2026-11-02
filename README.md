@@ -100,6 +100,8 @@ npm run test:e2e
 
 Deploy Next.js lên Vercel, trỏ `DATABASE_URL` tới PostgreSQL có pgvector (Supabase/Neon), đặt `APP_USERNAME`, `APP_PASSWORD`, `APP_DISPLAY_NAME` và các biến cần thiết trong project settings, rồi chạy `npx prisma migrate deploy`. Chỉ chạy `npm run db:seed` nếu thực sự cần dữ liệu mẫu. Không commit `.env` hoặc credentials.
 
+Prisma migration dùng `DATABASE_URL_UNPOOLED` (kết nối trực tiếp, hostname Neon không có `-pooler`); ứng dụng dùng `DATABASE_URL` (có thể dùng pooler). Cấu hình cả hai trong môi trường deploy để tránh lỗi advisory lock khi migration qua pooler. Local không có biến riêng sẽ dùng cùng `DATABASE_URL`.
+
 ### Web Push
 
 Chạy `npm run push:keys` một lần rồi lưu public/private key vào
