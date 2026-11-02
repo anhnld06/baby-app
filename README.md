@@ -18,15 +18,19 @@ Màn hình lớn dùng sidebar; điện thoại dùng thanh điều hướng 5 m
 
 - Lần đầu đăng nhập chọn giai đoạn: mang thai, đã có bé hoặc theo dõi sức khỏe mẹ. Khi đang mang thai và chưa có bé, Hôm nay hiển thị hành trình của mẹ.
 - Hôm nay ưu tiên ghi bú/ngủ/tã, hẹn giờ và số liệu trong ngày. Ghi nhanh mở sẵn biểu mẫu; cữ bú gần nhất vẫn hiện khi đã qua nửa đêm.
+- Bấm “Kết thúc” ở đồng hồ bú sẽ dừng và lưu thời gian, rồi mở cữ vừa ghi để bổ sung loại sữa, bên bú và lượng bé uống nếu biết. Có thể để trống ml khi bú mẹ trực tiếp; nếu rời biểu mẫu, thời gian đã ghi vẫn được giữ lại.
+- “Nhịp sinh hoạt của bé” trên Hôm nay tóm tắt bú, ngủ và tã theo 24 giờ gần nhất; cân nặng hiển thị ngày đo thật và chênh lệch hai lần cân. Khoảng ngủ tham khảo AASM theo tuổi chỉ để đối chiếu khi đã ghi đủ giấc. Không tự kết luận bú/ngủ đủ hay thiếu từ nhật ký chưa đầy đủ.
 - “Bàn giao chăm bé” tạo tóm tắt có thời điểm cập nhật và nút sao chép để người dùng tự chia sẻ.
 - Nút quay lại dùng lịch sử thực tế trong ứng dụng, hỗ trợ Back/Forward. Truy cập trực tiếp có đường về mục cha. Chỉnh sửa, lưu và tải thêm lịch sử dùng replace để tránh vòng lặp.
 - Bộ lọc và tìm kiếm cẩm nang lưu trên URL; quay lại từ bài viết giữ nguyên lựa chọn.
 - Nút giọng nói nằm cạnh tiêu đề. Chuyển động ngắn, tôn trọng chế độ giảm chuyển động; OCR chỉ tải thư viện nhận diện khi bắt đầu quét.
 - Trang dự phòng mất mạng cache các tài nguyên tĩnh cần để hiển thị; không cache trang hoặc API sức khỏe.
-- **Tiêm chủng:** lịch hẹn và lịch sử của mẹ/bé nằm cùng một màn hình. Thêm ngày hẹn, chọn “Đã tiêm”, xác nhận ngày thực tế; app tự ghi lịch sử và ngừng nhắc lịch đó. Có thể sửa, bỏ đánh dấu hoặc ghi lần tiêm trước đây.
+- **Tiêm chủng:** hiện sẵn toàn bộ danh sách mũi theo tuổi, có tóm tắt mốc tiếp theo và tên từng mũi. Tích ngay trên mũi để ghi “Đã tiêm hôm nay”, không cần nhập form; mũi vẫn nằm trong danh sách. Sửa ngày/ghi chú sau nếu cần, có thể bỏ tích. Tự nhận diện lần tiêm cũ; lịch hẹn riêng và lịch sử vẫn ở cùng trang.
 - **Nhạc hát ru** trong Của bé: tự gợi ý nhóm 0–6 tháng, 6–12 tháng, 1–3 tuổi hoặc từ 3 tuổi theo hồ sơ đang chọn. Có thể đổi nhóm hoặc xem tất cả bài, kết hợp hát ru tiếng Việt và nhạc nhẹ quốc tế. Nhóm tuổi là cách sắp xếp gợi ý, không phải giới hạn y khoa của bài hát.
 
-**Nhật ký hút sữa:** vào **Của mẹ → Nhật ký hút sữa** (`/mother/pumping`) để bấm **Bắt đầu hút → Kết thúc → nhập lượng sữa → Lưu**, tương tự bấm giờ bú. Cữ đang hút được lưu trên máy chủ, vẫn tiếp tục khi rời trang; khi kết thúc, ứng dụng tự điền thời lượng và mở biểu mẫu lượng sữa. Cữ chưa nhập lượng không làm giảm trung bình ml. Vẫn có thể ghi lại cữ cũ bằng biểu mẫu: thời điểm bắt đầu, thời lượng (tùy chọn), lượng sữa bên trái/phải và ghi chú. Nhập ít nhất một bên; có thể ghi 0 ml, để trống bên không hút. Màn hình có sửa/xóa, tải thêm lịch sử, số cữ, tổng ml và trung bình hôm nay theo múi giờ tài khoản. Cữ hút thuộc hồ sơ mẹ, độc lập với cữ bú và lượng bé uống; cần mạng khi lưu.
+**Nhật ký hút sữa:** bấm giờ ngay trên trang **Hôm nay**, cạnh bấm giờ bú/ngủ, hoặc vào **Của mẹ → Nhật ký hút sữa** (`/mother/pumping`) để bấm **Bắt đầu hút → Kết thúc → nhập lượng sữa → Lưu**, tương tự bấm giờ bú. Cữ đang hút được lưu trên máy chủ, vẫn tiếp tục khi rời trang; khi kết thúc, ứng dụng tự điền thời lượng và mở biểu mẫu lượng sữa. Cữ chưa nhập lượng không làm giảm trung bình ml. Vẫn có thể ghi lại cữ cũ bằng biểu mẫu: thời điểm bắt đầu, thời lượng (tùy chọn), lượng sữa bên trái/phải và ghi chú. Nhập ít nhất một bên; có thể ghi 0 ml, để trống bên không hút. Màn hình có sửa/xóa, tải thêm lịch sử, số cữ, tổng ml và trung bình hôm nay theo múi giờ tài khoản. Cữ hút thuộc hồ sơ mẹ, độc lập với cữ bú và lượng bé uống; cần mạng khi lưu.
+
+Phần **Xu hướng hút sữa** hiển thị 7 ngày trọn vẹn gần nhất (không tính hôm nay), so sánh với 7 ngày trước đó. Phân biệt ngày chưa có dữ liệu, cữ chờ nhập ml và cữ ghi 0 ml; chỉ tính phần trăm khi cả hai giai đoạn có lượng ở mọi ngày, không có cữ thiếu ml và tổng kỳ trước lớn hơn 0. Bảng đối chiếu chỉ lấy “Sữa mẹ bình” của bé đang chọn, không dùng chênh lệch làm kết luận đủ/thiếu hay tồn kho. Có liên kết nhật ký tã và tăng trưởng. Giới hạn diễn giải tham khảo [HSE về nguồn sữa](https://www2.hse.ie/babies-children/breastfeeding/common-challenges/breast-milk-supply/).
 
 Thiết kế trường nhật ký tham khảo [mẫu ghi cữ hút của Intermountain Health](https://intermountainhealthcare.org/ckr-ext/Dcmnt?ncid=520944174) (thời điểm, lượng từng bên, tổng ngày) và [hướng dẫn hút sữa của CDC](https://www.cdc.gov/infant-toddler-nutrition/breastfeeding/pumping-breast-milk.html). Ứng dụng không đặt mục tiêu sản lượng hay tự đánh giá nguồn sữa.
 
@@ -38,9 +42,9 @@ Nhạc hát ru phát trực tiếp bằng file MP3 trong `public/audio/lullabies
 
 ### Cập nhật luồng tiêm chủng
 
-Khi cập nhật bản đã có dữ liệu, chạy `npm run db:generate` và `npm run db:deploy` trước khi khởi động app mới. Migration `20261102070000_unify_vaccination_appointments` giữ các lần tiêm cũ và chuyển ngày hẹn tiếp theo đã lưu thành lịch hẹn riêng.
+Khi cập nhật bản đã có dữ liệu, chạy `npm run db:generate` và `npm run db:deploy` trước khi khởi động app mới. Migration `20261102070000_unify_vaccination_appointments` giữ các lần tiêm cũ và chuyển ngày hẹn tiếp theo đã lưu thành lịch hẹn riêng. Migration `20261102090000_vaccination_checklist_keys` thêm mã mũi tham khảo và ràng buộc duy nhất theo mẹ/bé, không thay đổi dữ liệu cũ. Khi cả hai vợ chồng cùng tích một mũi, chỉ tạo một bản ghi.
 
-Lịch nhắc trên trang chủ, Web Push và file lịch lấy từ ngày hẹn gia đình nhập, không tự tạo lịch theo tuổi. Đánh dấu đã tiêm không thay đổi ngày hẹn ban đầu; hai ngày được lưu riêng. Khi thêm hẹn tiếp theo, số mũi để trống để gia đình tự nhập nếu cần.
+Danh sách theo tuổi tự tính các mốc tháng từ ngày sinh (có xử lý cuối tháng), hiển thị cả mũi đã tiêm và các mũi sau. Mốc TCMR được đối chiếu với [Viện Vệ sinh dịch tễ Trung ương](https://nihe.org.vn/chuyen-mon/tiem-chung-vac-xin/cac-vac-xin-trong-tiem-chung-mo-rong/) ngày 02/11/2026; lịch thực tế theo cơ sở tiêm. Danh mục dịch vụ là tham khảo, tùy loại vắc-xin và tiền sử. Lịch nhắc trên trang chủ, Web Push và file lịch vẫn lấy từ ngày hẹn gia đình nhập; danh sách theo tuổi không tự tạo thông báo. Đánh dấu đã tiêm không thay đổi ngày hẹn ban đầu; hai ngày được lưu riêng. Khi thêm hẹn tiếp theo, số mũi để trống để gia đình tự nhập nếu cần.
 
 File `.ics` tải xuống là bản chụp tại thời điểm xuất. Nếu đã nhập vào lịch điện thoại, thay đổi trong app không tự sửa hoặc xóa sự kiện đã nhập ở đó.
 

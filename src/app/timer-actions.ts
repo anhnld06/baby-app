@@ -1,5 +1,7 @@
 "use server";
 
+import { cookies } from "next/headers";
+import { redirect, RedirectType } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -39,8 +41,16 @@ export async function finishFeedingTimerAction(formData: FormData) {
     orderBy: { startTime: "desc" },
     select: { id: true },
   });
-  if (open) await db.feeding.update({ where: { id: open.id }, data: { endTime: new Date() } });
+  if (!open) return;
+  const result = await db.feeding.updateMany({
+    where: { id: open.id, babyId, ...activeFeedingWhere },
+    data: { endTime: new Date() },
+  });
   refreshTracking();
+  if (result.count) {
+    (await cookies()).set("selectedBabyId", babyId, { sameSite: "lax", path: "/", maxAge: 31_536_000 });
+    redirect(`/tracking/feeding?edit=${open.id}`, RedirectType.replace);
+  }
 }
 
 export async function startSleepTimerAction(formData: FormData) {

@@ -1,3 +1,6 @@
+import { PumpingTrends } from "@/components/pumping-trends";
+import { pumpingTrends, pumpingTrendWindow } from "@/features/pumping/trends";
+import { getSelectedBaby } from "@/lib/data";
 import { PumpingTimer } from "@/components/pumping-timer";
 import { Droplets, UserRound } from "lucide-react";
 import { savePumpingAction, deletePumpingAction } from "@/app/pumping-actions";
@@ -29,12 +32,16 @@ export default async function PumpingPage({ searchParams }: {
   </>;
   const now = new Date();
   const { start, end } = getLocalDayRange(now, user.timezone);
+  const baby = await getSelectedBaby(user.id);
+  const window = pumpingTrendWindow(now, user.timezone);
   const limit = parseHistoryLimit(params.limit);
-  const [history, today, editing, active] = await Promise.all([
+  const [history, today, editing, active, trendEntries, bottles] = await Promise.all([
     db.pumpingEntry.findMany({ where: { motherId: mother.id, isRunning: false }, orderBy: [{ startTime: "desc" }, { id: "desc" }], take: limit + 1 }),
     db.pumpingEntry.findMany({ where: { motherId: mother.id, isRunning: false, startTime: { gte: start, lt: end } } }),
     params.edit ? db.pumpingEntry.findFirst({ where: { id: params.edit, motherId: mother.id, isRunning: false } }) : null,
     db.pumpingEntry.findFirst({ where: { motherId: mother.id, isRunning: true } }),
+    db.pumpingEntry.findMany({ where: { motherId: mother.id, isRunning: false, startTime: { gte: window.start, lt: window.end } } }),
+    baby ? db.feeding.findMany({ where: { babyId: baby.id, type: "BOTTLE_BREAST_MILK", startTime: { gte: window.start, lt: window.end } }, select: { startTime: true, type: true, amountMl: true } }) : [],
   ]);
   const items = history.slice(0, limit);
   const summary = pumpingSummary(today);
@@ -66,6 +73,7 @@ export default async function PumpingPage({ searchParams }: {
       </form>
       <FormActionBar formId="pumping-form" saveAction={savePumpingAction} saveLabel={editing ? (vi ? "Cập nhật" : "Update") : (vi ? "Lưu" : "Save")} cancelHref={editing || params.new === "1" ? "/mother/pumping" : undefined} cancelLabel={cancelLabel} />
     </CollapsibleRecordForm>
+    <PumpingTrends trend={pumpingTrends(now, user.timezone, trendEntries, bottles)} babyName={baby?.name} locale={locale} />
     <h2 className="mb-2 mt-7 text-lg font-semibold">{vi ? "Lịch sử hút sữa" : "Pumping history"}</h2>
     <div className="space-y-2">
       {items.map((item) => <div key={item.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 shadow-sm">

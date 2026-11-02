@@ -10,6 +10,7 @@ import { getSelectedBaby } from "@/lib/data";
 import { db } from "@/lib/db";
 import { toDateTimeLocal } from "@/lib/date";
 import { PageHeader } from "@/components/page-header";
+import { VaccinationChecklist } from "@/components/vaccination-checklist";
 import { BabySwitcher } from "@/components/baby-switcher";
 import { VaccinationActionForm } from "@/components/vaccination-action-form";
 import {
@@ -62,7 +63,7 @@ export default async function VaccinationSchedulePage({
       ? `mother:${mother.id}`
       : (owners[0]?.value ?? "");
   const limit = parseHistoryLimit(params.limit);
-  const [appointments, babyHistory, motherHistory] = await Promise.all([
+  const [appointments, babyHistory, motherHistory, babyChecklistRecords, motherChecklistRecords] = await Promise.all([
     db.vaccinationAppointment.findMany({
       where: {
         OR: [
@@ -87,6 +88,8 @@ export default async function VaccinationSchedulePage({
           take: limit + 1,
         })
       : [],
+    baby ? db.vaccinationRecord.findMany({ where: { babyId: baby.id }, include: { appointment: { select: { id: true } } }, orderBy: { administeredAt: "desc" } }) : [],
+    mother ? db.motherVaccinationRecord.findMany({ where: { motherId: mother.id }, include: { appointment: { select: { id: true } } }, orderBy: { administeredAt: "desc" } }) : [],
   ]);
   const today = toDateTimeLocal(new Date(), user.timezone).slice(0, 10);
   const formatDay = (date: Date) =>
@@ -168,7 +171,7 @@ export default async function VaccinationSchedulePage({
     <>
       <PageHeader
         title="Tiêm chủng"
-        subtitle="Lịch hẹn và các lần đã tiêm, cùng một nơi"
+        subtitle="Xem các mũi sắp tới, tích ngay khi đã tiêm"
         backHref={params.owner === "mother" ? "/mother" : "/baby"}
       />
       <BabySwitcher
@@ -188,6 +191,12 @@ export default async function VaccinationSchedulePage({
         </div>
       ) : (
         <>
+          {baby && mother && <nav aria-label="Chọn lịch tiêm" className="mb-5 flex gap-2">
+            <Link replace scroll={false} href="/vaccination-schedule?owner=baby" aria-current={params.owner !== "mother" ? "page" : undefined} className="rounded-full border px-4 py-3 text-sm aria-[current=page]:bg-secondary aria-[current=page]:text-primary">Của bé</Link>
+            <Link replace scroll={false} href="/vaccination-schedule?owner=mother" aria-current={params.owner === "mother" ? "page" : undefined} className="rounded-full border px-4 py-3 text-sm aria-[current=page]:bg-secondary aria-[current=page]:text-primary">Của mẹ</Link>
+          </nav>}
+          {!editing && !recordEditing && baby && params.owner !== "mother" && <VaccinationChecklist kind="baby" ownerId={baby.id} name={baby.name} birth={baby.dateOfBirth} records={babyChecklistRecords} appointments={pending.filter((item) => item.babyId === baby.id)} today={today} />}
+          {!editing && !recordEditing && mother && (params.owner === "mother" || !baby) && <VaccinationChecklist kind="mother" ownerId={mother.id} name={mother.name} records={motherChecklistRecords} appointments={pending.filter((item) => item.motherId === mother.id)} today={today} />}
           {editing || recordEditing ? (
             <section className="mb-6 rounded-3xl border bg-card p-5">
               <h2 className="mb-4 text-lg font-semibold">
@@ -316,7 +325,7 @@ export default async function VaccinationSchedulePage({
                     <div className="min-w-0 flex-1">
                       <h3 className="break-words font-semibold">
                         {item.vaccineName}
-                        {item.doseNumber ? ` · mũi ${item.doseNumber}` : ""}
+                        {item.doseNumber && !/(mũi|liều)\s*\d+/i.test(item.vaccineName) ? ` · mũi ${item.doseNumber}` : ""}
                       </h3>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {person(item.babyId)} · Hẹn{" "}
@@ -396,7 +405,7 @@ export default async function VaccinationSchedulePage({
               ))}
               {!pending.length && (
                 <p className="rounded-3xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  Chưa có lịch hẹn. Thêm ngày hẹn trên phiếu tiêm khi cần nhé.
+                  Chưa có ngày hẹn riêng. Bạn vẫn có thể xem và tích các mũi trong danh sách theo tuổi ở trên.
                 </p>
               )}
             </div>
@@ -417,7 +426,7 @@ export default async function VaccinationSchedulePage({
                     <div className="min-w-0 flex-1">
                       <h3 className="break-words font-semibold">
                         {item.vaccineName}
-                        {item.doseNumber ? ` · mũi ${item.doseNumber}` : ""}
+                        {item.doseNumber && !/(mũi|liều)\s*\d+/i.test(item.vaccineName) ? ` · mũi ${item.doseNumber}` : ""}
                       </h3>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {item.person} · Đã tiêm {formatDay(item.at)}

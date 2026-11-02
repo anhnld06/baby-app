@@ -254,3 +254,68 @@ test("đổi ngày hẹn và lưu hẹn tiếp theo ngay khi xác nhận", async
   await original.getByRole("button", { name: "Xóa hẹn", exact: true }).click();
   await expect(original).not.toBeVisible();
 });
+
+test("hiện đủ các mũi tiếp theo, tích trực tiếp và sửa ngày sau khi ghi", async ({ page }) => {
+  await login(page);
+  const checklist = page.getByRole("region", { name: /^Danh sách mũi tiêm của/ });
+  await expect(checklist.getByRole("heading", { name: /Lịch tiêm theo tuổi/ })).toBeVisible();
+  await expect(page.locator('[data-schedule-key="5in1-2"]')).toContainText("mũi 2");
+  await expect(page.locator('[data-schedule-key="5in1-3"]')).toContainText("mũi 3");
+  await expect(page.locator('[data-schedule-key="td-7-years"]')).toBeVisible();
+  await expect(page.locator('[data-schedule-key="hepb-birth"]').getByRole("checkbox")).toBeChecked();
+  const row = page.locator('[data-schedule-key="bcg"]');
+  const check = row.getByRole("checkbox");
+  await expect(check).not.toBeChecked();
+  await check.click();
+  await expect(check).toBeChecked();
+  await expect(row).toContainText("Đã tiêm");
+  await expect(page.locator('[data-schedule-key="5in1-2"]').getByRole("checkbox")).not.toBeChecked();
+  await page.reload();
+  await expect(check).toBeChecked();
+  expect((await responseText(page, "/api/export/baby-journal")).split("BCG (lao)").length - 1).toBe(1);
+  await row.getByRole("link", { name: "Sửa ngày / ghi chú" }).click();
+  const edit = page.locator("form").filter({ has: page.getByRole("button", { name: "Lưu thay đổi", exact: true }) });
+  await edit.getByLabel("Ngày tiêm thực tế", { exact: true }).fill(displayDate(actual));
+  await edit.getByRole("button", { name: "Lưu thay đổi", exact: true }).click();
+  await expect(row).toContainText(`Đã tiêm ${displayDate(actual)}`);
+  await row.screenshot({ path: test.info().outputPath("vaccination-checklist-completed.png") });
+  await check.click();
+  await expect(check).not.toBeChecked();
+  expect(await responseText(page, "/api/export/baby-journal")).not.toContain("BCG (lao)");
+});
+
+test("vợ chồng tích cùng mũi trong danh sách không tạo hai lần tiêm", async ({ page, browser }) => {
+  await login(page);
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  try {
+    const second = await context.newPage();
+    await login(second);
+    const selector = '[data-schedule-key="bcg"]';
+    await Promise.all([page.locator(selector).getByRole("checkbox").click(), second.locator(selector).getByRole("checkbox").click()]);
+    await expect(page.locator(selector).getByRole("checkbox")).toBeChecked();
+    await expect(second.locator(selector).getByRole("checkbox")).toBeChecked();
+    expect((await responseText(page, "/api/export/baby-journal")).split("BCG (lao)").length - 1).toBe(1);
+    await page.locator(selector).getByRole("checkbox").click();
+    await expect(page.locator(selector).getByRole("checkbox")).not.toBeChecked();
+  } finally { await context.close(); }
+});
+
+
+test("tích mũi có sẵn cũng hoàn tất lịch hẹn tương ứng và ngừng nhắc", async ({ page }) => {
+  await login(page);
+  const card = await addAppointment(page, "BCG (lao)");
+  const id = (await card.getAttribute("data-appointment"))!;
+  const row = page.locator('[data-schedule-key="bcg"]');
+  await expect(row).toContainText("Đã có hẹn");
+  await row.getByRole("checkbox").click();
+  await expect(row.getByRole("checkbox")).toBeChecked();
+  await expect(card).not.toBeVisible();
+  expect(await responseText(page, "/api/calendar")).not.toContain(`vaccination-appointment-${id}`);
+  expect((await responseText(page, "/api/export/baby-journal")).split("BCG (lao)").length - 1).toBe(1);
+  await row.getByRole("checkbox").click();
+  await expect(row.getByRole("checkbox")).not.toBeChecked();
+  await expect(card).toBeVisible();
+  page.once("dialog", (dialog) => dialog.accept());
+  await card.getByRole("button", { name: "Xóa hẹn", exact: true }).click();
+  await expect(card).not.toBeVisible();
+});

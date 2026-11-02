@@ -12,7 +12,7 @@ cùng xem nhật ký của bé và hồ sơ của mẹ. Không cần tài khoả
 - Khi mở lại trang Hôm nay hoặc quay lại ứng dụng, dữ liệu được cập nhật. Khi trang đang hiện, ứng dụng làm mới định kỳ; đây không phải đồng bộ tức thời.
 - Bật Ghi nhanh khi mất mạng trong Hồ sơ nếu cần lưu tạm bú/ngủ/tã trên thiết bị.
 - Tìm cẩm nang, mở bài rồi quay lại vẫn giữ bộ lọc và từ khóa.
-- Tiêm chủng chỉ có một nơi: lưu ngày hẹn → chọn Đã tiêm → xác nhận ngày thực tế. Lịch đó chuyển vào lịch sử và ngừng được nhắc. Nếu bấm nhầm, Bỏ đánh dấu đưa lịch về chờ tiêm; hẹn tiếp theo đã tạo vẫn được giữ để bạn tự sửa/xóa nếu cần.
+- Tiêm chủng mở sẵn danh sách theo tuổi và tên các mũi ở mốc tiếp theo. Tích tại từng mũi để ghi đã tiêm hôm nay, không mở form; các mũi sau vẫn hiện, mũi đã tiêm vẫn giữ trong danh sách kèm ngày. Sửa ngày / ghi chú khi cần, bỏ tích nếu nhầm. Dữ liệu cũ được nhận diện và không tự tạo lại. Ngày hẹn riêng vẫn lưu được ở phần Lịch hẹn; nếu đánh dấu mũi có hẹn tương ứng thì lịch đó ngừng được nhắc. Lịch tuổi là tham khảo, đối chiếu theo phiếu tiêm và cơ sở tiêm.
 - Trong Của bé, mở Nhạc hát ru để nghe gợi ý theo nhóm tuổi của hồ sơ đang chọn. Chọn bài để mở trình phát; dùng Dừng phát hoặc hẹn dừng 10/20/30 phút. Hẹn dừng tính cho lượt nghe hiện tại và được giữ khi đổi bài; rời trang sẽ đóng trình phát. Nhạc MP3 phát trực tiếp trong ứng dụng, có bật/tắt lặp bài và nút tải MP3 để nghe bằng trình nghe nhạc của thiết bị khi ngoại tuyến. Các bản thu nằm trong `public/audio/lullabies/`, có ghi công và giấy phép từng bài.
 
 ## Điều hướng nhất quán

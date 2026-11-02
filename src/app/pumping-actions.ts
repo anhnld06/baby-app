@@ -25,6 +25,7 @@ export async function savePumpingAction(formData: FormData) {
     await db.pumpingEntry.create({ data: { ...data, motherId: mother.id } });
   }
   revalidatePath("/mother/pumping");
+  revalidatePath("/");
   redirect("/mother/pumping", RedirectType.replace);
 }
 
@@ -34,6 +35,7 @@ export async function deletePumpingAction(formData: FormData) {
     where: { id: String(formData.get("id") ?? ""), mother: { userId: user.id } },
   });
   revalidatePath("/mother/pumping");
+  revalidatePath("/");
   redirect("/mother/pumping", RedirectType.replace);
 }
 
@@ -48,6 +50,7 @@ export async function startPumpingTimerAction() {
     skipDuplicates: true,
   });
   revalidatePath("/mother/pumping");
+  revalidatePath("/");
 }
 
 export async function finishPumpingTimerAction(formData: FormData) {
@@ -63,5 +66,6 @@ export async function finishPumpingTimerAction(formData: FormData) {
     data: { isRunning: false, durationMinutes },
   });
   revalidatePath("/mother/pumping");
+  revalidatePath("/");
   if (result.count) redirect(`/mother/pumping?edit=${open.id}`, RedirectType.replace);
 }

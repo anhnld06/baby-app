@@ -3,17 +3,17 @@ import {
   Baby,
   BedDouble,
   ChevronRight,
-  Droplets,
   Shell,
   Sparkles,
-  Weight,
   BookHeart,
   Moon,
   HeartPulse,
   ArrowUpRight,
 } from "lucide-react";
+import { BabyDailySummary } from "@/components/baby-daily-summary";
 import { BabySwitcher } from "@/components/baby-switcher";
 import { PageHeader } from "@/components/page-header";
+import { PumpingTimer } from "@/components/pumping-timer";
 import { QuickTimers } from "@/components/quick-timers";
 import { TimelineList } from "@/components/timeline-list";
 import { CareHandover } from "@/components/care-handover";
@@ -45,15 +45,17 @@ export default async function DashboardPage() {
   const [babies, selectedBabyId, mother] = await Promise.all([
     listBabies(user.id),
     getSelectedBabyId(),
-    db.mother.findUnique({ where: { userId: user.id }, include: { pregnancies: { orderBy: { createdAt: "desc" } } } }),
+    db.mother.findUnique({ where: { userId: user.id }, include: { pregnancies: { orderBy: { createdAt: "desc" } }, pumpingEntries: { where: { isRunning: true }, select: { id: true, startTime: true }, take: 1 } } }),
   ]);
+  const openPumping = mother?.pumpingEntries[0];
+  const pumpingTimer = mother ? <PumpingTimer compact locale={locale} active={openPumping ? { id: openPumping.id, startTime: openPumping.startTime.toISOString() } : undefined} /> : <Link href="/profile/mother" className="mt-2 block rounded-2xl bg-card p-3 text-sm text-primary shadow-sm">{locale === "vi" ? "Thêm hồ sơ mẹ để bấm giờ hút sữa" : "Add mother profile to use pumping timer"}</Link>;
   const baby = pickSelectedBaby(babies, selectedBabyId);
   if (!baby) {
     const nextVaccination = mother ? await db.vaccinationAppointment.findFirst({
       where: { motherId: mother.id, motherVaccinationRecordId: null, vaccinationRecordId: null },
       orderBy: { scheduledAt: "asc" },
     }) : null;
-    return <FamilyStart mother={mother} name={user.name} nextVaccination={nextVaccination} />;
+    return <><FamilyStart mother={mother} name={user.name} nextVaccination={nextVaccination} />{pumpingTimer}</>;
   }
   const now = new Date();
   const { start, end } = getLocalDayRange(now, user.timezone);
@@ -135,11 +137,6 @@ export default async function DashboardPage() {
     (item) => item.type === "STOOL" || item.type === "BOTH",
   ).length;
   const sleepMinutes = totalDurationWithinRangeMinutes(sleeps, start, end, now);
-  const ago = (date: Date) => {
-    const minutes = Math.max(0, Math.floor((now.getTime() - date.getTime()) / 60_000));
-    if (minutes < 1) return "Vừa xong";
-    return `${formatDuration(minutes, locale)} trước`;
-  };
   const clock = (date: Date) => new Intl.DateTimeFormat(locale, { timeZone: user.timezone, hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }).format(date);
   const summary = [
     `${baby.name} · ${formatAge(baby.dateOfBirth, now, locale)}`,
@@ -187,32 +184,9 @@ export default async function DashboardPage() {
         </div>
       </section>
       <QuickTimers babyId={baby.id} locale={locale} activeFeedingStartedAt={activeFeeding?.startTime.toISOString()} activeSleepStartedAt={activeSleep?.startTime.toISOString()} />
+      {pumpingTimer}
 
-      <section className="mt-7" aria-labelledby="today-title">
-        <h2 id="today-title" className="mb-3 text-lg font-semibold">Hôm nay của con</h2>
-        <div className="grid grid-cols-2 gap-3">
-          <Link href="/tracking/feeding" className="rounded-3xl border border-border/50 bg-card p-4 shadow-sm transition-colors hover:bg-secondary/40">
-            <span className="flex items-center gap-2 text-xs text-muted-foreground"><Baby className="size-4 text-orange-600" /> Cữ bú gần nhất</span>
-            <p className="mt-3 text-xl font-semibold tabular-nums">{lastFeed ? ago(lastFeed.startTime) : "Chưa ghi"}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{feedings.length} cữ đã ghi hôm nay</p>
-          </Link>
-          <Link href="/tracking/sleep" className="rounded-3xl border border-border/50 bg-card p-4 shadow-sm transition-colors hover:bg-secondary/40">
-            <span className="flex items-center gap-2 text-xs text-muted-foreground"><BedDouble className="size-4 text-indigo-500" /> Tổng giấc ngủ</span>
-            <p className="mt-3 text-xl font-semibold tabular-nums">{formatDuration(sleepMinutes, locale)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{activeSleep ? "Có giấc ngủ đang bấm giờ" : `${sleeps.length} giấc đã ghi hôm nay`}</p>
-          </Link>
-          <Link href="/tracking/diaper" className="rounded-3xl border border-border/50 bg-card p-4 shadow-sm transition-colors hover:bg-secondary/40">
-            <span className="flex items-center gap-2 text-xs text-muted-foreground"><Droplets className="size-4 text-emerald-600" /> Thay tã</span>
-            <p className="mt-3 text-xl font-semibold tabular-nums">{diapers.length} lần</p>
-            <p className="mt-1 text-xs text-muted-foreground">{wet} tã ướt · {stool} tã phân</p>
-          </Link>
-          <Link href="/tracking/growth" className="rounded-3xl border border-border/50 bg-card p-4 shadow-sm transition-colors hover:bg-secondary/40">
-            <span className="flex items-center gap-2 text-xs text-muted-foreground"><Weight className="size-4 text-sky-600" /> Số đo gần nhất</span>
-            <p className="mt-3 text-xl font-semibold tabular-nums">{growth[0]?.weightKg != null ? `${growth[0].weightKg} kg` : growth[0]?.heightCm != null ? `${growth[0].heightCm} cm` : "Chưa ghi"}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{growth[0] ? new Intl.DateTimeFormat(locale, { timeZone: user.timezone, day: "2-digit", month: "2-digit" }).format(growth[0].measuredAt) : "Thêm cân nặng hoặc chiều cao"}</p>
-          </Link>
-        </div>
-      </section>
+      <BabyDailySummary baby={baby} now={now} locale={locale} timeZone={user.timezone} />
       <UpcomingVaccination appointment={nextAppointment} />
       <CareHandover key={baby.id} summary={summary} />
       {pregnancy?.pregnancyStatus === "PREGNANT" && <Link href="/mother/pregnancy" className="mt-4 flex items-center gap-3 rounded-2xl border border-border/60 bg-card p-4"><HeartPulse className="size-5 text-primary" /><span className="flex-1 text-sm font-medium">Tiếp tục theo dõi thai kỳ của mẹ</span><ChevronRight className="size-4" /></Link>}

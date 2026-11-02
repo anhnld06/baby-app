@@ -318,6 +318,7 @@ model PregnancyCheckup {
 model MotherVaccinationRecord {
   id             String   @id @default(cuid())
   motherId       String
+  scheduleKey    String?
   vaccineName    String
   doseNumber     Int?
   administeredAt DateTime
@@ -329,6 +330,7 @@ model MotherVaccinationRecord {
   appointment    VaccinationAppointment?
 
   @@index([motherId, administeredAt])
+  @@unique([motherId, scheduleKey])
 }
 
 model MotherMedicalVisit {
@@ -529,6 +531,7 @@ model OfflineMutationReceipt {
 model VaccinationRecord {
   id             String       @id @default(cuid())
   babyId         String
+  scheduleKey    String?
   vaccineName    String
   doseNumber     Int?
   administeredAt DateTime
@@ -543,6 +546,7 @@ model VaccinationRecord {
   appointment    VaccinationAppointment?
 
   @@index([babyId, administeredAt])
+  @@unique([babyId, scheduleKey])
 }
 
 model VaccinationAppointment {

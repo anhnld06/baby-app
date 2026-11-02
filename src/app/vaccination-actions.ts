@@ -6,6 +6,8 @@ import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { BABY_SCHEDULE, MOTHER_PRENATAL_SCHEDULE } from "@/features/vaccination/schedule";
+import { findChecklistRecord, recordMatchesEntry, scheduleEntry } from "@/features/vaccination/checklist";
 import { toDateTimeLocal } from "@/lib/date";
 import {
   appointmentSchema,
@@ -42,13 +44,12 @@ async function lockedAppointment(
   userId: string,
 ) {
   const where = { id, OR: [{ baby: { userId } }, { mother: { userId } }] };
-  if (
-    !(await tx.vaccinationAppointment.findFirst({
-      where,
-      select: { id: true },
-    }))
-  )
-    throw new Error("Không tìm thấy lịch hẹn.");
+  const original = await tx.vaccinationAppointment.findFirst({ where });
+  if (!original) throw new Error("Không tìm thấy lịch hẹn.");
+  if (original.babyId)
+    await tx.$queryRaw`SELECT "id" FROM "Baby" WHERE "id" = ${original.babyId} FOR UPDATE`;
+  else
+    await tx.$queryRaw`SELECT "id" FROM "Mother" WHERE "id" = ${original.motherId} FOR UPDATE`;
   await tx.$queryRaw`SELECT "id" FROM "VaccinationAppointment" WHERE "id" = ${id} FOR UPDATE`;
   const item = await tx.vaccinationAppointment.findFirst({ where });
   if (!item) throw new Error("Không tìm thấy lịch hẹn.");
@@ -62,6 +63,7 @@ function checkActualDate(value: string, timezone: string) {
 
 async function mutation(
   run: () => Promise<unknown>,
+  navigate = true,
 ): Promise<VaccinationFormState> {
   try {
     await run();
@@ -83,7 +85,8 @@ async function mutation(
     };
   }
   revalidatePath("/", "layout");
-  redirect("/vaccination-schedule", RedirectType.replace);
+  if (navigate) redirect("/vaccination-schedule", RedirectType.replace);
+  return {};
 }
 
 export async function saveAppointment(
@@ -154,7 +157,14 @@ export async function completeAppointment(
     await db.$transaction(async (tx) => {
       const item = await lockedAppointment(tx, id, user.id);
       if (item.vaccinationRecordId || item.motherVaccinationRecordId) return;
+      const kind = item.babyId ? "baby" : "mother";
+      const entry = (kind === "baby" ? BABY_SCHEDULE : MOTHER_PRENATAL_SCHEDULE).find((candidate) => recordMatchesEntry(item, candidate));
+      const existingRecords = item.babyId
+        ? await tx.vaccinationRecord.findMany({ where: { babyId: item.babyId } })
+        : await tx.motherVaccinationRecord.findMany({ where: { motherId: item.motherId! } });
+      const existing = entry ? findChecklistRecord<(typeof existingRecords)[number]>(existingRecords, entry) : undefined;
       const details = {
+        ...(entry ? { scheduleKey: entry.key } : {}),
         vaccineName: item.vaccineName,
         doseNumber: item.doseNumber,
         administeredAt: dateFromInput(data.administeredAt),
@@ -162,7 +172,7 @@ export async function completeAppointment(
         notes: data.notes ?? null,
       };
       if (item.babyId) {
-        const record = await tx.vaccinationRecord.create({
+        const record = existing ?? await tx.vaccinationRecord.create({
           data: { ...details, babyId: item.babyId },
         });
         await tx.vaccinationAppointment.update({
@@ -170,7 +180,7 @@ export async function completeAppointment(
           data: { vaccinationRecordId: record.id },
         });
       } else {
-        const record = await tx.motherVaccinationRecord.create({
+        const record = existing ?? await tx.motherVaccinationRecord.create({
           data: { ...details, motherId: item.motherId! },
         });
         await tx.vaccinationAppointment.update({
@@ -264,4 +274,56 @@ export async function savePastVaccination(
       }
     });
   });
+}
+
+// A checkbox writes a real journal record, not a separate completion flag.
+export async function toggleScheduledDose(
+  kind: "baby" | "mother",
+  ownerId: string,
+  key: string,
+  done: boolean,
+  ..._submission: [VaccinationFormState, FormData]
+): Promise<VaccinationFormState> {
+  void _submission;
+  const user = await requireUser();
+  return mutation(async () => {
+    const entry = scheduleEntry(kind, key);
+    if (!entry) throw new Error("Không tìm thấy lần tiêm.");
+    await db.$transaction(async (tx) => {
+      await ownerFor(tx, `${kind}:${ownerId}`, user.id);
+      // Serialize both spouses marking the same child's checklist.
+      if (kind === "baby")
+        await tx.$queryRaw`SELECT "id" FROM "Baby" WHERE "id" = ${ownerId} FOR UPDATE`;
+      else
+        await tx.$queryRaw`SELECT "id" FROM "Mother" WHERE "id" = ${ownerId} FOR UPDATE`;
+      const records = kind === "baby"
+        ? await tx.vaccinationRecord.findMany({ where: { babyId: ownerId } })
+        : await tx.motherVaccinationRecord.findMany({ where: { motherId: ownerId } });
+      const record = findChecklistRecord<(typeof records)[number]>(records, entry);
+      if (!done) {
+        if (!record) return;
+        // SetNull on the relation restores a linked appointment to pending.
+        if (kind === "baby") await tx.vaccinationRecord.delete({ where: { id: record.id } });
+        else await tx.motherVaccinationRecord.delete({ where: { id: record.id } });
+        return;
+      }
+      if (record) return;
+      const details = {
+        scheduleKey: entry.key,
+        vaccineName: entry.label,
+        doseNumber: entry.doseNumber,
+        administeredAt: dateFromInput(toDateTimeLocal(new Date(), user.timezone).slice(0, 10)),
+      };
+      const created = kind === "baby"
+        ? await tx.vaccinationRecord.create({ data: { ...details, babyId: ownerId } })
+        : await tx.motherVaccinationRecord.create({ data: { ...details, motherId: ownerId } });
+      const pending = await tx.vaccinationAppointment.findMany({ where: {
+        ...(kind === "baby" ? { babyId: ownerId } : { motherId: ownerId }),
+        vaccinationRecordId: null,
+        motherVaccinationRecordId: null,
+      }, orderBy: { scheduledAt: "asc" } });
+      const appointment = pending.find((item) => recordMatchesEntry(item, entry));
+      if (appointment) await tx.vaccinationAppointment.update({ where: { id: appointment.id }, data: kind === "baby" ? { vaccinationRecordId: created.id } : { motherVaccinationRecordId: created.id } });
+    });
+  }, false);
 }

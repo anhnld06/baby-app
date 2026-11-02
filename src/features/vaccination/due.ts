@@ -1,3 +1,4 @@
+import { recordMatchesEntry, babyMilestoneDate } from "./checklist";
 import { BABY_SCHEDULE, MOTHER_PRENATAL_SCHEDULE, type VaccineProgram, type VaccineTier } from "@/features/vaccination/schedule";
 
 export type DueStatus = "UPCOMING" | "DUE" | "OVERDUE" | "DONE";
@@ -23,13 +24,6 @@ function statusFor(dueDate: Date, done: boolean, now: Date): DueStatus {
   return "UPCOMING";
 }
 
-function matches(vaccineName: string, doseNumber: number | null, matchNames: string[], entryDose: number) {
-  const normalized = vaccineName.toLowerCase();
-  const nameMatches = matchNames.some((name) => normalized.includes(name));
-  const doseMatches = doseNumber === entryDose || (doseNumber === null && entryDose === 1);
-  return nameMatches && doseMatches;
-}
-
 export function computeMotherDue(
   lastMenstrualPeriod: Date | null | undefined,
   records: { vaccineName: string; doseNumber: number | null }[],
@@ -38,7 +32,7 @@ export function computeMotherDue(
   if (!lastMenstrualPeriod) return [];
   return MOTHER_PRENATAL_SCHEDULE.map((entry) => {
     const dueDate = new Date(lastMenstrualPeriod.getTime() + entry.dueByWeek * 7 * dayMs);
-    const done = records.some((record) => matches(record.vaccineName, record.doseNumber, entry.matchNames, entry.doseNumber));
+    const done = records.some((record) => recordMatchesEntry(record, entry));
     return {
       key: entry.key,
       label: entry.label,
@@ -58,8 +52,8 @@ export function computeBabyDue(
   now = new Date(),
 ): DueItem[] {
   return BABY_SCHEDULE.map((entry) => {
-    const dueDate = new Date(dateOfBirth.getTime() + entry.dueAgeDays * dayMs);
-    const done = records.some((record) => matches(record.vaccineName, record.doseNumber, entry.matchNames, entry.doseNumber));
+    const dueDate = babyMilestoneDate(dateOfBirth, entry);
+    const done = records.some((record) => recordMatchesEntry(record, entry));
     return {
       key: entry.key,
       label: entry.label,

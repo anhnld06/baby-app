@@ -157,6 +157,11 @@ export default async function FeedingPage({
                 defaultValue={editing?.rightBreastDuration ?? ""}
               />
             </div>
+            <p className="text-sm text-muted-foreground">
+              {locale === "vi"
+                ? "Bú mẹ trực tiếp: ghi bên bú và thời gian, để trống ml nếu không biết. Bú bình: chọn loại sữa và nhập lượng bé thực tế uống."
+                : "Direct breastfeeding: record the side and duration; leave ml blank if unknown. Bottle feeding: select the milk type and enter the amount actually consumed."}
+            </p>
             <div className="grid min-w-0 gap-4 sm:grid-cols-2">
               <Field
                 name="amountMl"
