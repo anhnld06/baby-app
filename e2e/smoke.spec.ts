@@ -85,6 +85,7 @@ test("lưu tạm cữ bú khi mất mạng", async ({ context, page }) => {
   await setting.getByRole("button", { name: "Bật" }).click();
 
   await page.goto("/tracking/feeding");
+  await expect(page.locator("main h1")).toBeVisible();
   test.skip(
     (await page.getByRole("button", { name: "Ghi cữ bú" }).count()) === 0,
     "Cần có hồ sơ bé để kiểm thử ghi cữ bú.",

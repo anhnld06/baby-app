@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, FileHeart, HeartPulse, ShieldCheck, Syringe, UserRound } from "lucide-react";
+import { CalendarDays, Droplets, FileHeart, HeartPulse, ShieldCheck, Syringe, UserRound } from "lucide-react";
 import { FeatureLink } from "@/components/feature-link";
 import { PageHeader } from "@/components/page-header";
 import { gestationalAge } from "@/features/mother/insights";
@@ -48,12 +48,12 @@ export default async function MotherHubPage() {
         <p className="mt-2 text-sm leading-6 opacity-85">Dữ liệu của mẹ được tách hoàn toàn khỏi nhật ký của bé.</p>
       </section>
       <div className="space-y-3">
+        <FeatureLink href="/mother/pumping" icon={Droplets} title="Nhật ký hút sữa" description="Ghi cữ hút, lượng sữa từng bên và tổng lượng theo ngày." tone="blue" />
         <FeatureLink href="/mother/cycle" icon={CalendarDays} title="Chu kỳ kinh" description="Ngày bắt đầu, kết thúc, lượng kinh và triệu chứng." meta={`${mother._count.menstrualCycles} chu kỳ đã ghi`} tone="rose" />
         <FeatureLink href="/mother/pregnancy" icon={HeartPulse} title="Theo dõi thai kỳ" description="Tuổi thai, ngày dự sinh và lịch sử khám thai." meta={age ? `Hiện tại khoảng ${age.weeks} tuần ${age.days} ngày` : `${pregnancy?._count.checkups ?? 0} lần khám đã ghi`} tone="violet" />
         <FeatureLink href="/mother/medical" icon={FileHeart} title="Sổ khám bệnh của mẹ" description="Lý do khám, chẩn đoán, điều trị và lịch tái khám." meta={`${mother._count.medicalVisits} lượt khám`} tone="amber" />
         <FeatureLink href="/mother/insurance" icon={ShieldCheck} title="Bảo hiểm của mẹ" description="BHYT, bảo hiểm tư nhân, thời hạn và nơi đăng ký." meta={`${mother._count.insurancePolicies} thẻ / hợp đồng`} tone="emerald" />
-        <FeatureLink href="/mother/vaccination" icon={Syringe} title="Mũi tiêm của mẹ" description="Uốn ván và các mũi tiêm trong thai kỳ." meta={`${mother._count.vaccinationRecords} mũi đã ghi`} tone="blue" />
-        <FeatureLink href="/vaccination-schedule" icon={Bell} title="Lịch tiêm nhắc" description="Mũi nào đến hạn hoặc trễ hạn, đối chiếu lịch chuẩn." tone="rose" />
+        <FeatureLink href="/vaccination-schedule?owner=mother" icon={Syringe} title="Tiêm chủng của mẹ" description="Lịch hẹn và các lần đã tiêm, cùng một nơi." meta={`${mother._count.vaccinationRecords} mũi đã ghi`} tone="blue" />
       </div>
     </>
   );

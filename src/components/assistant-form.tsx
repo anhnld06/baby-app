@@ -1,7 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Bot, ExternalLink, Send, ShieldCheck } from "lucide-react";
+import { Bot, ExternalLink, LoaderCircle, Send, ShieldCheck } from "lucide-react";
+import { evidenceLabels } from "@/features/knowledge/labels";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -35,16 +36,22 @@ export function AssistantForm({
   } = useForm<Values>({ resolver: zodResolver(schema) });
   async function submit(values: Values) {
     setFailed(false);
-    const response = await fetch("/api/assistant", {
+    setAnswer(undefined);
+    try {
+      const response = await fetch("/api/assistant", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...values, babyId, locale }),
+      signal: AbortSignal.timeout(30_000),
     });
     if (!response.ok) {
       setFailed(true);
       return;
     }
     setAnswer((await response.json()) as AssistantAnswer);
+    } catch {
+      setFailed(true);
+    }
   }
   return (
     <div className="space-y-4">
@@ -54,18 +61,21 @@ export function AssistantForm({
       >
         <Textarea
           {...register("question")}
+          aria-label={labels.placeholder}
+          aria-invalid={Boolean(errors.question)}
+          aria-describedby={errors.question ? "question-error" : undefined}
           placeholder={labels.placeholder}
           className="min-h-28 resize-none border-0 bg-transparent text-base shadow-none focus-visible:ring-0"
         />
         {errors.question && (
-          <p className="px-2 text-xs text-destructive">
+          <p id="question-error" role="alert" className="px-2 text-xs text-destructive">
             {errors.question.message}
           </p>
         )}
         <div className="mt-3 flex justify-end">
           <Button type="submit" disabled={isSubmitting} className="h-11 rounded-xl">
-            <Send className="size-4" />
-            {isSubmitting ? "…" : labels.ask}
+            {isSubmitting ? <LoaderCircle className="size-4 animate-spin" /> : <Send className="size-4" />}
+            {isSubmitting ? "Đang tìm thông tin…" : labels.ask}
           </Button>
         </div>
       </form>
@@ -83,8 +93,8 @@ export function AssistantForm({
             <span className="grid size-9 place-items-center rounded-xl bg-secondary text-primary">
               <Bot className="size-4" />
             </span>
-            <BadgeLike>{answer.evidenceLevel}</BadgeLike>
-            <BadgeLike>{answer.safetyLevel}</BadgeLike>
+            <BadgeLike>{evidenceLabels[answer.evidenceLevel] ?? "Chưa đủ dữ liệu"}</BadgeLike>
+            <BadgeLike>{{ NORMAL: "Thông tin tham khảo", MONITOR: "Cần theo dõi", CONTACT_DOCTOR: "Trao đổi với bác sĩ", URGENT: "Cần khám khẩn", EMERGENCY: "Cấp cứu" }[answer.safetyLevel]}</BadgeLike>
           </div>
           <p className="whitespace-pre-wrap text-[15px] leading-7">
             {answer.answer}

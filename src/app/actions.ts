@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, RedirectType } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { zonedDateTimeToUtc } from "@/lib/date";
 import { db } from "@/lib/db";
@@ -98,14 +98,15 @@ export async function saveMotherAction(formData: FormData) {
     });
   }
   revalidatePath("/", "layout");
-  redirect("/profile");
+  const next = formData.get("next");
+  redirect(next === "pregnancy" ? "/profile/pregnancy" : "/profile", RedirectType.replace);
 }
 
 export async function deleteMotherAction() {
   const user = await requireUser();
   await db.mother.deleteMany({ where: { userId: user.id } });
   revalidatePath("/profile");
-  redirect("/profile");
+  redirect("/profile", RedirectType.replace);
 }
 
 export async function savePregnancyAction(formData: FormData) {
@@ -132,8 +133,8 @@ export async function savePregnancyAction(formData: FormData) {
       await transaction.pregnancy.create({ data: { ...data, id: undefined } });
     }
   });
-  revalidatePath("/profile");
-  redirect("/profile");
+  revalidatePath("/", "layout");
+  redirect("/mother/pregnancy", RedirectType.replace);
 }
 
 export async function deletePregnancyAction(formData: FormData) {
@@ -141,7 +142,7 @@ export async function deletePregnancyAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   await db.pregnancy.deleteMany({ where: { id, mother: { userId: user.id } } });
   revalidatePath("/profile");
-  redirect("/profile");
+  redirect("/profile", RedirectType.replace);
 }
 
 export async function saveMenstrualCycleAction(formData: FormData) {
@@ -159,7 +160,7 @@ export async function saveMenstrualCycleAction(formData: FormData) {
     });
   else await db.menstrualCycle.create({ data: { ...data, id: undefined } });
   revalidatePath("/mother/cycle");
-  redirect("/mother/cycle");
+  redirect("/mother/cycle", RedirectType.replace);
 }
 
 export async function deleteMenstrualCycleAction(formData: FormData) {
@@ -241,7 +242,7 @@ export async function savePregnancyCheckupAction(formData: FormData) {
     });
   else await db.pregnancyCheckup.create({ data: { ...data, id: undefined, source } });
   revalidatePath("/mother/pregnancy");
-  redirect("/mother/pregnancy");
+  redirect("/mother/pregnancy", RedirectType.replace);
 }
 
 export async function deletePregnancyCheckupAction(formData: FormData) {
@@ -267,15 +268,15 @@ export async function saveMotherVaccinationAction(formData: FormData) {
       data: { ...data, id: undefined },
     });
   else await db.motherVaccinationRecord.create({ data: { ...data, id: undefined } });
-  revalidatePath("/mother/vaccination");
-  redirect("/mother/vaccination");
+  revalidatePath("/", "layout");
+  redirect("/vaccination-schedule?owner=mother", RedirectType.replace);
 }
 
 export async function deleteMotherVaccinationAction(formData: FormData) {
   const user = await requireUser();
   const id = String(formData.get("id") ?? "");
   await db.motherVaccinationRecord.deleteMany({ where: { id, mother: { userId: user.id } } });
-  revalidatePath("/mother/vaccination");
+  revalidatePath("/", "layout");
 }
 
 export async function saveMotherMedicalVisitAction(formData: FormData) {
@@ -287,7 +288,7 @@ export async function saveMotherMedicalVisitAction(formData: FormData) {
     await db.motherMedicalVisit.updateMany({ where: { id: data.id, motherId: mother.id }, data: { ...data, id: undefined } });
   else await db.motherMedicalVisit.create({ data: { ...data, id: undefined } });
   revalidatePath("/mother/medical");
-  redirect("/mother/medical");
+  redirect("/mother/medical", RedirectType.replace);
 }
 
 export async function deleteMotherMedicalVisitAction(formData: FormData) {
@@ -305,7 +306,7 @@ export async function saveBabyMedicalVisitAction(formData: FormData) {
     await db.babyMedicalVisit.updateMany({ where: { id: data.id, babyId: data.babyId }, data: { ...data, id: undefined } });
   else await db.babyMedicalVisit.create({ data: { ...data, id: undefined } });
   revalidatePath("/baby/medical");
-  redirect("/baby/medical");
+  redirect("/baby/medical", RedirectType.replace);
 }
 
 export async function deleteBabyMedicalVisitAction(formData: FormData) {
@@ -324,7 +325,7 @@ export async function saveMotherInsuranceAction(formData: FormData) {
     await db.motherInsurancePolicy.updateMany({ where: { id: data.id, motherId: mother.id }, data: { ...data, id: undefined } });
   else await db.motherInsurancePolicy.create({ data: { ...data, id: undefined } });
   revalidatePath("/mother/insurance");
-  redirect("/mother/insurance");
+  redirect("/mother/insurance", RedirectType.replace);
 }
 
 export async function deleteMotherInsuranceAction(formData: FormData) {
@@ -342,7 +343,7 @@ export async function saveBabyInsuranceAction(formData: FormData) {
     await db.babyInsurancePolicy.updateMany({ where: { id: data.id, babyId: data.babyId }, data: { ...data, id: undefined } });
   else await db.babyInsurancePolicy.create({ data: { ...data, id: undefined } });
   revalidatePath("/baby/insurance");
-  redirect("/baby/insurance");
+  redirect("/baby/insurance", RedirectType.replace);
 }
 
 export async function deleteBabyInsuranceAction(formData: FormData) {
@@ -380,8 +381,9 @@ export async function saveBabyAction(formData: FormData) {
       update: coverImage,
     });
   }
+  (await cookies()).set("selectedBabyId", babyId, { sameSite: "lax", path: "/", maxAge: 31_536_000 });
   revalidatePath("/", "layout");
-  redirect("/profile");
+  redirect(data.id ? "/profile" : "/", RedirectType.replace);
 }
 
 export async function deleteBabyAction(formData: FormData) {
@@ -389,7 +391,7 @@ export async function deleteBabyAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   await db.baby.deleteMany({ where: { id, userId: user.id } });
   revalidatePath("/", "layout");
-  redirect("/profile");
+  redirect("/profile", RedirectType.replace);
 }
 
 export async function saveFeedingAction(formData: FormData) {
@@ -405,7 +407,7 @@ export async function saveFeedingAction(formData: FormData) {
     await db.feeding.create({ data: { ...data, id: undefined } });
   }
   revalidatePath("/", "layout");
-  redirect("/tracking/feeding");
+  redirect("/tracking/feeding", RedirectType.replace);
 }
 
 export async function deleteFeedingAction(formData: FormData) {
@@ -426,7 +428,7 @@ export async function saveSleepAction(formData: FormData) {
     });
   else await db.sleepEntry.create({ data: { ...data, id: undefined } });
   revalidatePath("/", "layout");
-  redirect("/tracking/sleep");
+  redirect("/tracking/sleep", RedirectType.replace);
 }
 
 export async function deleteSleepAction(formData: FormData) {
@@ -447,7 +449,7 @@ export async function saveDiaperAction(formData: FormData) {
     });
   else await db.diaperEntry.create({ data: { ...data, id: undefined } });
   revalidatePath("/", "layout");
-  redirect("/tracking/diaper");
+  redirect("/tracking/diaper", RedirectType.replace);
 }
 
 export async function deleteDiaperAction(formData: FormData) {
@@ -478,7 +480,7 @@ export async function saveGrowthAction(formData: FormData) {
   await db.growthAssessment.deleteMany({ where: { growthEntryId } });
   await refreshWhoGrowthAssessment(growthEntryId).catch(() => undefined);
   revalidatePath("/", "layout");
-  redirect("/tracking/growth");
+  redirect("/tracking/growth", RedirectType.replace);
 }
 
 export async function deleteGrowthAction(formData: FormData) {
@@ -517,7 +519,7 @@ export async function saveVaccinationAction(formData: FormData) {
     });
   else await db.vaccinationRecord.create({ data: { ...data, id: undefined, source } });
   revalidatePath("/", "layout");
-  redirect("/tracking/vaccination");
+  redirect("/vaccination-schedule", RedirectType.replace);
 }
 
 export async function deleteVaccinationAction(formData: FormData) {
@@ -552,7 +554,7 @@ export async function savePrescriptionAction(formData: FormData) {
     }),
   ]);
   revalidatePath("/", "layout");
-  redirect("/tracking/prescription");
+  redirect("/tracking/prescription", RedirectType.replace);
 }
 
 export async function deletePrescriptionAction(formData: FormData) {
@@ -573,7 +575,7 @@ export async function saveToothAction(formData: FormData) {
   });
   revalidatePath("/", "layout");
   revalidatePath("/tracking/teeth");
-  redirect(`/tracking/teeth?position=${data.position}`);
+  redirect(`/tracking/teeth?position=${data.position}`, RedirectType.replace);
 }
 
 export async function deleteToothAction(formData: FormData) {
@@ -582,5 +584,5 @@ export async function deleteToothAction(formData: FormData) {
   await db.toothRecord.deleteMany({ where: { id, baby: { userId: user.id } } });
   revalidatePath("/", "layout");
   revalidatePath("/tracking/teeth");
-  redirect("/tracking/teeth");
+  redirect("/tracking/teeth", RedirectType.replace);
 }

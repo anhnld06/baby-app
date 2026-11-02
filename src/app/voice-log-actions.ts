@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { zonedDateTimeToUtc } from "@/lib/date";
 import { db } from "@/lib/db";
+import { activeFeedingWhere } from "@/features/timeline/active-feeding";
 
 export type VoiceLogActionState = {
   status: "idle" | "success" | "error";
@@ -120,7 +121,7 @@ export async function saveVoiceLogAction(
       const data = feedingInput.parse(raw);
       if (data.operation === "finish") {
         const openFeeding = await db.feeding.findFirst({
-          where: { babyId: data.babyId, endTime: null },
+          where: { babyId: data.babyId, ...activeFeedingWhere },
           orderBy: { startTime: "desc" },
           select: { id: true, startTime: true },
         });

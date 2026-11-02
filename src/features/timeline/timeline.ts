@@ -36,10 +36,15 @@ type TimelineInput = {
 };
 
 export function buildTimeline(input: TimelineInput, labels: TimelineLabels, locale = "vi"): TimelineItem[] {
+  const vi = locale.startsWith("vi");
+  const feedingTypes = vi
+    ? { BREASTFEEDING: "Bú mẹ", BOTTLE_BREAST_MILK: "Sữa mẹ bình", FORMULA: "Sữa công thức", MIXED: "Kết hợp" }
+    : { BREASTFEEDING: "Breastfeeding", BOTTLE_BREAST_MILK: "Bottle breast milk", FORMULA: "Formula", MIXED: "Mixed" };
+  const diaperTypes = vi ? { WET: "Tã ướt", STOOL: "Tã phân", BOTH: "Tã ướt và phân" } : { WET: "Wet", STOOL: "Stool", BOTH: "Wet and stool" };
   return [
-    ...input.feedings.map((item) => ({ id: item.id, kind: "feeding" as const, at: item.startTime, title: labels.feeding, detail: item.amountMl ? `${item.amountMl} ml` : item.type.replaceAll("_", " ").toLowerCase() })),
+    ...input.feedings.map((item) => ({ id: item.id, kind: "feeding" as const, at: item.startTime, title: labels.feeding, detail: item.amountMl ? `${item.amountMl} ml` : feedingTypes[item.type] })),
     ...input.sleeps.map((item) => ({ id: item.id, kind: "sleep" as const, at: item.startTime, title: labels.sleep, detail: item.endTime ? new Intl.NumberFormat(locale, { style: "unit", unit: "minute", unitDisplay: "long" }).format(Math.round((item.endTime.getTime() - item.startTime.getTime()) / 60_000)) : labels.sleeping })),
-    ...input.diapers.map((item) => ({ id: item.id, kind: "diaper" as const, at: item.changedAt, title: labels.diaper, detail: item.type.replaceAll("_", " ").toLowerCase() })),
+    ...input.diapers.map((item) => ({ id: item.id, kind: "diaper" as const, at: item.changedAt, title: labels.diaper, detail: diaperTypes[item.type] })),
     ...input.growthEntries.map((item) => ({ id: item.id, kind: "growth" as const, at: item.measuredAt, title: labels.growth, detail: [item.weightKg && `${item.weightKg} kg`, item.heightCm && `${item.heightCm} cm`].filter(Boolean).join(" · ") })),
     ...(input.vaccinations ?? []).map((item) => ({ id: item.id, kind: "vaccination" as const, at: item.administeredAt, title: labels.vaccination, detail: item.vaccineName })),
     ...(input.prescriptions ?? []).map((item) => ({ id: item.id, kind: "prescription" as const, at: item.issuedAt, title: labels.prescription, detail: item.items.map((line) => line.medicineName).join(", ") })),

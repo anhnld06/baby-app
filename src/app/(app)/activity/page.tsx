@@ -24,7 +24,7 @@ export default async function ActivityPage({
   if (!baby)
     return (
       <>
-        <PageHeader title={t.nav.activity} />
+        <PageHeader backHref="/baby" title={t.nav.activity} />
         <p>{t.common.noData}</p>
       </>
     );
@@ -90,7 +90,7 @@ export default async function ActivityPage({
   const hasMore = timeline.length > limit || [feedings, sleeps, diapers, growthEntries, vaccinations, prescriptions, toothRecords].some((items) => items.length > limit);
   return (
     <>
-      <PageHeader title={t.nav.activity} subtitle={baby.name} />
+      <PageHeader backHref="/baby" title={t.nav.activity} subtitle={baby.name} />
       <a
         href="/api/export/baby-journal"
         download
@@ -102,6 +102,8 @@ export default async function ActivityPage({
       <TimelineList
         items={timeline.slice(0, limit)}
         locale={locale}
+        timeZone={user.timezone}
+        showDate
         empty={t.common.noData}
       />
       <HistoryLoadMore href="/activity" currentLimit={limit} increment={100} maximum={500} hasMore={hasMore} />

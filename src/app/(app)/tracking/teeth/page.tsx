@@ -35,7 +35,7 @@ export default async function TeethPage({
   if (!baby)
     return (
       <>
-        <PageHeader title={t.tracking.teethTitle} backHref="/" />
+        <PageHeader title={t.tracking.teethTitle} backHref="/baby" />
         <p>{t.common.noData}</p>
       </>
     );
@@ -53,7 +53,7 @@ export default async function TeethPage({
       <PageHeader
         title={t.tracking.teethTitle}
         subtitle={baby.name}
-        backHref="/"
+        backHref="/baby"
       />
       <Card className="border-0 shadow-sm">
         <CardContent className="p-3 sm:p-5">

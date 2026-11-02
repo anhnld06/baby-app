@@ -8,7 +8,7 @@ import type { AssistantContext } from "@/features/ai/types";
 import { getCurrentUser } from "@/lib/auth";
 import { ageInDays } from "@/lib/date";
 import { db } from "@/lib/db";
-import { totalDurationMinutes } from "@/lib/metrics";
+import { totalDurationWithinRangeMinutes } from "@/lib/metrics";
 
 const requestSchema = z.object({
   question: z.string().trim().min(3).max(1000),
@@ -35,7 +35,8 @@ export async function POST(request: Request) {
       },
       include: { pregnancies: { orderBy: { createdAt: "desc" } } },
     });
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const now = new Date();
+    const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const [growth, feedings, sleeps, diapers] = baby
       ? await Promise.all([
           db.growthEntry.findFirst({
@@ -43,13 +44,13 @@ export async function POST(request: Request) {
             orderBy: { measuredAt: "desc" },
           }),
           db.feeding.findMany({
-            where: { babyId: baby.id, startTime: { gte: since } },
+            where: { babyId: baby.id, startTime: { gte: since, lte: now } },
           }),
           db.sleepEntry.findMany({
-            where: { babyId: baby.id, startTime: { gte: since } },
+            where: { babyId: baby.id, startTime: { lt: now }, OR: [{ endTime: null }, { endTime: { gt: since } }] },
           }),
           db.diaperEntry.findMany({
-            where: { babyId: baby.id, changedAt: { gte: since } },
+            where: { babyId: baby.id, changedAt: { gte: since, lte: now } },
           }),
         ])
       : [null, [], [], []];
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
           }
         : undefined,
       feedingCount24h: feedings.length,
-      sleepMinutes24h: totalDurationMinutes(sleeps),
+      sleepMinutes24h: totalDurationWithinRangeMinutes(sleeps, since, now, now),
       wetDiapers24h: diapers.filter(
         (item) => item.type === "WET" || item.type === "BOTH",
       ).length,
@@ -96,7 +97,9 @@ export async function POST(request: Request) {
         shouldSeekMedicalCare: true,
       });
     }
-    const retrieved = await retrieveKnowledge(input.question, context.babyAgeDays);
+    const pregnancy = selectRelevantPregnancy(mother?.pregnancies ?? []);
+    const motherStage = !baby ? pregnancy?.pregnancyStatus === "PREGNANT" ? "PREGNANCY" : pregnancy?.pregnancyStatus === "PLANNING" ? "PRECONCEPTION" : context.postpartum ? "POSTPARTUM" : undefined : undefined;
+    const retrieved = await retrieveKnowledge(input.question, context.babyAgeDays, motherStage);
     const providerAnswer = await getAIProvider().answer({
       question: input.question,
       context,

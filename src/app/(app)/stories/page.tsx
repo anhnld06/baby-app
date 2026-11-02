@@ -1,3 +1,4 @@
+import { requireUser } from "@/lib/auth";
 import Link from "next/link";
 import { BookOpenText, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
@@ -7,11 +8,12 @@ import { db } from "@/lib/db";
 import { getDictionary } from "@/lib/i18n";
 
 export default async function StoriesPage() {
+  await requireUser();
   const t = await getDictionary();
   const stories = await db.story.findMany({ orderBy: { createdAt: "asc" } });
   return (
     <>
-      <PageHeader title={t.stories.title} subtitle={t.stories.subtitle} />
+      <PageHeader backHref="/knowledge" title={t.stories.title} subtitle={t.stories.subtitle} />
       <div className="space-y-3">
         {stories.map((story) => (
           <Link href={`/stories/${story.slug}`} key={story.id}>

@@ -1,29 +1,28 @@
 import Link from "next/link";
 import {
-  AlertTriangle,
   Baby,
   BedDouble,
   ChevronRight,
-  Clock3,
   Droplets,
-  Pill,
-  Plus,
-  Ruler,
   Shell,
-  Smile,
   Sparkles,
-  Syringe,
   Weight,
+  BookHeart,
+  Moon,
+  HeartPulse,
+  ArrowUpRight,
 } from "lucide-react";
 import { BabySwitcher } from "@/components/baby-switcher";
 import { PageHeader } from "@/components/page-header";
 import { QuickTimers } from "@/components/quick-timers";
 import { TimelineList } from "@/components/timeline-list";
-import { Card, CardContent } from "@/components/ui/card";
-import { WeatherBadge } from "@/components/weather-badge";
+import { CareHandover } from "@/components/care-handover";
+import { FamilyStart } from "@/components/family-start";
+import { UpcomingVaccination } from "@/components/upcoming-vaccination";
+import { DashboardRefresh } from "@/components/dashboard-refresh";
 import { buildTimeline } from "@/features/timeline/timeline";
+import { activeFeedingWhere } from "@/features/timeline/active-feeding";
 import { selectRelevantPregnancy } from "@/features/mother/pregnancy";
-import { computeBabyDue, computeMotherDue } from "@/features/vaccination/due";
 import { requireUser } from "@/lib/auth";
 import { getSelectedBabyId, listBabies, pickSelectedBaby } from "@/lib/data";
 import {
@@ -43,32 +42,22 @@ export default async function DashboardPage() {
     getDictionary(),
     getLocale(),
   ]);
-  const [babies, selectedBabyId] = await Promise.all([
+  const [babies, selectedBabyId, mother] = await Promise.all([
     listBabies(user.id),
     getSelectedBabyId(),
+    db.mother.findUnique({ where: { userId: user.id }, include: { pregnancies: { orderBy: { createdAt: "desc" } } } }),
   ]);
   const baby = pickSelectedBaby(babies, selectedBabyId);
-  if (!baby)
-    return (
-      <>
-        <PageHeader title={t.appName} subtitle={t.tagline} />
-        <Card>
-          <CardContent className="p-6 text-center">
-            <Baby className="mx-auto mb-3 size-8 text-primary" />
-            <p>{t.common.noData}</p>
-            <Link
-              href="/profile"
-              className="mt-4 inline-block text-primary underline"
-            >
-              {t.profile.baby}
-            </Link>
-          </CardContent>
-        </Card>
-      </>
-    );
+  if (!baby) {
+    const nextVaccination = mother ? await db.vaccinationAppointment.findFirst({
+      where: { motherId: mother.id, motherVaccinationRecordId: null, vaccinationRecordId: null },
+      orderBy: { scheduledAt: "asc" },
+    }) : null;
+    return <FamilyStart mother={mother} name={user.name} nextVaccination={nextVaccination} />;
+  }
   const now = new Date();
   const { start, end } = getLocalDayRange(now, user.timezone);
-  const [feedings, sleeps, diapers, growth, vaccinations, prescriptions, toothRecords, openFeeding] = await Promise.all([
+  const [feedings, sleeps, diapers, growth, vaccinations, prescriptions, toothRecords, openFeeding, lastFeed, lastDiaper, nextAppointment] = await Promise.all([
     db.feeding.findMany({
       where: { babyId: baby.id, startTime: { gte: start, lt: end } },
       orderBy: { startTime: "desc" },
@@ -107,22 +96,17 @@ export default async function DashboardPage() {
       take: 3,
     }),
     db.feeding.findFirst({
-      where: { babyId: baby.id, endTime: null },
+      where: { babyId: baby.id, ...activeFeedingWhere },
       orderBy: { startTime: "desc" },
     }),
-  ]);
-  const [allVaccinations, mother] = await Promise.all([
-    db.vaccinationRecord.findMany({ where: { babyId: baby.id }, select: { vaccineName: true, doseNumber: true } }),
-    db.mother.findUnique({ where: { userId: user.id }, include: { pregnancies: { orderBy: { createdAt: "desc" } } } }),
+    db.feeding.findFirst({ where: { babyId: baby.id, startTime: { lte: now } }, orderBy: { startTime: "desc" } }),
+    db.diaperEntry.findFirst({ where: { babyId: baby.id, changedAt: { lte: now } }, orderBy: { changedAt: "desc" } }),
+    db.vaccinationAppointment.findFirst({
+      where: { vaccinationRecordId: null, motherVaccinationRecordId: null, OR: [{ babyId: baby.id }, ...(mother ? [{ motherId: mother.id }] : [])] },
+      orderBy: { scheduledAt: "asc" },
+    }),
   ]);
   const pregnancy = selectRelevantPregnancy(mother?.pregnancies ?? []);
-  const motherRecords = mother
-    ? await db.motherVaccinationRecord.findMany({ where: { motherId: mother.id }, select: { vaccineName: true, doseNumber: true } })
-    : [];
-  const dueCount = [
-    ...computeBabyDue(baby.dateOfBirth, allVaccinations),
-    ...(pregnancy?.lastMenstrualPeriod ? computeMotherDue(pregnancy.lastMenstrualPeriod, motherRecords) : []),
-  ].filter((item) => item.status === "DUE" || item.status === "OVERDUE").length;
   const timeline = buildTimeline(
     { feedings, sleeps, diapers, growthEntries: growth, vaccinations, prescriptions, toothRecords },
     {
@@ -144,296 +128,100 @@ export default async function DashboardPage() {
   ).slice(0, 5);
   const activeSleep = sleeps.find((sleep) => sleep.endTime === null);
   const activeFeeding = openFeeding;
-  const lastFeed = feedings[0];
   const wet = diapers.filter(
     (item) => item.type === "WET" || item.type === "BOTH",
   ).length;
   const stool = diapers.filter(
     (item) => item.type === "STOOL" || item.type === "BOTH",
   ).length;
-  const quickActions = [
-    {
-      href: "/tracking/feeding",
-      label: t.dashboard.feeding,
-      icon: Baby,
-      className:
-        "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
-    },
-    {
-      href: "/tracking/sleep",
-      label: t.dashboard.sleep,
-      icon: BedDouble,
-      className:
-        "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300",
-    },
-    {
-      href: "/tracking/diaper",
-      label: t.dashboard.diaper,
-      icon: Shell,
-      className:
-        "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
-    },
-    {
-      href: "/tracking/growth",
-      label: t.dashboard.growth,
-      icon: Ruler,
-      className: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300",
-    },
-    {
-      href: "/tracking/vaccination",
-      label: t.dashboard.vaccination,
-      icon: Syringe,
-      className: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300",
-    },
-    {
-      href: "/tracking/prescription",
-      label: t.dashboard.prescription,
-      icon: Pill,
-      className:
-        "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
-    },
-    {
-      href: "/tracking/teeth",
-      label: t.dashboard.teeth,
-      icon: Smile,
-      className: "bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300",
-    },
-  ];
+  const sleepMinutes = totalDurationWithinRangeMinutes(sleeps, start, end, now);
+  const ago = (date: Date) => {
+    const minutes = Math.max(0, Math.floor((now.getTime() - date.getTime()) / 60_000));
+    if (minutes < 1) return "Vừa xong";
+    return `${formatDuration(minutes, locale)} trước`;
+  };
+  const clock = (date: Date) => new Intl.DateTimeFormat(locale, { timeZone: user.timezone, hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }).format(date);
+  const summary = [
+    `${baby.name} · ${formatAge(baby.dateOfBirth, now, locale)}`,
+    `Cập nhật: ${formatDateTime(now, user.timezone, locale)}`,
+    `Hôm nay: ${feedings.length} cữ bú · ngủ ${formatDuration(sleepMinutes, locale)} · ${wet} tã ướt / ${stool} tã phân.`,
+    lastFeed ? `Cữ bú gần nhất: ${clock(lastFeed.startTime)}${lastFeed.amountMl != null ? ` · ${lastFeed.amountMl} ml` : ""}.` : "Chưa có bản ghi bú.",
+    lastDiaper ? `Thay tã gần nhất: ${clock(lastDiaper.changedAt)}.` : "Chưa có bản ghi thay tã.",
+    activeSleep ? `Đang ngủ từ ${clock(activeSleep.startTime)}.` : "Không có giấc ngủ đang bấm giờ.",
+    activeFeeding ? `Đang bú từ ${clock(activeFeeding.startTime)}.` : "",
+  ].filter(Boolean).join("\n");
   const greetingLabel = {
     morning: t.dashboard.helloMorning,
     noon: t.dashboard.helloNoon,
     afternoon: t.dashboard.helloAfternoon,
     evening: t.dashboard.helloEvening,
   }[greetingPeriod(now, user.timezone)];
+  const dailyActions = [
+    { href: "/tracking/feeding", title: "Ghi cữ bú", icon: Baby, tone: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300" },
+    { href: "/tracking/sleep", title: "Ghi giấc ngủ", icon: BedDouble, tone: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300" },
+    { href: "/tracking/diaper", title: "Ghi thay tã", icon: Shell, tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" },
+  ];
   return (
     <>
-      <PageHeader
-        title={`${greetingLabel} 🌿`}
-        subtitle={user.name}
-        meta={
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground">
-              <Clock3 className="size-3.5 shrink-0" />
-              {formatDateTime(now, user.timezone, locale)}
-            </span>
-            <WeatherBadge
-              currentLocationLabel={t.dashboard.currentLocation}
-              unavailableLabel={t.dashboard.weatherUnavailable}
-              requestLabel={t.dashboard.weatherRequest}
-            />
-          </div>
-        }
-      />
-      <BabySwitcher
-        babies={babies}
-        selectedBabyId={baby.id}
-        addLabel={t.profile.addBaby}
-      />
-      <section className="relative overflow-hidden rounded-3xl bg-primary px-5 py-6 text-primary-foreground shadow-lg shadow-primary/15">
-        <div className="absolute -right-5 -top-8 size-32 rounded-full bg-white/10" />
-        <div className="absolute -bottom-10 left-10 size-24 rounded-full bg-white/10" />
-        <div className="relative">
-          <div className="flex items-center gap-2 text-sm opacity-85">
-            <Sparkles className="size-4" />
-            {t.dashboard.age}
-          </div>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight">
-            {baby.name}
-          </h2>
-          <p className="mt-1 text-sm opacity-90">
-            {baby.nickname ? `${baby.nickname} · ` : ""}
-            {formatAge(baby.dateOfBirth, now, locale)}
-          </p>
+      <DashboardRefresh />
+      <PageHeader title={greetingLabel} subtitle={new Intl.DateTimeFormat(locale, { timeZone: user.timezone, weekday: "long", day: "numeric", month: "long" }).format(now)} />
+      <BabySwitcher babies={babies} selectedBabyId={baby.id} addLabel={t.profile.addBaby} />
+      <section className="family-hero relative overflow-hidden rounded-[2rem] p-5 shadow-lg shadow-primary/10 sm:p-7">
+        <div aria-hidden="true" className="family-orbit" />
+        <div className="flex items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-2 text-xs font-medium text-white/80"><Sparkles className="size-3.5" /> Mỗi ngày bên con</span>
+          <Link href={`/profile/baby/${baby.id}`} aria-label={`Hồ sơ của ${baby.name}`} className="grid size-11 shrink-0 place-items-center rounded-full border border-white/20 bg-white/10 transition-colors hover:bg-white/20"><ArrowUpRight className="size-5" /></Link>
+        </div>
+        <h2 className="mt-3 break-words text-3xl font-semibold tracking-tight sm:text-4xl">{baby.nickname || baby.name}</h2>
+        <p className="mt-2 text-sm text-white/80">{formatAge(baby.dateOfBirth, now, locale)}</p>
+        <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-xs font-medium">
+          {activeSleep ? <Moon className="size-3.5" /> : <HeartPulse className="size-3.5" />}
+          {activeSleep ? `Đang ngủ · từ ${new Intl.DateTimeFormat(locale, { timeZone: user.timezone, hour: "2-digit", minute: "2-digit" }).format(activeSleep.startTime)}` : activeFeeding ? "Đang trong cữ bú" : "Cùng con ghi lại một ngày"}
         </div>
       </section>
-      <QuickTimers
-        babyId={baby.id}
-        locale={locale}
-        activeFeedingStartedAt={activeFeeding?.startTime.toISOString()}
-        activeSleepStartedAt={activeSleep?.startTime.toISOString()}
-      />
-      <section className="mt-5 grid grid-cols-2 gap-3">
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <span className="grid size-9 place-items-center rounded-xl bg-secondary text-primary">
-                <Weight className="size-4" />
-              </span>
-              {growth[0]?.weightKg !== undefined &&
-                growth[0]?.weightKg !== null && (
-                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                    {t.dashboard.healthy}
-                  </span>
-                )}
-            </div>
-            <p className="mt-3 text-2xl font-semibold">
-              {growth[0]?.weightKg ? `${growth[0].weightKg} kg` : "—"}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {t.tracking.weight}
-              {growth[0] &&
-                ` · ${new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" }).format(growth[0].measuredAt)}`}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <span className="grid size-9 place-items-center rounded-xl bg-secondary text-primary">
-                <Ruler className="size-4" />
-              </span>
-              {growth[0]?.heightCm !== undefined &&
-                growth[0]?.heightCm !== null && (
-                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                    {t.dashboard.healthy}
-                  </span>
-                )}
-            </div>
-            <p className="mt-3 text-2xl font-semibold">
-              {growth[0]?.heightCm ? `${growth[0].heightCm} cm` : "—"}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {t.tracking.height}
-              {growth[0] &&
-                ` · ${new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" }).format(growth[0].measuredAt)}`}
-            </p>
-          </CardContent>
-        </Card>
-      </section>
-      <Link
-        href="/tracking/growth"
-        className="mt-3 flex items-center justify-between rounded-2xl bg-card p-4 shadow-sm"
-      >
-        <span className="text-sm font-medium">
-          {growth[0] ? t.dashboard.growthStandard : t.dashboard.growthStart}
-        </span>
-        <span className="flex shrink-0 items-center gap-1 text-sm font-medium text-primary">
-          {t.dashboard.viewDetail}
-          <ChevronRight className="size-4" />
-        </span>
-      </Link>
-      {dueCount > 0 && (
-        <Link
-          href="/vaccination-schedule"
-          className="mt-3 flex items-center gap-3 rounded-2xl bg-card p-4 shadow-sm"
-        >
-          <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
-            <AlertTriangle className="size-5" />
-          </span>
-          <span className="flex-1 text-sm font-medium">
-            {dueCount} {t.vaccinationSchedule.dashboardCount}
-          </span>
-          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-        </Link>
-      )}
-      <section className="mt-7">
-        <h2 className="mb-3 text-lg font-semibold">{t.dashboard.quickAdd}</h2>
-        <div className="grid grid-cols-4 gap-2">
-          {quickActions.map(({ href, label, icon: Icon, className }) => (
-            <Link
-              href={href}
-              key={href}
-              className="group flex min-h-24 min-w-0 flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl bg-card px-1 text-xs font-medium shadow-sm transition-transform active:scale-95"
-            >
-              <span
-                className={`relative grid size-11 place-items-center rounded-2xl ${className}`}
-              >
-                <Icon className="size-5" />
-                <Plus className="absolute -right-1 -top-1 size-4 rounded-full bg-card p-0.5" />
-              </span>
-              <span className="max-w-full truncate px-1">{label}</span>
-            </Link>
-          ))}
+
+      <section className="mt-6" aria-labelledby="daily-actions-title">
+        <div className="mb-3 flex items-center justify-between gap-3"><h2 id="daily-actions-title" className="text-lg font-semibold">Chăm bé mỗi ngày</h2><Link href="/baby" className="inline-flex min-h-11 items-center gap-1 text-xs font-medium text-primary">Tất cả <ChevronRight className="size-3.5" /></Link></div>
+        <div className="grid grid-cols-3 gap-3">
+          {dailyActions.map(({ href, title, icon: Icon, tone }) => <Link key={href} href={`${href}?new=1`} className="flex min-h-28 min-w-0 flex-col items-center justify-center gap-3 rounded-3xl border border-border/50 bg-card p-3 text-center text-xs font-semibold shadow-sm transition-[transform,box-shadow] hover:shadow-md active:scale-95"><span className={`grid size-12 place-items-center rounded-2xl ${tone}`}><Icon className="size-5" /></span>{title}</Link>)}
         </div>
       </section>
-      <section className="mt-7">
-        <h2 className="mb-3 text-lg font-semibold">{t.dashboard.overview}</h2>
+      <QuickTimers babyId={baby.id} locale={locale} activeFeedingStartedAt={activeFeeding?.startTime.toISOString()} activeSleepStartedAt={activeSleep?.startTime.toISOString()} />
+
+      <section className="mt-7" aria-labelledby="today-title">
+        <h2 id="today-title" className="mb-3 text-lg font-semibold">Hôm nay của con</h2>
         <div className="grid grid-cols-2 gap-3">
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock3 className="size-4 text-orange-600" />
-                {t.dashboard.lastFeed}
-              </div>
-              <p className="mt-3 text-xl font-semibold">
-                {lastFeed
-                  ? new Intl.RelativeTimeFormat(locale, {
-                      numeric: "auto",
-                    }).format(
-                      -Math.round(
-                        (now.getTime() - lastFeed.startTime.getTime()) /
-                          3_600_000,
-                      ),
-                      "hour",
-                    )
-                  : "—"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {feedings.length} {t.dashboard.feedsToday}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <BedDouble className="size-4 text-indigo-600" />
-                {activeSleep ? t.dashboard.sleeping : t.dashboard.awake}
-              </div>
-              <p className="mt-3 text-xl font-semibold">
-                {formatDuration(
-                  totalDurationWithinRangeMinutes(sleeps, start, end, now),
-                  locale,
-                )}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {t.dashboard.sleepToday}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Droplets className="size-4 text-emerald-600" />
-                {t.dashboard.diaper}
-              </div>
-              <p className="mt-3 text-xl font-semibold">
-                {wet} / {stool}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {t.dashboard.wet} · {t.dashboard.stool}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Ruler className="size-4 text-sky-600" />
-                {t.dashboard.latestWeight}
-              </div>
-              <p className="mt-3 text-xl font-semibold">
-                {growth[0]?.weightKg ? `${growth[0].weightKg} kg` : "—"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {growth[0]
-                  ? new Intl.DateTimeFormat(locale, {
-                      day: "2-digit",
-                      month: "short",
-                    }).format(growth[0].measuredAt)
-                  : t.common.noData}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-      <section className="mt-7">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{t.dashboard.recent}</h2>
-          <Link href="/activity" className="text-sm font-medium text-primary">
-            {t.common.seeAll}
+          <Link href="/tracking/feeding" className="rounded-3xl border border-border/50 bg-card p-4 shadow-sm transition-colors hover:bg-secondary/40">
+            <span className="flex items-center gap-2 text-xs text-muted-foreground"><Baby className="size-4 text-orange-600" /> Cữ bú gần nhất</span>
+            <p className="mt-3 text-xl font-semibold tabular-nums">{lastFeed ? ago(lastFeed.startTime) : "Chưa ghi"}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{feedings.length} cữ đã ghi hôm nay</p>
+          </Link>
+          <Link href="/tracking/sleep" className="rounded-3xl border border-border/50 bg-card p-4 shadow-sm transition-colors hover:bg-secondary/40">
+            <span className="flex items-center gap-2 text-xs text-muted-foreground"><BedDouble className="size-4 text-indigo-500" /> Tổng giấc ngủ</span>
+            <p className="mt-3 text-xl font-semibold tabular-nums">{formatDuration(sleepMinutes, locale)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{activeSleep ? "Có giấc ngủ đang bấm giờ" : `${sleeps.length} giấc đã ghi hôm nay`}</p>
+          </Link>
+          <Link href="/tracking/diaper" className="rounded-3xl border border-border/50 bg-card p-4 shadow-sm transition-colors hover:bg-secondary/40">
+            <span className="flex items-center gap-2 text-xs text-muted-foreground"><Droplets className="size-4 text-emerald-600" /> Thay tã</span>
+            <p className="mt-3 text-xl font-semibold tabular-nums">{diapers.length} lần</p>
+            <p className="mt-1 text-xs text-muted-foreground">{wet} tã ướt · {stool} tã phân</p>
+          </Link>
+          <Link href="/tracking/growth" className="rounded-3xl border border-border/50 bg-card p-4 shadow-sm transition-colors hover:bg-secondary/40">
+            <span className="flex items-center gap-2 text-xs text-muted-foreground"><Weight className="size-4 text-sky-600" /> Số đo gần nhất</span>
+            <p className="mt-3 text-xl font-semibold tabular-nums">{growth[0]?.weightKg != null ? `${growth[0].weightKg} kg` : growth[0]?.heightCm != null ? `${growth[0].heightCm} cm` : "Chưa ghi"}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{growth[0] ? new Intl.DateTimeFormat(locale, { timeZone: user.timezone, day: "2-digit", month: "2-digit" }).format(growth[0].measuredAt) : "Thêm cân nặng hoặc chiều cao"}</p>
           </Link>
         </div>
-        <TimelineList items={timeline} locale={locale} />
       </section>
+      <UpcomingVaccination appointment={nextAppointment} />
+      <CareHandover key={baby.id} summary={summary} />
+      {pregnancy?.pregnancyStatus === "PREGNANT" && <Link href="/mother/pregnancy" className="mt-4 flex items-center gap-3 rounded-2xl border border-border/60 bg-card p-4"><HeartPulse className="size-5 text-primary" /><span className="flex-1 text-sm font-medium">Tiếp tục theo dõi thai kỳ của mẹ</span><ChevronRight className="size-4" /></Link>}
+
+      <section className="mt-7">
+        <div className="mb-3 flex items-center justify-between gap-3"><h2 className="text-lg font-semibold">{t.dashboard.recent}</h2><Link href="/activity" className="inline-flex min-h-11 items-center gap-1 text-xs font-medium text-primary">{t.common.seeAll}<ChevronRight className="size-3.5" /></Link></div>
+        <TimelineList items={timeline} locale={locale} timeZone={user.timezone} empty="Một ngày mới bắt đầu. Ghi cữ bú, giấc ngủ hoặc lần thay tã đầu tiên ở phía trên nhé." />
+      </section>
+      <Link href="/knowledge" className="mt-6 flex items-center gap-3 rounded-3xl bg-secondary/60 p-5"><BookHeart className="size-6 shrink-0 text-primary" /><span className="flex-1"><strong className="block text-sm">Cùng hiểu con hơn mỗi ngày</strong><span className="mt-1 block text-xs leading-5 text-muted-foreground">Cẩm nang chăm mẹ và bé, kèm nguồn tham khảo.</span></span><ChevronRight className="size-4 shrink-0 text-primary" /></Link>
     </>
   );
 }

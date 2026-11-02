@@ -13,7 +13,7 @@ export default async function AssistantPage() {
   const baby = await getSelectedBaby(user.id);
   return (
     <>
-      <PageHeader title={t.assistant.title} subtitle={t.assistant.context} />
+      <PageHeader backHref="/knowledge" title={t.assistant.title} subtitle={t.assistant.context} />
       <AssistantForm babyId={baby?.id} labels={t.assistant} locale={locale} />
     </>
   );

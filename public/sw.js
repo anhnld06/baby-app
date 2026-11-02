@@ -1,4 +1,4 @@
-const CACHE_NAME = "vani-static-v1";
+const CACHE_NAME = "vani-static-v2";
 const PRECACHE = [
   "/offline",
   "/manifest.webmanifest",
@@ -6,9 +6,21 @@ const PRECACHE = [
   "/icons/vani-family-512.png",
 ];
 
+async function precacheOffline() {
+  const cache = await caches.open(CACHE_NAME);
+  await cache.addAll(PRECACHE);
+  // The offline HTML also needs its scripts, stylesheet and font to render on a fresh offline visit.
+  // Only the public static fallback and immutable build assets are cached, never health pages or APIs.
+  const response = await cache.match("/offline");
+  const html = await response.text();
+  const assets = [...html.matchAll(/(?:src|href)="([^\"]+)"/g)]
+    .map((match) => match[1])
+    .filter((path) => path.startsWith("/_next/static/"));
+  await cache.addAll([...new Set(assets)]);
+}
+
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE)));
-  self.skipWaiting();
+  event.waitUntil(precacheOffline().then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (event) => {

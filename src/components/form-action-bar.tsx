@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import { LoaderCircle, Save, Trash2, X } from "lucide-react";
 import { useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
@@ -91,7 +92,8 @@ export function FormActionBar({
           return;
         }
         await saveAction(new FormData(form));
-      } catch {
+      } catch (error) {
+        unstable_rethrow(error);
         setError("Chưa thể lưu vì có thông tin chưa hợp lệ. Hãy kiểm tra lại các trường và thử lại.");
       }
     });
@@ -103,6 +105,8 @@ export function FormActionBar({
         {cancelHref && (
           <Link
             href={cancelHref}
+            replace
+            scroll={false}
             aria-label={cancelLabel}
             aria-disabled={isSaving}
             tabIndex={isSaving ? -1 : undefined}

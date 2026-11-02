@@ -407,13 +407,13 @@ export function VoiceQuickLog({ babyId, locale }: { babyId: string; locale: Loca
         render={
           <button
             type="button"
-            className="fixed bottom-[calc(4rem+max(1rem,env(safe-area-inset-bottom)))] left-1/2 z-[45] grid h-10 w-20 -translate-x-1/2 place-items-center rounded-t-full border-x-4 border-t-4 border-background bg-primary pb-0.5 text-primary-foreground shadow-[0_-6px_18px_-8px_rgba(0,0,0,0.45)] lg:bottom-24 lg:left-[max(8rem,calc((100vw-80rem)/2+8rem))] lg:size-14 lg:rounded-full lg:border-4 lg:pb-0 lg:shadow-lg lg:shadow-primary/35"
+            className="grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-primary transition-[background-color,transform] hover:bg-primary/15 active:scale-95"
             aria-label={t.open}
             onClick={startListening}
           />
         }
       >
-        <Mic className="size-6" strokeWidth={2.5} />
+        <Mic className="size-5" />
         <span className="sr-only">{t.open}</span>
       </DialogTrigger>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-3xl p-5 sm:max-w-md">

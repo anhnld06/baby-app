@@ -24,7 +24,7 @@ import { parseHistoryLimit } from "@/lib/pagination";
 export default async function SleepPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string; limit?: string }>;
+  searchParams: Promise<{ edit?: string; limit?: string; new?: string }>;
 }) {
   const [user, t, locale, params] = await Promise.all([
     requireUser(),
@@ -36,7 +36,7 @@ export default async function SleepPage({
   if (!baby)
     return (
       <>
-        <PageHeader title={t.tracking.newSleep} backHref="/" />
+        <PageHeader title={t.tracking.newSleep} backHref="/baby" />
         <p>{t.common.noData}</p>
       </>
     );
@@ -75,7 +75,7 @@ export default async function SleepPage({
       <PageHeader
         title={editing ? t.tracking.editSleep : t.tracking.newSleep}
         subtitle={baby.name}
-        backHref="/"
+        backHref="/baby"
       />
       <MetricGrid
         items={[
@@ -112,8 +112,8 @@ export default async function SleepPage({
         ]}
       />
       <CollapsibleRecordForm
-        key={`${editing?.id ?? "new"}-${items.length}`}
-        defaultOpen={!!editing}
+        key={`${editing?.id ?? "new"}-${params.new ?? ""}-${items.length}`}
+        defaultOpen={!!editing || params.new === "1"}
         addLabel={t.tracking.newSleep}
         closeLabel={t.common.cancel}
       >
@@ -164,7 +164,7 @@ export default async function SleepPage({
         formId="sleep-form"
         saveAction={saveSleepAction}
         saveLabel={editing ? t.common.update : t.common.save}
-        cancelHref={editing ? "/tracking/sleep" : undefined}
+        cancelHref={editing || params.new === "1" ? "/tracking/sleep" : undefined}
         cancelLabel={t.common.cancel}
         deleteAction={editing ? deleteSleepAction : undefined}
         deleteId={editing?.id}
@@ -188,6 +188,7 @@ export default async function SleepPage({
               </p>
               <p className="text-sm text-muted-foreground">
                 {new Intl.DateTimeFormat(locale, {
+                  timeZone: user.timezone,
                   day: "2-digit",
                   month: "short",
                   hour: "2-digit",

@@ -87,6 +87,8 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-image: radial-gradient(ellipse at top left, color-mix(in oklch, var(--secondary), transparent 45%), transparent 60%);
+    text-rendering: optimizeLegibility;
   }
   html,
   body {
@@ -99,6 +101,18 @@
   select,
   textarea {
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  :where(a, button, input, select, textarea):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 4px;
+  }
+  :where(input, select, textarea) {
+    font-size: max(1rem, 16px);
+    scroll-margin-block: 6rem;
+  }
+  :where(button, a) {
+    -webkit-user-drag: none;
   }
   input:is([type="date"], [type="time"], [type="datetime-local"]) {
     display: block;
@@ -127,12 +141,30 @@
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
   .page-enter {
-    animation: page-enter 0.28s ease-out both;
+    animation: page-enter 0.22s ease-out both;
   }
   @keyframes page-enter {
     from {
       opacity: 0;
+      transform: translateY(5px);
     }
+  }
+  .family-hero {
+    isolation: isolate;
+    background: linear-gradient(125deg, #713649 0%, #a74763 58%, #c86c83 100%);
+    color: #fff9f6;
+  }
+  .family-orbit {
+    position: absolute;
+    width: 12rem;
+    height: 12rem;
+    right: -3rem;
+    top: -3rem;
+    border-radius: 50%;
+    border: 1px solid #fff3;
+    box-shadow: 0 0 0 2rem #fff1, 0 0 0 4rem #fff1;
+    pointer-events: none;
+    z-index: -1;
   }
   @keyframes loading-bar {
     from {
@@ -141,5 +173,13 @@
     to {
       transform: translateX(210%);
     }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
 }

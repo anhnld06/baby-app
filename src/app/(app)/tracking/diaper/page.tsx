@@ -23,7 +23,7 @@ const labels = {
 export default async function DiaperPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string; limit?: string }>;
+  searchParams: Promise<{ edit?: string; limit?: string; new?: string }>;
 }) {
   const [user, t, locale, params] = await Promise.all([
     requireUser(),
@@ -35,7 +35,7 @@ export default async function DiaperPage({
   if (!baby)
     return (
       <>
-        <PageHeader title={t.tracking.newDiaper} backHref="/" />
+        <PageHeader title={t.tracking.newDiaper} backHref="/baby" />
         <p>{t.common.noData}</p>
       </>
     );
@@ -70,7 +70,7 @@ export default async function DiaperPage({
       <PageHeader
         title={editing ? t.tracking.editDiaper : t.tracking.newDiaper}
         subtitle={baby.name}
-        backHref="/"
+        backHref="/baby"
       />
       <MetricGrid
         items={[
@@ -79,8 +79,8 @@ export default async function DiaperPage({
         ]}
       />
       <CollapsibleRecordForm
-        key={`${editing?.id ?? "new"}-${items.length}`}
-        defaultOpen={!!editing}
+        key={`${editing?.id ?? "new"}-${params.new ?? ""}-${items.length}`}
+        defaultOpen={!!editing || params.new === "1"}
         addLabel={t.tracking.newDiaper}
         closeLabel={t.common.cancel}
       >
@@ -140,7 +140,7 @@ export default async function DiaperPage({
         formId="diaper-form"
         saveAction={saveDiaperAction}
         saveLabel={editing ? t.common.update : t.common.save}
-        cancelHref={editing ? "/tracking/diaper" : undefined}
+        cancelHref={editing || params.new === "1" ? "/tracking/diaper" : undefined}
         cancelLabel={t.common.cancel}
         deleteAction={editing ? deleteDiaperAction : undefined}
         deleteId={editing?.id}
@@ -162,6 +162,7 @@ export default async function DiaperPage({
               <p className="font-medium">{labels[locale][item.type]}</p>
               <p className="truncate text-sm text-muted-foreground">
                 {new Intl.DateTimeFormat(locale, {
+                  timeZone: user.timezone,
                   day: "2-digit",
                   month: "short",
                   hour: "2-digit",

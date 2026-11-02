@@ -28,10 +28,14 @@ const colors = {
 export function TimelineList({
   items,
   locale = "vi",
+  timeZone,
+  showDate = false,
   empty = "Chưa có hoạt động",
 }: {
   items: TimelineItem[];
   locale?: string;
+  timeZone?: string;
+  showDate?: boolean;
   empty?: string;
 }) {
   if (items.length === 0)
@@ -60,8 +64,10 @@ export function TimelineList({
                 {item.detail}
               </p>
             </div>
-            <time className="text-xs tabular-nums text-muted-foreground">
+            <time dateTime={item.at.toISOString()} className="shrink-0 text-right text-xs tabular-nums text-muted-foreground">
               {new Intl.DateTimeFormat(locale, {
+                timeZone,
+                ...(showDate ? { day: "2-digit", month: "2-digit" } as const : {}),
                 hour: "2-digit",
                 minute: "2-digit",
               }).format(item.at)}

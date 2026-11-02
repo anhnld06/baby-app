@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Baby,
   BookHeart,
@@ -67,11 +68,21 @@ export function KnowledgeLibrary({
   articles: LibraryArticle[];
   currentStage?: string;
 }) {
-  const [query, setQuery] = useState("");
-  const [stage, setStage] = useState<string | null>(null);
+  const params = useSearchParams();
+  const query = (params.get("q") ?? "").slice(0, 120);
+  const requestedStage = params.get("stage");
+  const stage = STAGE_TILES.some((tile) => tile.value === requestedStage) ? requestedStage : null;
+  const deferredQuery = useDeferredValue(query);
+  function updateFilter(key: string, value: string | null) {
+    const url = new URL(window.location.href);
+    if (value) url.searchParams.set(key, value);
+    else url.searchParams.delete(key);
+    // Keep filters on Back without refetching the entire library or adding keystrokes to history.
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+  }
 
   const filtered = useMemo(() => {
-    const needle = normalize(query.trim());
+    const needle = normalize(deferredQuery.trim());
     return articles.filter((article) => {
       if (stage && stage !== "ALL" && article.stage !== stage) return false;
       if (!needle) return true;
@@ -79,7 +90,7 @@ export function KnowledgeLibrary({
         `${article.title} ${article.summary} ${article.category} ${stageLabels[article.stage] ?? ""}`,
       ).includes(needle);
     });
-  }, [articles, query, stage]);
+  }, [articles, deferredQuery, stage]);
 
   const showList = stage !== null || query.trim().length > 0;
 
@@ -117,7 +128,8 @@ export function KnowledgeLibrary({
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => updateFilter("q", event.target.value)}
+          maxLength={120}
           placeholder="Tìm: quấy khóc, ăn dặm, giấc ngủ..."
           aria-label="Tìm trong sổ tay"
           className="h-11 rounded-2xl bg-card pl-10 shadow-sm"
@@ -136,7 +148,7 @@ export function KnowledgeLibrary({
                 <button
                   type="button"
                   key={value}
-                  onClick={() => setStage(value)}
+                  onClick={() => updateFilter("stage", value)}
                   className="group min-w-0 overflow-hidden rounded-2xl bg-card text-xs font-medium shadow-sm transition-transform active:scale-95"
                 >
                   <span className="relative block h-16 overflow-hidden bg-muted">
@@ -175,8 +187,13 @@ export function KnowledgeLibrary({
           <div className="mb-3 flex items-center justify-between gap-2">
             <button
               type="button"
-              onClick={() => setStage(null)}
-              className="flex min-w-0 items-center gap-1 text-sm font-medium text-primary"
+              onClick={() => {
+                const url = new URL(window.location.href);
+                url.searchParams.delete("stage");
+                url.searchParams.delete("q");
+                window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+              }}
+              className="flex min-h-11 min-w-0 items-center gap-1 text-sm font-medium text-primary"
             >
               <ChevronLeft className="size-4 shrink-0" />
               <span className="truncate">

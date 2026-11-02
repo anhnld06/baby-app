@@ -28,7 +28,7 @@ export default async function PrescriptionPage({
   if (!baby)
     return (
       <>
-        <PageHeader title={t.tracking.newPrescription} backHref="/" />
+        <PageHeader title={t.tracking.newPrescription} backHref="/baby" />
         <p>{t.common.noData}</p>
       </>
     );
@@ -54,7 +54,7 @@ export default async function PrescriptionPage({
       <PageHeader
         title={editing ? t.tracking.editPrescription : t.tracking.newPrescription}
         subtitle={baby.name}
-        backHref="/"
+        backHref="/baby"
       />
       <CollapsibleRecordForm
         key={`${editing?.id ?? "new"}-${items.length}`}
@@ -114,6 +114,7 @@ export default async function PrescriptionPage({
               </p>
               <p className="text-sm text-muted-foreground">
                 {new Intl.DateTimeFormat(locale, {
+                  timeZone: user.timezone,
                   day: "2-digit",
                   month: "short",
                   year: "numeric",

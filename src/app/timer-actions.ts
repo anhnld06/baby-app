@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { activeFeedingWhere } from "@/features/timeline/active-feeding";
 
 async function ownedBabyId(formData: FormData) {
   const user = await requireUser();
@@ -22,7 +23,7 @@ function refreshTracking() {
 
 export async function startFeedingTimerAction(formData: FormData) {
   const { babyId } = await ownedBabyId(formData);
-  const open = await db.feeding.findFirst({ where: { babyId, endTime: null }, select: { id: true } });
+  const open = await db.feeding.findFirst({ where: { babyId, ...activeFeedingWhere }, select: { id: true } });
   if (!open) {
     await db.feeding.create({
       data: { babyId, type: "BREASTFEEDING", startTime: new Date() },
@@ -34,7 +35,7 @@ export async function startFeedingTimerAction(formData: FormData) {
 export async function finishFeedingTimerAction(formData: FormData) {
   const { babyId } = await ownedBabyId(formData);
   const open = await db.feeding.findFirst({
-    where: { babyId, endTime: null },
+    where: { babyId, ...activeFeedingWhere },
     orderBy: { startTime: "desc" },
     select: { id: true },
   });

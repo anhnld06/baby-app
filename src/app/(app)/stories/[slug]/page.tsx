@@ -1,3 +1,4 @@
+import { requireUser } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,7 @@ export default async function StoryPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  await requireUser();
   const [{ slug }, t] = await Promise.all([params, getDictionary()]);
   const story = await db.story.findUnique({ where: { slug } });
   if (!story) notFound();

@@ -1,3 +1,4 @@
+import { requireUser } from "@/lib/auth";
 import { ExternalLink, ShieldAlert, ShieldCheck } from "lucide-react";
 import { notFound } from "next/navigation";
 import { ArticleContent } from "@/components/article-content";
@@ -17,6 +18,7 @@ export default async function ArticlePage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  await requireUser();
   const [{ slug }, t] = await Promise.all([params, getDictionary()]);
   const article = await db.knowledgeArticle.findUnique({
     where: { slug },

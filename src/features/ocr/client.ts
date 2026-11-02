@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  createWorker,
-  OEM,
-  PSM,
-  type LoggerMessage,
-  type Worker,
-} from "tesseract.js";
+import type { LoggerMessage, Worker } from "tesseract.js";
 import { parseHealthDocument, type HealthDocumentType } from "@/features/ocr/parse";
 
 const MAX_SOURCE_BYTES = 25 * 1024 * 1024;
@@ -37,10 +31,9 @@ function reportWorkerProgress(message: LoggerMessage) {
 
 async function getWorker() {
   if (!workerPromise) {
-    workerPromise = createWorker(["vie", "eng"], OEM.LSTM_ONLY, {
-      logger: reportWorkerProgress,
-    })
-      .then(async (worker) => {
+    workerPromise = import("tesseract.js")
+      .then(async ({ createWorker, OEM, PSM }) => {
+        const worker = await createWorker(["vie", "eng"], OEM.LSTM_ONLY, { logger: reportWorkerProgress });
         await worker.setParameters({
           tessedit_pageseg_mode: PSM.AUTO,
           preserve_interword_spaces: "1",

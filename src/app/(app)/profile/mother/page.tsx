@@ -13,7 +13,8 @@ function dateInput(date?: Date | null) {
   return date?.toISOString().slice(0, 10) ?? "";
 }
 
-export default async function MotherProfilePage() {
+export default async function MotherProfilePage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const { next } = await searchParams;
   const [user, t] = await Promise.all([requireUser(), getDictionary()]);
   const mother = await db.mother.findUnique({
     where: { userId: user.id },
@@ -33,6 +34,7 @@ export default async function MotherProfilePage() {
             action={saveMotherAction}
             className="space-y-5"
           >
+            {next === "pregnancy" && <input type="hidden" name="next" value="pregnancy" />}
             {mother && <input type="hidden" name="id" value={mother.id} />}
             <ProfileCoverUpload
               currentImageUrl={mother?.coverImage

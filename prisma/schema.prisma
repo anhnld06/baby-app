@@ -171,6 +171,8 @@ model Mother {
   medicalVisits        MotherMedicalVisit[]
   insurancePolicies    MotherInsurancePolicy[]
   vaccinationRecords   MotherVaccinationRecord[]
+  vaccinationAppointments VaccinationAppointment[]
+  pumpingEntries       PumpingEntry[]
   coverImage           MotherProfileCover?
 }
 
@@ -217,6 +219,7 @@ model Baby {
   diapers                  DiaperEntry[]
   growthEntries            GrowthEntry[]
   vaccinationRecords       VaccinationRecord[]
+  vaccinationAppointments  VaccinationAppointment[]
   prescriptions            Prescription[]
   toothRecords             ToothRecord[]
   medicalVisits            BabyMedicalVisit[]
@@ -323,6 +326,7 @@ model MotherVaccinationRecord {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   mother         Mother   @relation(fields: [motherId], references: [id], onDelete: Cascade)
+  appointment    VaccinationAppointment?
 
   @@index([motherId, administeredAt])
 }
@@ -536,8 +540,30 @@ model VaccinationRecord {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   baby           Baby         @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  appointment    VaccinationAppointment?
 
   @@index([babyId, administeredAt])
+}
+
+model VaccinationAppointment {
+  id                        String @id @default(cuid())
+  babyId                    String?
+  motherId                  String?
+  vaccineName               String
+  doseNumber                Int?
+  scheduledAt               DateTime @db.Date
+  notes                     String?
+  vaccinationRecordId       String? @unique
+  motherVaccinationRecordId String? @unique
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  baby                      Baby? @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  mother                    Mother? @relation(fields: [motherId], references: [id], onDelete: Cascade)
+  vaccinationRecord         VaccinationRecord? @relation(fields: [vaccinationRecordId], references: [id], onDelete: SetNull)
+  motherVaccinationRecord   MotherVaccinationRecord? @relation(fields: [motherVaccinationRecordId], references: [id], onDelete: SetNull)
+
+  @@index([babyId, scheduledAt])
+  @@index([motherId, scheduledAt])
 }
 
 model Prescription {
@@ -636,4 +662,20 @@ model KnowledgeChunk {
   article   KnowledgeArticle             @relation(fields: [articleId], references: [id], onDelete: Cascade)
 
   @@index([articleId])
+}
+
+model PumpingEntry {
+  id              String   @id @default(cuid())
+  motherId        String
+  isRunning       Boolean  @default(false)
+  startTime       DateTime
+  durationMinutes Int?
+  leftAmountMl    Float?
+  rightAmountMl   Float?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  mother          Mother   @relation(fields: [motherId], references: [id], onDelete: Cascade)
+
+  @@index([motherId, startTime])
 }

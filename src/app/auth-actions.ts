@@ -1,7 +1,7 @@
 "use server";
 
 import { createHash, timingSafeEqual } from "node:crypto";
-import { redirect } from "next/navigation";
+import { redirect, RedirectType } from "next/navigation";
 import { z } from "zod";
 import { createSession, deleteSession } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -54,14 +54,13 @@ export async function loginAction(
       username: configuredUsername,
       name: process.env.APP_DISPLAY_NAME?.trim() || configuredUsername,
     },
-    include: { babies: { select: { id: true }, take: 1 } },
   });
 
   await createSession(user.id);
-  redirect(user.babies.length > 0 ? "/" : "/profile");
+  redirect("/", RedirectType.replace);
 }
 
 export async function logoutAction() {
   await deleteSession();
-  redirect("/login");
+  redirect("/login", RedirectType.replace);
 }

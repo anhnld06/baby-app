@@ -24,8 +24,9 @@ export function BabySwitcher({
             <input type="hidden" name="babyId" value={baby.id} />
             <button
               type="submit"
+              aria-pressed={active}
               className={cn(
-                "flex shrink-0 items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5 text-sm font-medium transition-colors",
+                "flex min-h-11 shrink-0 items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5 text-sm font-medium transition-colors",
                 active
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "bg-card text-muted-foreground",
@@ -46,7 +47,7 @@ export function BabySwitcher({
       })}
       <Link
         href="/profile/baby/new"
-        className="flex shrink-0 items-center gap-1 rounded-full bg-card py-1.5 pl-2.5 pr-3.5 text-sm font-medium text-muted-foreground"
+        className="flex min-h-11 shrink-0 items-center gap-1 rounded-full bg-card py-1.5 pl-2.5 pr-3.5 text-sm font-medium text-muted-foreground"
       >
         <Plus className="size-4" />
         {addLabel}

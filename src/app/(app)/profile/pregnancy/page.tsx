@@ -56,7 +56,7 @@ export default async function PregnancyProfilePage() {
             <SelectField
               name="pregnancyStatus"
               label={t.profile.status}
-              defaultValue={pregnancy?.pregnancyStatus ?? "DELIVERED"}
+              defaultValue={pregnancy?.pregnancyStatus ?? "PREGNANT"}
             >
               <option value="PLANNING">{t.profile.planning}</option>
               <option value="PREGNANT">{t.profile.pregnant}</option>

@@ -22,6 +22,8 @@ export function RecordActions({
     <div className="flex items-center gap-1">
       <Link
         href={editHref}
+        replace
+        scroll={false}
         aria-label={editLabel}
         className={cn(
           buttonVariants({ variant: "ghost", size: "icon" }),

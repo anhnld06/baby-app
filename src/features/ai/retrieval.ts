@@ -1,22 +1,31 @@
 import { db } from "@/lib/db";
 import { stageForAge } from "@/features/knowledge/stage";
+import { questionTerms, rankKnowledge } from "./rank";
+import type { KnowledgeStage } from "@prisma/client";
 
-export async function retrieveKnowledge(question: string, ageDays?: number) {
-  const terms = question.toLowerCase().split(/\s+/).filter((term) => term.length >= 3).slice(0, 6);
-  const stage = stageForAge(ageDays);
-  const articles = await db.knowledgeArticle.findMany({
+export async function retrieveKnowledge(question: string, ageDays?: number, motherStage?: KnowledgeStage) {
+  const terms = questionTerms(question);
+  if (!terms.length) return { excerpts: [], sources: [] };
+  const stage = motherStage ?? stageForAge(ageDays);
+  const candidates = await db.knowledgeArticle.findMany({
     where: {
-      ...(terms.length ? { OR: terms.flatMap((term) => [{ title: { contains: term, mode: "insensitive" as const } }, { summary: { contains: term, mode: "insensitive" as const } }, { content: { contains: term, mode: "insensitive" as const } }]) } : {}),
       NOT: { summary: { startsWith: "DEMO CONTENT" } },
+      sources: { some: {} },
     },
-    include: { sources: true, chunks: { take: 3 } },
-    take: 40,
+    select: { id: true, title: true, summary: true, content: true, stage: true },
+    orderBy: { id: "asc" },
+    take: 500,
   });
-  const ranked = articles
-    .sort((left, right) => Number(right.stage === stage) - Number(left.stage === stage))
-    .slice(0, 5);
+  const ranked = rankKnowledge(candidates, terms, stage);
+  if (!ranked.length) return { excerpts: [], sources: [] };
+  const articles = await db.knowledgeArticle.findMany({
+    where: { id: { in: ranked.map((article) => article.id) } },
+    include: { sources: true, chunks: { take: 3 } },
+  });
+  const usable = ranked.flatMap((candidate) => articles.filter((article) => article.id === candidate.id && article.chunks.length > 0));
+  const sources = usable.flatMap((article) => article.sources.map((source) => ({ title: source.title, organization: source.organization, url: source.url, evidenceLevel: article.evidenceLevel })));
   return {
-    excerpts: ranked.flatMap((article) => article.chunks.map((chunk) => chunk.content)),
-    sources: ranked.flatMap((article) => article.sources.map((source) => ({ title: source.title, organization: source.organization, url: source.url, evidenceLevel: article.evidenceLevel }))),
+    excerpts: usable.flatMap((article) => article.chunks.map((chunk) => chunk.content)),
+    sources: sources.filter((source, index) => sources.findIndex((other) => other.url === source.url) === index),
   };
 }

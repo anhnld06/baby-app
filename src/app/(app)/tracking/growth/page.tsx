@@ -36,7 +36,7 @@ export default async function GrowthPage({
   if (!baby)
     return (
       <>
-        <PageHeader title={t.tracking.newGrowth} backHref="/" />
+        <PageHeader title={t.tracking.newGrowth} backHref="/baby" />
         <p>{t.common.noData}</p>
       </>
     );
@@ -72,7 +72,7 @@ export default async function GrowthPage({
       <PageHeader
         title={editing ? t.tracking.editGrowth : t.tracking.newGrowth}
         subtitle={`${baby.name} · Xu hướng và chuẩn WHO khi khả dụng`}
-        backHref="/"
+        backHref="/baby"
       />
       <CollapsibleRecordForm
         key={`${editing?.id ?? "new"}-${items.length}`}
@@ -220,6 +220,7 @@ export default async function GrowthPage({
               </p>
               <p className="text-sm text-muted-foreground">
                 {new Intl.DateTimeFormat(locale, {
+                  timeZone: user.timezone,
                   day: "2-digit",
                   month: "short",
                   year: "numeric",

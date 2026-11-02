@@ -10,9 +10,8 @@ import {
   startSleepTimerAction,
 } from "@/app/timer-actions";
 import { Button } from "@/components/ui/button";
-import { formatDuration } from "@/lib/date";
 
-function TimerButton({ active, startLabel, stopLabel }: { active: boolean; startLabel: string; stopLabel: string }) {
+export function TimerButton({ active, startLabel, stopLabel }: { active: boolean; startLabel: string; stopLabel: string }) {
   const { pending } = useFormStatus();
   return (
     <Button
@@ -28,22 +27,26 @@ function TimerButton({ active, startLabel, stopLabel }: { active: boolean; start
   );
 }
 
-function Elapsed({ startTime, locale }: { startTime?: string; locale: "vi" | "en" }) {
+export function Elapsed({ startTime, locale }: { startTime?: string; locale: "vi" | "en" }) {
   const [now, setNow] = useState<number>();
   useEffect(() => {
     if (!startTime) return;
     const update = () => setNow(Date.now());
     const timeout = window.setTimeout(update, 0);
-    const interval = window.setInterval(update, 30_000);
+    const interval = window.setInterval(update, 1_000);
     return () => {
       window.clearTimeout(timeout);
       window.clearInterval(interval);
     };
   }, [startTime]);
   if (!startTime || now === undefined) return null;
+  const seconds = Math.max(0, Math.floor((now - new Date(startTime).getTime()) / 1_000));
+  const hours = Math.floor(seconds / 3_600);
+  const minutes = Math.floor((seconds % 3_600) / 60);
+  const display = [hours > 0 ? String(hours).padStart(2, "0") : undefined, String(minutes).padStart(2, "0"), String(seconds % 60).padStart(2, "0")].filter(Boolean).join(":");
   return (
-    <span className="text-xs font-semibold text-primary" aria-live="polite">
-      {formatDuration((now - new Date(startTime).getTime()) / 60_000, locale)}
+    <span role="timer" className="text-xs font-semibold tabular-nums text-primary" aria-label={locale === "vi" ? "Thời gian đang bấm giờ" : "Elapsed time"} aria-live="off">
+      {display}
     </span>
   );
 }
@@ -64,7 +67,7 @@ export function QuickTimers({
     {
       key: "feeding",
       icon: Baby,
-      title: vi ? "Hẹn giờ cữ bú" : "Feeding timer",
+      title: vi ? "Bấm giờ bú" : "Feeding timer",
       active: Boolean(activeFeedingStartedAt),
       startedAt: activeFeedingStartedAt,
       action: activeFeedingStartedAt ? finishFeedingTimerAction : startFeedingTimerAction,
@@ -75,7 +78,7 @@ export function QuickTimers({
     {
       key: "sleep",
       icon: BedDouble,
-      title: vi ? "Hẹn giờ giấc ngủ" : "Sleep timer",
+      title: vi ? "Bấm giờ ngủ" : "Sleep timer",
       active: Boolean(activeSleepStartedAt),
       startedAt: activeSleepStartedAt,
       action: activeSleepStartedAt ? finishSleepTimerAction : startSleepTimerAction,

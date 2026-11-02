@@ -7,7 +7,7 @@ export function ThemeToggle() {
   function toggle() {
     const next = !document.documentElement.classList.contains("dark");
     document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("theme", next ? "dark" : "light");
+    try { localStorage.setItem("theme", next ? "dark" : "light"); } catch { /* Private browsing can disable storage. */ }
   }
   return (
     <Button
@@ -16,7 +16,7 @@ export function ThemeToggle() {
       size="icon"
       className="size-11"
       onClick={toggle}
-      aria-label="Toggle dark mode"
+      aria-label="Đổi giao diện sáng hoặc tối"
     >
       <Moon className="dark:hidden" />
       <Sun className="hidden dark:block" />
