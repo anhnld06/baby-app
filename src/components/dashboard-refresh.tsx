@@ -4,14 +4,21 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 /** Keep timers, midnight totals and another device's entries current while the dashboard is visible. */
-export function DashboardRefresh() {
+export function DashboardRefresh({
+  pauseSelector = "[data-handover][open]",
+}: { pauseSelector?: string } = {}) {
   const router = useRouter();
   useEffect(() => {
     let lastRefresh = Date.now();
     const refresh = () => {
-      if (document.visibilityState !== "visible" || !navigator.onLine || Date.now() - lastRefresh < 15_000) return;
+      if (
+        document.visibilityState !== "visible" ||
+        !navigator.onLine ||
+        Date.now() - lastRefresh < 15_000
+      )
+        return;
       // Never interrupt a user copying or reading a handover.
-      if (document.querySelector("[data-handover][open]")) return;
+      if (document.querySelector(pauseSelector)) return;
       lastRefresh = Date.now();
       router.refresh();
     };
@@ -25,6 +32,6 @@ export function DashboardRefresh() {
       window.removeEventListener("online", refresh);
       document.removeEventListener("visibilitychange", refresh);
     };
-  }, [router]);
+  }, [router, pauseSelector]);
   return null;
 }

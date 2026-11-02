@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: [{ media: "(prefers-color-scheme: light)", color: "#fdf1f2" }, { media: "(prefers-color-scheme: dark)", color: "#2b1a1e" }] };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: [{ media: "(prefers-color-scheme: light)", color: "#f6f8fb" }, { media: "(prefers-color-scheme: dark)", color: "#101c29" }] };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

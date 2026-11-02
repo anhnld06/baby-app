@@ -1,15 +1,8 @@
 import Link from "next/link";
-import {
-  Baby,
-  BedDouble,
-  ChevronRight,
-  Shell,
-  Sparkles,
-  BookHeart,
-  Moon,
-  HeartPulse,
-  ArrowUpRight,
-} from "lucide-react";
+import { JourneyOverview } from "@/components/journey-overview";
+import { ChevronRight, BookHeart, HeartPulse } from "lucide-react";
+import { DailySentence } from "@/components/daily-sentence";
+import { HomeQuickActions } from "@/components/home-quick-actions";
 import { BabyDailySummary } from "@/components/baby-daily-summary";
 import { BabySwitcher } from "@/components/baby-switcher";
 import { PageHeader } from "@/components/page-header";
@@ -45,21 +38,99 @@ export default async function DashboardPage() {
   const [babies, selectedBabyId, mother] = await Promise.all([
     listBabies(user.id),
     getSelectedBabyId(),
-    db.mother.findUnique({ where: { userId: user.id }, include: { pregnancies: { orderBy: { createdAt: "desc" } }, pumpingEntries: { where: { isRunning: true }, select: { id: true, startTime: true }, take: 1 } } }),
+    db.mother.findUnique({
+      where: { userId: user.id },
+      include: {
+        pregnancies: { orderBy: { createdAt: "desc" } },
+        pumpingEntries: {
+          where: { isRunning: true },
+          select: { id: true, startTime: true },
+          take: 1,
+        },
+      },
+    }),
   ]);
   const openPumping = mother?.pumpingEntries[0];
-  const pumpingTimer = mother ? <PumpingTimer compact locale={locale} active={openPumping ? { id: openPumping.id, startTime: openPumping.startTime.toISOString() } : undefined} /> : <Link href="/profile/mother" className="mt-2 block rounded-2xl bg-card p-3 text-sm text-primary shadow-sm">{locale === "vi" ? "Thêm hồ sơ mẹ để bấm giờ hút sữa" : "Add mother profile to use pumping timer"}</Link>;
+  const pumpingTimer = mother ? (
+    <PumpingTimer
+      compact
+      locale={locale}
+      active={
+        openPumping
+          ? {
+              id: openPumping.id,
+              startTime: openPumping.startTime.toISOString(),
+            }
+          : undefined
+      }
+    />
+  ) : (
+    <Link
+      href="/profile/mother"
+      className="mt-2 block rounded-2xl bg-card p-3 text-sm text-primary shadow-sm"
+    >
+      {locale === "vi"
+        ? "Thêm hồ sơ mẹ để bấm giờ hút sữa"
+        : "Add mother profile to use pumping timer"}
+    </Link>
+  );
   const baby = pickSelectedBaby(babies, selectedBabyId);
   if (!baby) {
-    const nextVaccination = mother ? await db.vaccinationAppointment.findFirst({
-      where: { motherId: mother.id, motherVaccinationRecordId: null, vaccinationRecordId: null },
-      orderBy: { scheduledAt: "asc" },
-    }) : null;
-    return <><FamilyStart mother={mother} name={user.name} nextVaccination={nextVaccination} />{pumpingTimer}</>;
+    const nextVaccination = mother
+      ? await db.vaccinationAppointment.findFirst({
+          where: {
+            motherId: mother.id,
+            motherVaccinationRecordId: null,
+            vaccinationRecordId: null,
+          },
+          orderBy: { scheduledAt: "asc" },
+        })
+      : null;
+    return (
+      <>
+        <FamilyStart
+          mother={mother}
+          name={user.name}
+          nextVaccination={nextVaccination}
+        />
+        {pumpingTimer}
+        <Link
+          href="/statistics?owner=mother"
+          className="mt-5 flex min-h-12 items-center rounded-2xl bg-secondary px-4 text-sm font-medium text-primary"
+        >
+          Xem thống kê hút sữa →
+        </Link>
+      </>
+    );
   }
   const now = new Date();
   const { start, end } = getLocalDayRange(now, user.timezone);
-  const [feedings, sleeps, diapers, growth, vaccinations, prescriptions, toothRecords, openFeeding, lastFeed, lastDiaper, nextAppointment] = await Promise.all([
+  const [
+    careEntries,
+    feedings,
+    sleeps,
+    diapers,
+    growth,
+    vaccinations,
+    prescriptions,
+    toothRecords,
+    openFeeding,
+    lastFeed,
+    lastDiaper,
+    nextAppointment,
+  ] = await Promise.all([
+    db.babyCareEntry.findMany({
+      where: { babyId: baby.id, kind: { not: "ROUTINE" } },
+      select: {
+        id: true,
+        kind: true,
+        occurredAt: true,
+        title: true,
+        details: true,
+      },
+      orderBy: { occurredAt: "desc" },
+      take: 5,
+    }),
     db.feeding.findMany({
       where: { babyId: baby.id, startTime: { gte: start, lt: end } },
       orderBy: { startTime: "desc" },
@@ -101,16 +172,35 @@ export default async function DashboardPage() {
       where: { babyId: baby.id, ...activeFeedingWhere },
       orderBy: { startTime: "desc" },
     }),
-    db.feeding.findFirst({ where: { babyId: baby.id, startTime: { lte: now } }, orderBy: { startTime: "desc" } }),
-    db.diaperEntry.findFirst({ where: { babyId: baby.id, changedAt: { lte: now } }, orderBy: { changedAt: "desc" } }),
+    db.feeding.findFirst({
+      where: { babyId: baby.id, startTime: { lte: now } },
+      orderBy: { startTime: "desc" },
+    }),
+    db.diaperEntry.findFirst({
+      where: { babyId: baby.id, changedAt: { lte: now } },
+      orderBy: { changedAt: "desc" },
+    }),
     db.vaccinationAppointment.findFirst({
-      where: { vaccinationRecordId: null, motherVaccinationRecordId: null, OR: [{ babyId: baby.id }, ...(mother ? [{ motherId: mother.id }] : [])] },
+      where: {
+        vaccinationRecordId: null,
+        motherVaccinationRecordId: null,
+        OR: [{ babyId: baby.id }, ...(mother ? [{ motherId: mother.id }] : [])],
+      },
       orderBy: { scheduledAt: "asc" },
     }),
   ]);
   const pregnancy = selectRelevantPregnancy(mother?.pregnancies ?? []);
   const timeline = buildTimeline(
-    { feedings, sleeps, diapers, growthEntries: growth, vaccinations, prescriptions, toothRecords },
+    {
+      careEntries,
+      feedings,
+      sleeps,
+      diapers,
+      growthEntries: growth,
+      vaccinations,
+      prescriptions,
+      toothRecords,
+    },
     {
       feeding: t.dashboard.feeding,
       sleep: t.dashboard.sleep,
@@ -137,65 +227,186 @@ export default async function DashboardPage() {
     (item) => item.type === "STOOL" || item.type === "BOTH",
   ).length;
   const sleepMinutes = totalDurationWithinRangeMinutes(sleeps, start, end, now);
-  const clock = (date: Date) => new Intl.DateTimeFormat(locale, { timeZone: user.timezone, hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }).format(date);
+  const clock = (date: Date) =>
+    new Intl.DateTimeFormat(locale, {
+      timeZone: user.timezone,
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+    }).format(date);
   const summary = [
     `${baby.name} · ${formatAge(baby.dateOfBirth, now, locale)}`,
     `Cập nhật: ${formatDateTime(now, user.timezone, locale)}`,
     `Hôm nay: ${feedings.length} cữ bú · ngủ ${formatDuration(sleepMinutes, locale)} · ${wet} tã ướt / ${stool} tã phân.`,
-    lastFeed ? `Cữ bú gần nhất: ${clock(lastFeed.startTime)}${lastFeed.amountMl != null ? ` · ${lastFeed.amountMl} ml` : ""}.` : "Chưa có bản ghi bú.",
-    lastDiaper ? `Thay tã gần nhất: ${clock(lastDiaper.changedAt)}.` : "Chưa có bản ghi thay tã.",
-    activeSleep ? `Đang ngủ từ ${clock(activeSleep.startTime)}.` : "Không có giấc ngủ đang bấm giờ.",
+    lastFeed
+      ? `Cữ bú gần nhất: ${clock(lastFeed.startTime)}${lastFeed.amountMl != null ? ` · ${lastFeed.amountMl} ml` : ""}.`
+      : "Chưa có bản ghi bú.",
+    lastDiaper
+      ? `Thay tã gần nhất: ${clock(lastDiaper.changedAt)}.`
+      : "Chưa có bản ghi thay tã.",
+    activeSleep
+      ? `Đang ngủ từ ${clock(activeSleep.startTime)}.`
+      : "Không có giấc ngủ đang bấm giờ.",
     activeFeeding ? `Đang bú từ ${clock(activeFeeding.startTime)}.` : "",
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
   const greetingLabel = {
     morning: t.dashboard.helloMorning,
     noon: t.dashboard.helloNoon,
     afternoon: t.dashboard.helloAfternoon,
     evening: t.dashboard.helloEvening,
   }[greetingPeriod(now, user.timezone)];
-  const dailyActions = [
-    { href: "/tracking/feeding", title: "Ghi cữ bú", icon: Baby, tone: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300" },
-    { href: "/tracking/sleep", title: "Ghi giấc ngủ", icon: BedDouble, tone: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300" },
-    { href: "/tracking/diaper", title: "Ghi thay tã", icon: Shell, tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" },
-  ];
+  const measuredBottles = feedings.filter(
+    (item) => item.type !== "BREASTFEEDING" && item.amountMl != null,
+  );
+  const bottleMl = measuredBottles.length
+    ? measuredBottles.reduce((total, item) => total + item.amountMl!, 0)
+    : null;
   return (
     <>
       <DashboardRefresh />
-      <PageHeader title={greetingLabel} subtitle={new Intl.DateTimeFormat(locale, { timeZone: user.timezone, weekday: "long", day: "numeric", month: "long" }).format(now)} />
-      <BabySwitcher babies={babies} selectedBabyId={baby.id} addLabel={t.profile.addBaby} />
-      <section className="family-hero relative overflow-hidden rounded-[2rem] p-5 shadow-lg shadow-primary/10 sm:p-7">
-        <div aria-hidden="true" className="family-orbit" />
-        <div className="flex items-center justify-between gap-3">
-          <span className="inline-flex items-center gap-2 text-xs font-medium text-white/80"><Sparkles className="size-3.5" /> Mỗi ngày bên con</span>
-          <Link href={`/profile/baby/${baby.id}`} aria-label={`Hồ sơ của ${baby.name}`} className="grid size-11 shrink-0 place-items-center rounded-full border border-white/20 bg-white/10 transition-colors hover:bg-white/20"><ArrowUpRight className="size-5" /></Link>
+      <PageHeader
+        title="Hôm nay"
+        subtitle={`${greetingLabel} · ${new Intl.DateTimeFormat(locale, { timeZone: user.timezone, weekday: "short", day: "numeric", month: "numeric" }).format(now)}`}
+      />
+      <BabySwitcher
+        babies={babies}
+        selectedBabyId={baby.id}
+        addLabel={t.profile.addBaby}
+      />
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_18rem]">
+        <div className="min-w-0 space-y-6">
+          <DailySentence
+            baby={baby}
+            now={now}
+            locale={locale}
+            feedCount={feedings.length}
+            bottleMl={bottleMl}
+            sleepMinutes={sleepMinutes}
+            hasSleep={sleeps.length > 0}
+            diaperCount={diapers.length}
+            lastFeedAt={lastFeed?.startTime}
+            timeZone={user.timezone}
+            activeSleep={Boolean(activeSleep)}
+            activeFeeding={Boolean(activeFeeding)}
+          />
+          <HomeQuickActions />
+          <section
+            className="surface-panel px-4 pb-4 pt-4"
+            aria-label="Bấm giờ chăm mẹ và bé"
+          >
+            <p className="mb-1 text-xs font-semibold text-muted-foreground">
+              Bấm giờ, rồi cứ yên tâm bên con
+            </p>
+            <QuickTimers
+              babyId={baby.id}
+              locale={locale}
+              activeFeedingStartedAt={activeFeeding?.startTime.toISOString()}
+              activeSleepStartedAt={activeSleep?.startTime.toISOString()}
+            />
+            {pumpingTimer}
+          </section>
+          <section
+            className="surface-panel p-4 sm:p-5"
+            aria-labelledby="recent-journal-title"
+          >
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-muted-foreground">
+                  Từng khoảnh khắc của con
+                </p>
+                <h2
+                  id="recent-journal-title"
+                  className="mt-1 text-lg font-semibold"
+                >
+                  {t.dashboard.recent}
+                </h2>
+              </div>
+              <Link
+                href="/activity"
+                className="inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-primary"
+              >
+                {t.common.seeAll}
+                <ChevronRight className="size-3.5" />
+              </Link>
+            </div>
+            <TimelineList
+              items={timeline}
+              locale={locale}
+              timeZone={user.timezone}
+              empty="Một ngày mới bắt đầu. Ghi cữ bú, giấc ngủ hoặc lần thay tã đầu tiên ở phía trên nhé."
+            />
+          </section>
+          <details className="surface-panel p-4 sm:p-5">
+            <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3">
+              <span>
+                <strong className="block text-sm font-semibold">
+                  Nhịp sinh hoạt trong 24 giờ
+                </strong>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  Bú, ngủ, tã và số đo gần nhất
+                </span>
+              </span>
+              <ChevronRight className="size-4 text-primary" />
+            </summary>
+            <BabyDailySummary
+              baby={baby}
+              now={now}
+              locale={locale}
+              timeZone={user.timezone}
+            />
+          </details>
         </div>
-        <h2 className="mt-3 break-words text-3xl font-semibold tracking-tight sm:text-4xl">{baby.nickname || baby.name}</h2>
-        <p className="mt-2 text-sm text-white/80">{formatAge(baby.dateOfBirth, now, locale)}</p>
-        <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-xs font-medium">
-          {activeSleep ? <Moon className="size-3.5" /> : <HeartPulse className="size-3.5" />}
-          {activeSleep ? `Đang ngủ · từ ${new Intl.DateTimeFormat(locale, { timeZone: user.timezone, hour: "2-digit", minute: "2-digit" }).format(activeSleep.startTime)}` : activeFeeding ? "Đang trong cữ bú" : "Cùng con ghi lại một ngày"}
+        <div className="min-w-0 space-y-4 xl:sticky xl:top-8">
+          <Link
+            href="/statistics?owner=baby"
+            className="surface-panel flex items-center justify-between gap-3 p-4"
+          >
+            <span>
+              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[.12em] text-primary">
+                Cùng nhìn lại
+              </span>
+              <strong className="block text-sm">Thống kê của mẹ & bé</strong>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Những thay đổi qua từng ngày
+              </span>
+            </span>
+            <ChevronRight className="size-4 shrink-0 text-primary" />
+          </Link>
+          <UpcomingVaccination appointment={nextAppointment} />
+          <CareHandover key={baby.id} summary={summary} />
+          <JourneyOverview baby={baby} timeZone={user.timezone} />
+          {pregnancy?.pregnancyStatus === "PREGNANT" && (
+            <Link
+              href="/mother/pregnancy"
+              className="surface-panel flex items-center gap-3 p-4"
+            >
+              <HeartPulse className="size-5 text-primary" />
+              <span className="flex-1 text-sm font-medium">
+                Tiếp tục theo dõi thai kỳ của mẹ
+              </span>
+              <ChevronRight className="size-4" />
+            </Link>
+          )}
+          <Link
+            href="/knowledge"
+            className="flex items-center gap-3 rounded-3xl bg-secondary/60 p-5"
+          >
+            <BookHeart className="size-6 shrink-0 text-primary" />
+            <span className="flex-1">
+              <strong className="block text-sm">
+                Cùng hiểu con hơn mỗi ngày
+              </strong>
+              <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                Cẩm nang chăm mẹ và bé, kèm nguồn tham khảo.
+              </span>
+            </span>
+            <ChevronRight className="size-4 shrink-0 text-primary" />
+          </Link>
         </div>
-      </section>
-
-      <section className="mt-6" aria-labelledby="daily-actions-title">
-        <div className="mb-3 flex items-center justify-between gap-3"><h2 id="daily-actions-title" className="text-lg font-semibold">Chăm bé mỗi ngày</h2><Link href="/baby" className="inline-flex min-h-11 items-center gap-1 text-xs font-medium text-primary">Tất cả <ChevronRight className="size-3.5" /></Link></div>
-        <div className="grid grid-cols-3 gap-3">
-          {dailyActions.map(({ href, title, icon: Icon, tone }) => <Link key={href} href={`${href}?new=1`} className="flex min-h-28 min-w-0 flex-col items-center justify-center gap-3 rounded-3xl border border-border/50 bg-card p-3 text-center text-xs font-semibold shadow-sm transition-[transform,box-shadow] hover:shadow-md active:scale-95"><span className={`grid size-12 place-items-center rounded-2xl ${tone}`}><Icon className="size-5" /></span>{title}</Link>)}
-        </div>
-      </section>
-      <QuickTimers babyId={baby.id} locale={locale} activeFeedingStartedAt={activeFeeding?.startTime.toISOString()} activeSleepStartedAt={activeSleep?.startTime.toISOString()} />
-      {pumpingTimer}
-
-      <BabyDailySummary baby={baby} now={now} locale={locale} timeZone={user.timezone} />
-      <UpcomingVaccination appointment={nextAppointment} />
-      <CareHandover key={baby.id} summary={summary} />
-      {pregnancy?.pregnancyStatus === "PREGNANT" && <Link href="/mother/pregnancy" className="mt-4 flex items-center gap-3 rounded-2xl border border-border/60 bg-card p-4"><HeartPulse className="size-5 text-primary" /><span className="flex-1 text-sm font-medium">Tiếp tục theo dõi thai kỳ của mẹ</span><ChevronRight className="size-4" /></Link>}
-
-      <section className="mt-7">
-        <div className="mb-3 flex items-center justify-between gap-3"><h2 className="text-lg font-semibold">{t.dashboard.recent}</h2><Link href="/activity" className="inline-flex min-h-11 items-center gap-1 text-xs font-medium text-primary">{t.common.seeAll}<ChevronRight className="size-3.5" /></Link></div>
-        <TimelineList items={timeline} locale={locale} timeZone={user.timezone} empty="Một ngày mới bắt đầu. Ghi cữ bú, giấc ngủ hoặc lần thay tã đầu tiên ở phía trên nhé." />
-      </section>
-      <Link href="/knowledge" className="mt-6 flex items-center gap-3 rounded-3xl bg-secondary/60 p-5"><BookHeart className="size-6 shrink-0 text-primary" /><span className="flex-1"><strong className="block text-sm">Cùng hiểu con hơn mỗi ngày</strong><span className="mt-1 block text-xs leading-5 text-muted-foreground">Cẩm nang chăm mẹ và bé, kèm nguồn tham khảo.</span></span><ChevronRight className="size-4 shrink-0 text-primary" /></Link>
+      </div>
     </>
   );
 }

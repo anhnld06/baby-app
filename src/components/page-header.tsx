@@ -1,3 +1,4 @@
+import { NotificationShortcut } from "@/components/notification-shortcut";
 import type { ReactNode } from "react";
 import { BackLink } from "@/components/back-link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -21,14 +22,14 @@ export function PageHeader({
           <BackLink fallback={backHref} />
         )}
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+          <h1 className="text-[1.65rem] font-semibold tracking-tight sm:text-3xl">{title}</h1>
           {subtitle && (
             <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
           )}
           {meta}
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-1"><VoiceLogShortcut /><ThemeToggle /></div>
+      <div className="flex shrink-0 items-center gap-1"><NotificationShortcut /><VoiceLogShortcut /><ThemeToggle /></div>
     </header>
   );
 }

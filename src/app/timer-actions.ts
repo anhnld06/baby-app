@@ -23,6 +23,7 @@ function refreshTracking() {
   revalidatePath("/tracking/feeding");
   revalidatePath("/tracking/sleep");
   revalidatePath("/activity");
+  revalidatePath("/baby/routine");
 }
 
 export async function startFeedingTimerAction(formData: FormData) {

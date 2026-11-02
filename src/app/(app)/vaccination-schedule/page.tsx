@@ -39,6 +39,8 @@ export default async function VaccinationSchedulePage({
 }: {
   searchParams: Promise<{
     owner?: string;
+    baby?: string;
+    view?: string;
     edit?: string;
     record?: string;
     limit?: string;
@@ -46,7 +48,7 @@ export default async function VaccinationSchedulePage({
 }) {
   const [user, params] = await Promise.all([requireUser(), searchParams]);
   const [baby, babies, mother] = await Promise.all([
-    getSelectedBaby(user.id),
+    params.baby ? db.baby.findFirst({ where: { id: params.baby, userId: user.id } }) : getSelectedBaby(user.id),
     db.baby.findMany({
       where: { userId: user.id },
       select: { id: true, name: true, nickname: true },
@@ -196,8 +198,8 @@ export default async function VaccinationSchedulePage({
             <Link replace scroll={false} href="/vaccination-schedule?owner=baby" aria-current={params.owner !== "mother" ? "page" : undefined} className="rounded-full border px-4 py-3 text-sm aria-[current=page]:bg-secondary aria-[current=page]:text-primary">Của bé</Link>
             <Link replace scroll={false} href="/vaccination-schedule?owner=mother" aria-current={params.owner === "mother" ? "page" : undefined} className="rounded-full border px-4 py-3 text-sm aria-[current=page]:bg-secondary aria-[current=page]:text-primary">Của mẹ</Link>
           </nav>}
-          {!editing && !recordEditing && baby && params.owner !== "mother" && <VaccinationChecklist kind="baby" ownerId={baby.id} name={baby.name} birth={baby.dateOfBirth} records={babyChecklistRecords} appointments={pending.filter((item) => item.babyId === baby.id)} today={today} />}
-          {!editing && !recordEditing && mother && (params.owner === "mother" || !baby) && <VaccinationChecklist kind="mother" ownerId={mother.id} name={mother.name} records={motherChecklistRecords} appointments={pending.filter((item) => item.motherId === mother.id)} today={today} />}
+          {!editing && !recordEditing && baby && params.owner !== "mother" && <VaccinationChecklist view={params.view} kind="baby" ownerId={baby.id} name={baby.name} birth={baby.dateOfBirth} records={babyChecklistRecords} appointments={pending.filter((item) => item.babyId === baby.id)} today={today} />}
+          {!editing && !recordEditing && mother && (params.owner === "mother" || !baby) && <VaccinationChecklist view={params.view} kind="mother" ownerId={mother.id} name={mother.name} records={motherChecklistRecords} appointments={pending.filter((item) => item.motherId === mother.id)} today={today} />}
           {editing || recordEditing ? (
             <EditFormTarget recordId={editing?.id ?? recordEditing?.id}>
             <section className="mb-6 rounded-3xl border bg-card p-5">

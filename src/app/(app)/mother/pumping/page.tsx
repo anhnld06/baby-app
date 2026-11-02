@@ -1,3 +1,4 @@
+import { RecordScene } from "@/components/record-scene";
 import { PumpingChart } from "@/components/pumping-chart";
 import { pumpingChartData, pumpingChartPeriod } from "@/features/pumping/chart";
 import { PumpingTrends } from "@/components/pumping-trends";
@@ -56,14 +57,15 @@ export default async function PumpingPage({ searchParams }: {
   return <>
     <PageHeader title={title} subtitle={mother.name} backHref="/mother" />
     <PumpingTimer locale={locale} active={active ? { id: active.id, startTime: active.startTime.toISOString() } : undefined} />
-    <MetricGrid items={[
+    {!(params.new === "1" || editing) && <MetricGrid items={[
       { label: vi ? "Cữ hút hôm nay" : "Sessions today", value: String(summary.count) },
       { label: vi ? "Tổng hôm nay" : "Total today", value: `${number(summary.totalMl)} ml` },
       { label: vi ? "Trung bình mỗi cữ" : "Average per session", value: today.some((item) => item.leftAmountMl != null || item.rightAmountMl != null) ? `${number(summary.averageMl)} ml` : "—" },
       { label: vi ? "Từ cữ hút gần nhất" : "Since last session", value: items[0] ? formatDuration(Math.max(0, (now.getTime() - items[0].startTime.getTime()) / 60_000), locale) : "—" },
-    ]} />
+    ]} />}
     {params.edit && !editing && <p role="alert" className="mb-4 text-sm text-destructive">{vi ? "Không tìm thấy cữ hút sữa." : "Pumping session not found."}</p>}
     <CollapsibleRecordForm editingId={editing?.id} key={`${editing?.id ?? "new"}-${params.new ?? ""}-${items.length}`} defaultOpen={!!editing || params.new === "1"} addLabel={addLabel} closeLabel={cancelLabel}>
+      <RecordScene kind="pumping" timeZone={user.timezone} initialValues={{leftAmountMl: String(editing?.leftAmountMl ?? ""), rightAmountMl: String(editing?.rightAmountMl ?? "")}}>
       <form id="pumping-form" action={savePumpingAction} className="space-y-4 rounded-2xl bg-card p-5 shadow-sm">
         {editing && <input type="hidden" name="id" value={editing.id} />}
         <Field name="startTime" type="datetime-local" required label={vi ? "Thời điểm bắt đầu" : "Start time"} defaultValue={toDateTimeLocal(editing?.startTime, user.timezone)} />
@@ -76,7 +78,8 @@ export default async function PumpingPage({ searchParams }: {
         <TextAreaField name="notes" maxLength={1000} label={vi ? "Ghi chú" : "Notes"} defaultValue={editing?.notes ?? ""} />
       </form>
       <FormActionBar formId="pumping-form" saveAction={savePumpingAction} saveLabel={editing ? (vi ? "Cập nhật" : "Update") : (vi ? "Lưu" : "Save")} cancelHref={editing || params.new === "1" ? "/mother/pumping" : undefined} cancelLabel={cancelLabel} />
-    </CollapsibleRecordForm>
+    </RecordScene>
+      </CollapsibleRecordForm>
     <PumpingChart key={`${chartPeriod.mode}-${chartPeriod.anchor}`} rows={pumpingChartData(chartPeriod, chartEntries, user.timezone)} mode={chartPeriod.mode} anchor={chartPeriod.anchor} previous={chartPeriod.previous} next={chartPeriod.next} today={chartPeriod.today} locale={locale} />
     <PumpingTrends trend={pumpingTrends(now, user.timezone, trendEntries, bottles)} babyName={baby?.name} locale={locale} />
     <h2 className="mb-2 mt-7 text-lg font-semibold">{vi ? "Lịch sử hút sữa" : "Pumping history"}</h2>

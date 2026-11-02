@@ -2,7 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useDeferredValue, useMemo } from "react";
+import { useEffect, useState } from "react";
+import {
+  libraryQueryKey,
+  parseLibraryQuery,
+  type LibraryPage,
+} from "@/features/knowledge/library";
 import { useSearchParams } from "next/navigation";
 import {
   Baby,
@@ -29,70 +34,145 @@ import {
 import { getKnowledgeVisual } from "@/features/knowledge/visuals";
 import { cn } from "@/lib/utils";
 
-type LibraryArticle = {
-  id: string;
-  title: string;
-  slug: string;
-  summary: string;
-  category: string;
-  stage: string;
-  evidenceLevel: string;
-  knowledgeType: string;
-  sourceCount: number;
-};
-
 const STAGE_TILES = [
   { value: "ALL", icon: BookHeart, className: "bg-secondary text-primary" },
-  { value: "PRECONCEPTION", icon: Heart, className: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" },
-  { value: "PREGNANCY", icon: HeartPulse, className: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300" },
-  { value: "POSTPARTUM", icon: Sparkles, className: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },
-  { value: "NEWBORN_0_28_DAYS", icon: Baby, className: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300" },
-  { value: "INFANT_1_3_MONTHS", icon: Smile, className: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300" },
-  { value: "INFANT_3_6_MONTHS", icon: Puzzle, className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" },
-  { value: "INFANT_6_12_MONTHS", icon: Utensils, className: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300" },
-  { value: "TODDLER", icon: Footprints, className: "bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300" },
+  {
+    value: "PRECONCEPTION",
+    icon: Heart,
+    className: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300",
+  },
+  {
+    value: "PREGNANCY",
+    icon: HeartPulse,
+    className:
+      "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
+  },
+  {
+    value: "POSTPARTUM",
+    icon: Sparkles,
+    className:
+      "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+  },
+  {
+    value: "NEWBORN_0_28_DAYS",
+    icon: Baby,
+    className:
+      "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+  },
+  {
+    value: "INFANT_1_3_MONTHS",
+    icon: Smile,
+    className: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300",
+  },
+  {
+    value: "INFANT_3_6_MONTHS",
+    icon: Puzzle,
+    className:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+  },
+  {
+    value: "INFANT_6_12_MONTHS",
+    icon: Utensils,
+    className:
+      "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300",
+  },
+  {
+    value: "TODDLER",
+    icon: Footprints,
+    className: "bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300",
+  },
 ] as const;
 
-function normalize(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .replace(/đ/g, "d")
-    .toLowerCase();
-}
-
 export function KnowledgeLibrary({
-  articles,
+  totalArticles,
+  initialPage,
   currentStage,
 }: {
-  articles: LibraryArticle[];
+  totalArticles: number;
+  initialPage?: LibraryPage;
   currentStage?: string;
 }) {
   const params = useSearchParams();
   const query = (params.get("q") ?? "").slice(0, 120);
   const requestedStage = params.get("stage");
-  const stage = STAGE_TILES.some((tile) => tile.value === requestedStage) ? requestedStage : null;
-  const deferredQuery = useDeferredValue(query);
+  const stage = STAGE_TILES.some((tile) => tile.value === requestedStage)
+    ? requestedStage
+    : null;
+  const [debouncedQuery, setDebouncedQuery] = useState(query.trim());
+  const [response, setResponse] = useState<{
+    key: string;
+    data?: LibraryPage;
+    error?: string;
+  }>();
+  const [retry, setRetry] = useState(0);
+  const requestQuery = parseLibraryQuery({
+    q: debouncedQuery,
+    stage,
+    page: params.get("page"),
+  });
+  const key = libraryQueryKey(requestQuery);
+  const initialKey = initialPage ? libraryQueryKey(initialPage) : null;
+  const showList = stage !== null || query.trim().length > 0;
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+  useEffect(() => {
+    if (!showList || key === initialKey) return;
+    const controller = new AbortController();
+    const [q, stage, page] = JSON.parse(key) as [string, string | null, number];
+    const search = new URLSearchParams({ q, page: String(page) });
+    if (stage) search.set("stage", stage);
+    async function load() {
+      try {
+        const result = await fetch(`/api/knowledge?${search}`, {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        if (!result.ok)
+          throw new Error(
+            result.status === 401
+              ? "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại."
+              : "Chưa tải được cẩm nang. Hãy thử lại.",
+          );
+        const data: LibraryPage = await result.json();
+        if (!controller.signal.aborted) setResponse({ key, data });
+      } catch (error) {
+        if (!controller.signal.aborted)
+          setResponse({
+            key,
+            error:
+              error instanceof Error
+                ? error.message
+                : "Chưa tải được cẩm nang.",
+          });
+      }
+    }
+    void load();
+    return () => controller.abort();
+  }, [key, initialKey, showList, retry]);
+  const data =
+    key === initialKey
+      ? initialPage
+      : response?.key === key
+        ? response.data
+        : undefined;
+  const error = response?.key === key ? response.error : undefined;
+  const loading =
+    showList && ((!data && !error) || query.trim() !== debouncedQuery);
+  const filtered = loading ? [] : (data?.items ?? []);
   function updateFilter(key: string, value: string | null) {
     const url = new URL(window.location.href);
     if (value) url.searchParams.set(key, value);
     else url.searchParams.delete(key);
-    // Keep filters on Back without refetching the entire library or adding keystrokes to history.
-    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+    if (key !== "page") url.searchParams.delete("page");
+    // Keep the current search on Back without adding every keystroke to history.
+    window.history.replaceState(null, "", `${url.pathname}${url.search}`);
+    if (key === "page")
+      document
+        .getElementById("knowledge-results")
+        ?.scrollIntoView({ block: "start" });
   }
-
-  const filtered = useMemo(() => {
-    const needle = normalize(deferredQuery.trim());
-    return articles.filter((article) => {
-      if (stage && stage !== "ALL" && article.stage !== stage) return false;
-      if (!needle) return true;
-      return normalize(
-        `${article.title} ${article.summary} ${article.category} ${stageLabels[article.stage] ?? ""}`,
-      ).includes(needle);
-    });
-  }, [articles, deferredQuery, stage]);
-
-  const showList = stage !== null || query.trim().length > 0;
 
   return (
     <>
@@ -101,6 +181,7 @@ export function KnowledgeLibrary({
           alt=""
           className="object-cover"
           fill
+          preload
           sizes="(max-width: 768px) 100vw, 672px"
           src={getKnowledgeVisual("ALL")}
         />
@@ -117,7 +198,7 @@ export function KnowledgeLibrary({
               Đồng hành từ khi chuẩn bị mang thai
             </h2>
             <p className="mt-2 text-sm leading-6 opacity-85">
-              {articles.length} bài thực hành, có nguồn và phân loại rõ mẹo dân
+              {totalArticles} bài thực hành, có nguồn và phân loại rõ mẹo dân
               gian.
             </p>
           </div>
@@ -184,34 +265,67 @@ export function KnowledgeLibrary({
 
       {showList && (
         <>
-          <div className="mb-3 flex items-center justify-between gap-2">
+          <div
+            id="knowledge-results"
+            className="mb-3 flex scroll-mt-6 items-center justify-between gap-2"
+          >
             <button
               type="button"
               onClick={() => {
                 const url = new URL(window.location.href);
                 url.searchParams.delete("stage");
                 url.searchParams.delete("q");
-                window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+                url.searchParams.delete("page");
+                window.history.replaceState(
+                  null,
+                  "",
+                  `${url.pathname}${url.search}`,
+                );
               }}
               className="flex min-h-11 min-w-0 items-center gap-1 text-sm font-medium text-primary"
             >
               <ChevronLeft className="size-4 shrink-0" />
               <span className="truncate">
-                {stage && stage !== "ALL" ? stageLabels[stage] : "Toàn bộ sổ tay"}
+                {stage && stage !== "ALL"
+                  ? stageLabels[stage]
+                  : "Toàn bộ sổ tay"}
               </span>
             </button>
             <span className="shrink-0 text-xs text-muted-foreground">
-              {filtered.length} bài
+              {loading ? "Đang tìm…" : `${data?.total ?? 0} bài`}
             </span>
           </div>
 
           <div className="space-y-3">
+            {loading && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="rounded-3xl border bg-card p-6 text-sm text-muted-foreground"
+              >
+                Đang tải bài viết…
+              </div>
+            )}
+            {error && !loading && (
+              <div role="alert" className="rounded-3xl border p-5 text-sm">
+                <p>{error}</p>
+                <button
+                  type="button"
+                  onClick={() => setRetry((value) => value + 1)}
+                  className="mt-3 min-h-11 text-primary"
+                >
+                  Thử lại
+                </button>
+              </div>
+            )}
             {filtered.map((article) => {
               const warning = article.knowledgeType === "POTENTIALLY_HARMFUL";
               const folk = article.knowledgeType === "TRADITIONAL_PRACTICE";
               return (
                 <Link
                   href={`/knowledge/${article.slug}`}
+                  prefetch={false}
+                  data-knowledge-article
                   key={article.id}
                   className={cn(
                     "group flex gap-3 rounded-3xl border bg-card p-4 shadow-sm transition-transform active:scale-[.99]",
@@ -227,7 +341,9 @@ export function KnowledgeLibrary({
                         <Badge variant="outline">Phù hợp lúc này</Badge>
                       )}
                     </span>
-                    <strong className="mt-2 block leading-5">{article.title}</strong>
+                    <strong className="mt-2 block leading-5">
+                      {article.title}
+                    </strong>
                     <span className="mt-1 line-clamp-2 text-sm leading-5 text-muted-foreground">
                       {article.summary}
                     </span>
@@ -242,7 +358,9 @@ export function KnowledgeLibrary({
                       <span
                         className={cn(
                           "mt-2 block text-xs font-medium",
-                          warning ? "text-red-600" : "text-amber-700 dark:text-amber-300",
+                          warning
+                            ? "text-red-600"
+                            : "text-amber-700 dark:text-amber-300",
                         )}
                       >
                         {knowledgeTypeLabels[article.knowledgeType]}
@@ -253,16 +371,42 @@ export function KnowledgeLibrary({
                 </Link>
               );
             })}
-            {filtered.length === 0 && (
+            {!loading && !error && filtered.length === 0 && (
               <div className="rounded-3xl border border-dashed p-8 text-center">
                 <Search className="mx-auto mb-3 size-6 text-muted-foreground" />
-                <p className="text-sm font-medium">Không tìm thấy bài phù hợp</p>
+                <p className="text-sm font-medium">
+                  Không tìm thấy bài phù hợp
+                </p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Thử từ khóa ngắn hơn hoặc chọn giai đoạn khác.
                 </p>
               </div>
             )}
           </div>
+          {!loading && !error && data && data.totalPages > 1 && (
+            <nav
+              aria-label="Trang cẩm nang"
+              className="mt-4 flex items-center justify-between gap-3"
+            >
+              <button
+                disabled={data.page <= 1}
+                onClick={() => updateFilter("page", String(data.page - 1))}
+                className="min-h-11 rounded-full bg-secondary px-4 text-sm text-primary disabled:opacity-40"
+              >
+                Trang trước
+              </button>
+              <span className="text-xs text-muted-foreground">
+                {data.page}/{data.totalPages}
+              </span>
+              <button
+                disabled={data.page >= data.totalPages}
+                onClick={() => updateFilter("page", String(data.page + 1))}
+                className="min-h-11 rounded-full bg-secondary px-4 text-sm text-primary disabled:opacity-40"
+              >
+                Trang sau
+              </button>
+            </nav>
+          )}
         </>
       )}
 

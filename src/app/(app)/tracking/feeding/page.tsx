@@ -1,3 +1,4 @@
+import { RecordScene } from "@/components/record-scene";
 import { Baby as BabyIcon } from "lucide-react";
 import { deleteFeedingAction, saveFeedingAction } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
@@ -35,7 +36,7 @@ const typeLabels = {
 export default async function FeedingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string; limit?: string; new?: string }>;
+  searchParams: Promise<{ edit?: string; limit?: string; new?: string; type?: string }>;
 }) {
   const [user, t, locale, params] = await Promise.all([
     requireUser(),
@@ -80,7 +81,7 @@ export default async function FeedingPage({
         subtitle={baby.name}
         backHref="/baby"
       />
-      <MetricGrid
+      {!(params.new === "1" || editing) && <MetricGrid
         items={[
           { label: t.dashboard.feedsToday, value: String(today.length) },
           {
@@ -96,13 +97,14 @@ export default async function FeedingPage({
             value: items[0] ? formatDuration(sinceLast, locale) : "—",
           },
         ]}
-      />
+      />}
       <CollapsibleRecordForm editingId={editing?.id}
-        key={`${editing?.id ?? "new"}-${params.new ?? ""}-${items.length}`}
+        key={`${editing?.id ?? "new"}-${params.new ?? ""}-${params.type ?? ""}-${items.length}`}
         defaultOpen={!!editing || params.new === "1"}
         addLabel={t.tracking.newFeeding}
         closeLabel={t.common.cancel}
       >
+      <RecordScene kind="breast" timeZone={user.timezone} initialValues={{type: editing?.type ?? (params.type || "BREASTFEEDING"), amountMl: String(editing?.amountMl ?? ""), leftBreastDuration: String(editing?.leftBreastDuration ?? ""), rightBreastDuration: String(editing?.rightBreastDuration ?? "")}}>
       <Card className="border-0 shadow-sm">
         <CardContent className="p-5">
           <form
@@ -113,6 +115,7 @@ export default async function FeedingPage({
             <input type="hidden" name="babyId" value={baby.id} />
             {editing && <input type="hidden" name="id" value={editing.id} />}
             <FeedingFields
+              initialType={params.type === "BOTTLE_BREAST_MILK" || params.type === "FORMULA" || params.type === "MIXED" ? params.type : "BREASTFEEDING"}
               key={editing?.id ?? "new"}
               locale={locale}
               labels={t.tracking}
@@ -155,7 +158,7 @@ export default async function FeedingPage({
       <FormActionBar
         formId="feeding-form"
         saveAction={saveFeedingAction}
-        saveLabel={editing ? t.common.update : t.common.save}
+        saveLabel={editing ? t.common.update : locale === "vi" ? "Lưu cữ bú" : t.common.save}
         cancelHref={editing || params.new === "1" ? "/tracking/feeding" : undefined}
         cancelLabel={t.common.cancel}
         deleteAction={editing ? deleteFeedingAction : undefined}
@@ -163,6 +166,7 @@ export default async function FeedingPage({
         deleteLabel={t.common.delete}
         offlineMutationType={editing ? undefined : "CREATE_FEEDING"}
       />
+      </RecordScene>
       </CollapsibleRecordForm>
       <h2 className="mb-2 mt-7 text-lg font-semibold">{t.tracking.history}</h2>
       <div className="space-y-2">

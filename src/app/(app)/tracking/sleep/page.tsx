@@ -1,3 +1,4 @@
+import { RecordScene } from "@/components/record-scene";
 import { BedDouble } from "lucide-react";
 import { deleteSleepAction, saveSleepAction } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
@@ -77,7 +78,7 @@ export default async function SleepPage({
         subtitle={baby.name}
         backHref="/baby"
       />
-      <MetricGrid
+      {!(params.new === "1" || editing) && <MetricGrid
         items={[
           {
             label: t.dashboard.sleepToday,
@@ -110,13 +111,14 @@ export default async function SleepPage({
                 : "—",
           },
         ]}
-      />
+      />}
       <CollapsibleRecordForm editingId={editing?.id}
         key={`${editing?.id ?? "new"}-${params.new ?? ""}-${items.length}`}
         defaultOpen={!!editing || params.new === "1"}
         addLabel={t.tracking.newSleep}
         closeLabel={t.common.cancel}
       >
+      <RecordScene kind="sleep" timeZone={user.timezone} initialValues={{startTime: toDateTimeLocal(editing?.startTime, user.timezone), endTime: editing?.endTime ? toDateTimeLocal(editing.endTime, user.timezone) : ""}}>
       <Card className="border-0 shadow-sm">
         <CardContent className="p-5">
           <form id="sleep-form" action={saveSleepAction} className="space-y-4">
@@ -163,7 +165,7 @@ export default async function SleepPage({
       <FormActionBar
         formId="sleep-form"
         saveAction={saveSleepAction}
-        saveLabel={editing ? t.common.update : t.common.save}
+        saveLabel={editing ? t.common.update : locale === "vi" ? "Lưu giấc ngủ" : t.common.save}
         cancelHref={editing || params.new === "1" ? "/tracking/sleep" : undefined}
         cancelLabel={t.common.cancel}
         deleteAction={editing ? deleteSleepAction : undefined}
@@ -171,6 +173,7 @@ export default async function SleepPage({
         deleteLabel={t.common.delete}
         offlineMutationType={editing ? undefined : "CREATE_SLEEP"}
       />
+      </RecordScene>
       </CollapsibleRecordForm>
       <h2 className="mb-2 mt-7 text-lg font-semibold">{t.tracking.history}</h2>
       <div className="space-y-2">

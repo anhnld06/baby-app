@@ -1,3 +1,4 @@
+import { getJourneyNotifications } from "@/features/journey/notifications";
 import { AppShell } from "@/components/app-shell";
 import { requireUser } from "@/lib/auth";
 import { getSelectedBaby } from "@/lib/data";
@@ -10,10 +11,12 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     getLocale(),
     getSelectedBaby(user.id),
   ]);
+  const notifications = await getJourneyNotifications(user.id,user.timezone,baby?.id ?? null);
   return (
     <AppShell
       labels={dictionary.nav}
       appName={dictionary.appName}
+      unreadCount={notifications.filter(n=>!n.read).length}
       voiceLog={baby ? { babyId: baby.id, locale } : undefined}
     >
       {children}

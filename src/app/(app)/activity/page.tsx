@@ -30,7 +30,8 @@ export default async function ActivityPage({
     );
   const limit = parseHistoryLimit(params.limit, 100, 500);
   const queryLimit = limit + 1;
-  const [feedings, sleeps, diapers, growthEntries, vaccinations, prescriptions, toothRecords] = await Promise.all([
+  const [careEntries, feedings, sleeps, diapers, growthEntries, vaccinations, prescriptions, toothRecords] = await Promise.all([
+    db.babyCareEntry.findMany({ where: { babyId: baby.id, kind: { not: "ROUTINE" } }, select: { id: true, kind: true, occurredAt: true, title: true, details: true }, orderBy: { occurredAt: "desc" }, take: queryLimit }),
     db.feeding.findMany({
       where: { babyId: baby.id },
       orderBy: { startTime: "desc" },
@@ -69,7 +70,7 @@ export default async function ActivityPage({
     }),
   ]);
   const timeline = buildTimeline(
-    { feedings, sleeps, diapers, growthEntries, vaccinations, prescriptions, toothRecords },
+    { careEntries, feedings, sleeps, diapers, growthEntries, vaccinations, prescriptions, toothRecords },
     {
       feeding: t.dashboard.feeding,
       sleep: t.dashboard.sleep,
@@ -87,7 +88,7 @@ export default async function ActivityPage({
     },
     locale,
   );
-  const hasMore = timeline.length > limit || [feedings, sleeps, diapers, growthEntries, vaccinations, prescriptions, toothRecords].some((items) => items.length > limit);
+  const hasMore = timeline.length > limit || [careEntries, feedings, sleeps, diapers, growthEntries, vaccinations, prescriptions, toothRecords].some((items) => items.length > limit);
   return (
     <>
       <PageHeader backHref="/baby" title={t.nav.activity} subtitle={baby.name} />

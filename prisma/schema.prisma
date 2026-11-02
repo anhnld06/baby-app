@@ -132,6 +132,7 @@ model User {
   locale                  String                   @default("vi")
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
+  notificationReads       NotificationRead[]
   sessions                Session[]
   mother                  Mother?
   babies                  Baby[]
@@ -225,6 +226,8 @@ model Baby {
   toothRecords             ToothRecord[]
   medicalVisits            BabyMedicalVisit[]
   insurancePolicies        BabyInsurancePolicy[]
+  routineSettings          BabyRoutineSettings?
+  careEntries              BabyCareEntry[]
   coverImage               BabyProfileCover?
 
   @@index([userId])
@@ -683,4 +686,49 @@ model PumpingEntry {
   mother          Mother   @relation(fields: [motherId], references: [id], onDelete: Cascade)
 
   @@index([motherId, startTime])
+}
+
+model BabyCareEntry {
+  id String @id @default(cuid())
+  babyId String
+  kind String
+  milestoneKey String?
+  endedAt DateTime?
+  expectedEndAt DateTime?
+  occurredAt DateTime
+  title String
+  details String?
+  amount String?
+  mood String?
+  symptoms String?
+  durationMinutes Int?
+  completed Boolean @default(false)
+  photoData Bytes?
+  photoMime String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  baby Baby @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  @@unique([babyId, milestoneKey])
+  @@index([babyId, kind, occurredAt])
+}
+
+model BabyRoutineSettings {
+  babyId String @id
+  method String @default("AUTO")
+  dayStart String @default("06:30")
+  dayEnd String @default("19:00")
+  feedingMinutes Int @default(25)
+  awakeMinutes Int @default(35)
+  sleepMinutes Int @default(120)
+  adaptToLogs Boolean @default(true)
+  updatedAt DateTime @updatedAt
+  baby Baby @relation(fields: [babyId], references: [id], onDelete: Cascade)
+}
+model NotificationRead {
+  id String @id @default(cuid())
+  userId String
+  key String
+  readAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, key])
 }

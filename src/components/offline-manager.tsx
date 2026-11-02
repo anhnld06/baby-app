@@ -25,8 +25,13 @@ export function OfflineManager() {
       if (event.data?.type === "SYNC_OFFLINE_QUEUE") void sync();
     };
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-      navigator.serviceWorker.addEventListener("message", handleServiceWorkerMessage);
+      navigator.serviceWorker
+        .register("/sw.js", { updateViaCache: "none" })
+        .catch(() => undefined);
+      navigator.serviceWorker.addEventListener(
+        "message",
+        handleServiceWorkerMessage,
+      );
     }
     const initialRefresh = window.setTimeout(() => {
       if (navigator.onLine) void sync();
@@ -36,7 +41,10 @@ export function OfflineManager() {
     window.addEventListener(offlineQueueEvent, refresh);
     return () => {
       window.clearTimeout(initialRefresh);
-      navigator.serviceWorker?.removeEventListener("message", handleServiceWorkerMessage);
+      navigator.serviceWorker?.removeEventListener(
+        "message",
+        handleServiceWorkerMessage,
+      );
       window.removeEventListener("online", sync);
       window.removeEventListener(offlineQueueEvent, refresh);
     };

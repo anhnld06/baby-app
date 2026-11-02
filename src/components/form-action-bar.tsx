@@ -100,7 +100,7 @@ export function FormActionBar({
   }
 
   return (
-    <div className="mt-4 w-full rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
+    <div data-record-actions className="mt-4 w-full rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
       <div className="flex items-center gap-2">
         {cancelHref && (
           <Link

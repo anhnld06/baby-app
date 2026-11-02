@@ -8,10 +8,10 @@ export function MetricGrid({
       {items.map((item) => (
         <div
           key={item.label}
-          className="min-w-0 rounded-2xl bg-card p-4 shadow-sm"
+          className="surface-panel min-w-0 p-4"
         >
-          <p className="truncate text-xs text-muted-foreground">{item.label}</p>
-          <p className="mt-1 text-xl font-semibold tabular-nums">
+          <p className="text-xs leading-5 text-muted-foreground">{item.label}</p>
+          <p className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
             {item.value}
           </p>
         </div>

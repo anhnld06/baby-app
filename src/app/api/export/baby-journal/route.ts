@@ -14,7 +14,8 @@ export async function GET() {
   const baby = await getSelectedBaby(user.id);
   if (!baby) return new Response("No baby profile", { status: 404 });
 
-  const [feedings, sleeps, diapers, growth, vaccinations, prescriptions, teeth] = await Promise.all([
+  const [care, feedings, sleeps, diapers, growth, vaccinations, prescriptions, teeth] = await Promise.all([
+    db.babyCareEntry.findMany({ where: { babyId: baby.id }, select: { endedAt: true, expectedEndAt: true, milestoneKey: true, occurredAt: true, kind: true, title: true, amount: true, mood: true, symptoms: true, durationMinutes: true, completed: true, details: true } }),
     db.feeding.findMany({ where: { babyId: baby.id } }),
     db.sleepEntry.findMany({ where: { babyId: baby.id } }),
     db.diaperEntry.findMany({ where: { babyId: baby.id } }),
@@ -25,6 +26,7 @@ export async function GET() {
   ]);
 
   const rows: Array<{ at: Date; type: string; summary: string; detail: string; notes: string }> = [
+    ...care.map(item => ({ at: item.occurredAt, type: item.kind, summary: item.title, detail: [item.endedAt ? `ended=${item.endedAt.toISOString()}` : "", item.expectedEndAt ? `family-estimate=${item.expectedEndAt.toISOString()}` : "", item.milestoneKey, item.amount, item.mood, item.symptoms, item.durationMinutes ? `${item.durationMinutes} minutes planned` : "", item.kind === "ROUTINE" ? `planned; completed=${item.completed}` : ""].filter(Boolean).join("; "), notes: item.details ?? "" })),
     ...feedings.map((item) => ({
       at: item.startTime,
       type: "Feeding",

@@ -1,4 +1,4 @@
-import { Baby, Music2, BedDouble, FileHeart, Pill, Ruler, Shell, ShieldCheck, Smile, Syringe } from "lucide-react";
+import { Star, Utensils, Sun, ChartColumn, Heart, Baby, Music2, BedDouble, FileHeart, Pill, Ruler, Shell, ShieldCheck, Smile, Syringe } from "lucide-react";
 import { BabySwitcher } from "@/components/baby-switcher";
 import { FeatureLink } from "@/components/feature-link";
 import { PageHeader } from "@/components/page-header";
@@ -41,6 +41,15 @@ export default async function BabyHubPage() {
         <FeatureLink href="/tracking/sleep" icon={BedDouble} title="Giấc ngủ" description="Giấc ngày, giấc đêm và thời lượng." tone="violet" />
         <FeatureLink href="/tracking/diaper" icon={Shell} title="Bỉm / tã" description="Tã ướt, đi ngoài và ghi chú." tone="emerald" />
         <FeatureLink href="/tracking/growth" icon={Ruler} title="Tăng trưởng" description="Cân nặng, chiều cao và vòng đầu." tone="blue" />
+      </div>
+      <h2 className="mb-3 mt-7 text-sm font-semibold uppercase tracking-[.14em] text-muted-foreground">Nhịp sống & kỷ niệm</h2>
+      <div className="grid gap-3 min-[520px]:grid-cols-2">
+        <FeatureLink href="/statistics?owner=baby" icon={ChartColumn} title="Thống kê chăm bé" description="Bú, ngủ và tã trong 7 / 30 ngày." tone="emerald" />
+        <FeatureLink href="/baby/development" icon={Sun} title="Tuần khủng hoảng" description="Theo dõi thực tế, giấc ngủ và tham khảo theo tuần." tone="violet" />
+        <FeatureLink href="/baby/routine" icon={Sun} title="Nếp ngày EASY" description="Lịch theo tuổi, tùy chỉnh và điều chỉnh theo nhật ký." tone="amber" />
+        <FeatureLink href="/baby/meals" icon={Utensils} title="Ăn dặm" description="Món ăn, nguyên liệu và quan sát sau bữa." tone="rose" />
+        <FeatureLink href="/baby/milestones" icon={Star} title="Mốc phát triển" description="Lưu những lần đầu, ảnh và kỷ niệm." tone="violet" />
+        <FeatureLink href="/baby/wellbeing" icon={Heart} title="Dấu hiệu & tâm trạng" description="Nhật ký quan sát của gia đình." tone="blue" />
       </div>
       <div className="mt-4"><FeatureLink href="/baby/lullabies" icon={Music2} title="Nhạc hát ru" description="Chọn bài theo độ tuổi, nghe cùng con và hẹn dừng nhạc." tone="violet" /></div>
       <h2 className="mb-3 mt-7 text-sm font-semibold uppercase tracking-[.14em] text-muted-foreground">Sức khỏe của bé</h2>

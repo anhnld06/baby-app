@@ -6,45 +6,35 @@ import { stageForAge } from "@/features/knowledge/stage";
 import { requireUser } from "@/lib/auth";
 import { getSelectedBaby } from "@/lib/data";
 import { ageInDays } from "@/lib/date";
-import { db } from "@/lib/db";
+import { getLibraryIndex } from "@/features/knowledge/library-data";
+import { parseLibraryQuery, queryLibrary } from "@/features/knowledge/library";
 import { getDictionary } from "@/lib/i18n";
 
-export default async function KnowledgePage() {
+export default async function KnowledgePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; stage?: string; page?: string }>;
+}) {
   const [user, t] = await Promise.all([requireUser(), getDictionary()]);
-  const baby = await getSelectedBaby(user.id);
+  const [baby, index, params] = await Promise.all([
+    getSelectedBaby(user.id),
+    getLibraryIndex(),
+    searchParams,
+  ]);
   const ageDays = baby ? ageInDays(baby.dateOfBirth) : undefined;
   const stage = stageForAge(ageDays);
-  const articles = await db.knowledgeArticle.findMany({
-    where: { NOT: { slug: { startsWith: "demo-" } } },
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      summary: true,
-      category: true,
-      stage: true,
-      evidenceLevel: true,
-      knowledgeType: true,
-      _count: { select: { sources: true } },
-    },
-    orderBy: [{ stage: "asc" }, { title: "asc" }],
-  });
+  const query = parseLibraryQuery(params);
+  const initialPage =
+    query.stage !== null || query.q.length > 0
+      ? queryLibrary(index, query)
+      : undefined;
   return (
     <>
       <PageHeader title={t.knowledge.title} subtitle={t.knowledge.subtitle} />
       <KnowledgeLibrary
         currentStage={stage}
-        articles={articles.map((article) => ({
-          id: article.id,
-          title: article.title,
-          slug: article.slug,
-          summary: article.summary,
-          category: article.category,
-          stage: article.stage,
-          evidenceLevel: article.evidenceLevel,
-          knowledgeType: article.knowledgeType,
-          sourceCount: article._count.sources,
-        }))}
+        totalArticles={index.length}
+        initialPage={initialPage}
       />
       <Link
         href="/assistant"

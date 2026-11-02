@@ -12,7 +12,9 @@
 - **Cẩm nang:** thư viện kiến thức theo giai đoạn và truyện đọc cùng bé; không trộn với nhật ký sức khỏe.
 - **Hồ sơ:** thông tin định danh của mẹ, từng bé và cài đặt.
 
-Màn hình lớn dùng sidebar; điện thoại dùng thanh điều hướng 5 mục tương đương.
+Màn hình lớn có thêm mục **Thống kê** ngay dưới Hôm nay trên sidebar. Trang `/statistics` chuyển giữa **Của bé** (bú/ngủ/tã/tăng trưởng, chọn bé) và **Của mẹ** (tổng quan hút sữa, biểu đồ ngày/tháng/năm, xu hướng). Điện thoại giữ thanh điều hướng 5 mục và có lối vào thống kê trên Hôm nay. `/baby/stats` chuyển hướng sang trang mới, giữ bộ lọc ngày/khoảng thời gian.
+
+Giao diện tham khảo cách tổ chức nội dung của [embé](https://embe.icedtealabs.com/vi/): nền trắng/xám sáng, xanh biển–xanh ngọc làm màu chính, màu pastel theo hoạt động và nhật ký gọn. Hôm nay có tóm tắt bằng câu dựa trên bản ghi thật; số ml chỉ tính phần bình đã nhập, không quy đổi bú mẹ. Nhịp 24 giờ giữ riêng trong mục mở rộng. Màn lớn chia nội dung chính và thông tin gia đình thành hai cột; điện thoại xếp dọc, hỗ trợ giao diện tối và giảm chuyển động. Minh họa được tạo từ SVG/icon trong code, không lấy tài sản thương hiệu của trang tham khảo.
 
 ## Trải nghiệm hằng ngày
 
@@ -25,9 +27,9 @@ Màn hình lớn dùng sidebar; điện thoại dùng thanh điều hướng 5 m
 - “Bàn giao chăm bé” tạo tóm tắt có thời điểm cập nhật và nút sao chép để người dùng tự chia sẻ.
 - Nút Sửa mở đúng bản ghi, tự cuộn đến biểu mẫu và chuyển focus vào vùng chỉnh sửa; đổi bản ghi sẽ nạp lại giá trị. Áp dụng cho các nhật ký, tiêm chủng, kỳ kinh và sơ đồ răng.
 - Nút quay lại dùng lịch sử thực tế trong ứng dụng, hỗ trợ Back/Forward. Truy cập trực tiếp có đường về mục cha. Chỉnh sửa, lưu và tải thêm lịch sử dùng replace để tránh vòng lặp.
-- Bộ lọc và tìm kiếm cẩm nang lưu trên URL; quay lại từ bài viết giữ nguyên lựa chọn.
+- Cẩm nang tải 24 bài mỗi trang, không gửi toàn bộ kho bài trên màn chọn giai đoạn. Tìm kiếm tiếng Việt có/không dấu trì hoãn 250 ms lúc đang gõ, hủy request cũ khi đổi bộ lọc. `/api/knowledge` kiểm tra đăng nhập, response `private, no-store`; chỉ danh mục biên tập dùng chung được giữ trong bộ nhớ server tối đa 60 giây mỗi worker, không gồm hồ sơ hay nhật ký sức khỏe. Bộ lọc, từ khóa và trang lưu trên URL; quay lại từ bài viết giữ nguyên lựa chọn. Không tự tải trước toàn bộ bài viết trong danh sách.
 - Nút giọng nói nằm cạnh tiêu đề. Chuyển động ngắn, tôn trọng chế độ giảm chuyển động; OCR chỉ tải thư viện nhận diện khi bắt đầu quét.
-- Trang dự phòng mất mạng cache các tài nguyên tĩnh cần để hiển thị; không cache trang hoặc API sức khỏe.
+- Trang dự phòng mất mạng cache các tài nguyên tĩnh bất biến có hash của bản production; không cache trang hoặc API sức khỏe. Service worker v4 tự dọn cache `vani-static-*` cũ và bỏ qua JavaScript/CSS dev không có hash để tránh dùng bundle lỗi thời khi sửa code. Icon/manifest lấy bản mới khi có mạng. Nếu đang giữ tab localhost từ trước thay đổi này, tải lại mạnh bằng Cmd+Shift+R một lần.
 - **Tiêm chủng:** hiện sẵn toàn bộ danh sách mũi theo tuổi, có tóm tắt mốc tiếp theo và tên từng mũi. Tích ngay trên mũi để ghi “Đã tiêm hôm nay”, không cần nhập form; mũi vẫn nằm trong danh sách. Sửa ngày/ghi chú sau nếu cần, có thể bỏ tích. Tự nhận diện lần tiêm cũ; lịch hẹn riêng và lịch sử vẫn ở cùng trang.
 - **Nhạc hát ru** trong Của bé: tự gợi ý nhóm 0–6 tháng, 6–12 tháng, 1–3 tuổi hoặc từ 3 tuổi theo hồ sơ đang chọn. Có thể đổi nhóm hoặc xem tất cả bài, kết hợp hát ru tiếng Việt và nhạc nhẹ quốc tế. Nhóm tuổi là cách sắp xếp gợi ý, không phải giới hạn y khoa của bài hát.
 
@@ -52,6 +54,23 @@ Khi cập nhật bản đã có dữ liệu, chạy `npm run db:generate` và `n
 Danh sách theo tuổi tự tính các mốc tháng từ ngày sinh (có xử lý cuối tháng), hiển thị cả mũi đã tiêm và các mũi sau. Mốc TCMR được đối chiếu với [Viện Vệ sinh dịch tễ Trung ương](https://nihe.org.vn/chuyen-mon/tiem-chung-vac-xin/cac-vac-xin-trong-tiem-chung-mo-rong/) ngày 02/11/2026; lịch thực tế theo cơ sở tiêm. Danh mục dịch vụ là tham khảo, tùy loại vắc-xin và tiền sử. Lịch nhắc trên trang chủ, Web Push và file lịch vẫn lấy từ ngày hẹn gia đình nhập; danh sách theo tuổi không tự tạo thông báo. Đánh dấu đã tiêm không thay đổi ngày hẹn ban đầu; hai ngày được lưu riêng. Khi thêm hẹn tiếp theo, số mũi để trống để gia đình tự nhập nếu cần.
 
 File `.ics` tải xuống là bản chụp tại thời điểm xuất. Nếu đã nhập vào lịch điện thoại, thay đổi trong app không tự sửa hoặc xóa sự kiện đã nhập ở đó.
+
+## Ghi nhanh và hành trình của bé
+
+- **Ghi nhanh** toàn app tách Bú mẹ / Bú bình và mở sẵn loại cữ tương ứng, vẫn có thể đổi. Thức giấc kết thúc giấc ngủ đang chạy hoặc lưu giờ thức riêng khi chưa có giấc đang chạy. Ăn dặm, dấu hiệu/tâm trạng, số đo, tã, hút sữa và kỷ niệm tiếp tục dùng nhật ký riêng.
+- **Thống kê chăm bé** (`/baby/stats`) chọn ngày kết thúc và khoảng 7/30 ngày, xem tổng quan ngày đó và chênh lệch số liệu đã ghi so với ngày trước. Có biểu đồ sữa bình, số cữ bú, thời gian ngủ và số lần thay tã; bảng số liệu truy cập được. Chưa có bản ghi là “—”, khác với ghi 0 ml. Cữ kết hợp chỉ tính phần ml bình; không quy đổi phút bú mẹ. Giấc qua nửa đêm chia theo múi giờ tài khoản. Hôm nay chưa kết thúc được ghi rõ. Tăng trưởng ở cùng trang, có tab cân nặng / chiều dài-chiều cao / vòng đầu. Các con số không tự đánh giá đủ/thiếu.
+- **Mốc phát triển** (`/baby/milestones`) có bộ sưu tập 47 huy hiệu: 18 cột mốc, 14 khoảnh khắc và 15 thai kỳ. Có lọc nhóm, tiến độ và ngày đã ghi; chào đời/tròn tháng tự tính từ ngày sinh, xử lý cuối tháng. Kỹ năng do gia đình xác nhận và có liên kết tham khảo CDC; chưa ghi không có nghĩa là chưa đạt. Kỷ niệm có ảnh JPG/PNG/WebP tối đa 500 KB, ghi chú, sửa và xóa. Ảnh lưu trong database, chỉ tài khoản gia đình được đọc và không cache.
+- **Ăn dặm** (`/baby/meals`) ghi món/nguyên liệu, lượng tùy chọn và quan sát sau bữa. **Dấu hiệu & tâm trạng** (`/baby/wellbeing`) ghi quan sát và tâm trạng; có đường sang trợ lý/cẩm nang hiện có.
+- **Nếp ngày EASY** (`/baby/routine`) mặc định chọn mẫu 3 giờ dưới 90 ngày, 3,5 giờ từ 90 đến 149 ngày, 4 giờ từ 150 ngày. Đây là quy tắc sắp xếp của sản phẩm, không phải ngưỡng y khoa hay chỉ định bú/ngủ. Có thể chọn mẫu hoặc tự nhập thời lượng, giờ bắt đầu/kết thúc ngày và bật/tắt điều chỉnh theo nhật ký. Chỉ tạo lịch ban ngày; không suy ra rằng bé không cần ăn ban đêm. Luôn đáp ứng tín hiệu của bé theo [NHS về cho ăn đáp ứng](https://www.nhs.uk/best-start-in-life/baby/feeding-your-baby/bottle-feeding/bottle-feeding-your-baby/feeding-on-demand/).
+- EASY hiển thị dự kiến và cữ bú/ngủ/thức thực tế cùng timeline. Ghép bản ghi cùng loại gần mốc trong 90 phút, dùng một bản ghi một lần; bản ghi không khớp vẫn hiện. Khi bật điều chỉnh, giờ kết thúc thực tế làm điểm tính tiếp; giấc đang chạy dùng thời lượng mẫu làm dự kiến, không tự kết thúc giấc. Cập nhật mỗi phút khi đang xem và dừng khi mở cài đặt để bảo vệ bản nháp. Lịch nhập tay vẫn ở phần riêng; đánh dấu hoàn thành không tạo cữ bú/ngủ.
+- **Tuần khủng hoảng** (`/baby/development`) có dòng thời gian tuần, chọn tuổi theo ngày sinh hoặc hiệu chỉnh về 40 tuần, các mốc tham khảo từ [tác giả Wonder Weeks](https://thewonderweeks.com/blog/leaps/crankiness-and-crying/) và thông tin về [thay đổi giấc ngủ từ NHS](https://www.nhs.uk/baby/caring-for-a-newborn/helping-your-baby-to-sleep/). Mốc mô hình không được coi là chẩn đoán hoặc dự báo chắc chắn triệu chứng. “Đang theo dõi” chỉ từ đợt gia đình ghi, có ngày bắt đầu, kết thúc thực tế và ngày kết thúc dự kiến tùy chọn của gia đình. Đếm ngược tới mốc mô hình được ghi nhãn riêng với ước tính kết thúc của gia đình.
+- **Tháng này có gì** trên Hôm nay hiển thị nội dung theo giai đoạn, tiến độ huy hiệu, đường tới trợ lý và phần cần lưu ý dựa trên đợt thực tế hoặc nội dung tham khảo theo tuổi.
+- **Thông báo** (`/notifications`) có chuông và số chưa đọc, lịch tiêm sắp tới hoặc chưa xác nhận trong 30 ngày, thông tin giai đoạn và đợt gia đình đang ghi. Đánh dấu từng mục/tất cả lưu theo tài khoản, đồng bộ khi tải lại trên thiết bị khác. Ngày hẹn đổi tạo khóa thông báo mới. Liên kết lịch hẹn mở đúng hồ sơ bé, kiểm tra quyền ở server. Hộp thông báo độc lập với Web Push đã có.
+- Tiêm chủng có hai cách xem **Theo tuổi / Theo vắc-xin**; theo vắc-xin dùng thẻ mũi cuộn ngang và nút tròn. Hai cách xem cùng dùng dữ liệu và thao tác đã có, không nhân bản bản ghi.
+- Nhật ký ăn dặm, dấu hiệu, đợt theo dõi, thức giấc và kỷ niệm xuất hiện trong nhật ký chung. CSV gồm cả các mục mới; lịch nhập tay mang loại `ROUTINE`, đợt theo dõi mang `EPISODE` với giờ kết thúc/ước tính riêng. Ảnh không nhúng trong CSV.
+- Các nhật ký mới cần mạng khi lưu; offline tiếp tục áp dụng cho bú/ngủ/tã như trước.
+
+Trước khi chạy với database đã có, chạy `npm run db:generate` và `npm run db:deploy`. Migration `20261102130000_baby_care_journal` thêm bảng nhật ký; `20261102150000_complete_baby_journey` thêm cấu hình EASY, khóa huy hiệu, thời điểm đợt theo dõi và trạng thái đọc thông báo. Cả hai giữ nguyên bản ghi cũ. Xem [bảng đối chiếu từng ảnh](docs/reference-feature-coverage.md).
 
 ## Chạy local
 

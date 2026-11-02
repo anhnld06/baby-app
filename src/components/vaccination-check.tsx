@@ -4,12 +4,13 @@ import { useActionState } from "react";
 import { Check, LoaderCircle } from "lucide-react";
 import { toggleScheduledDose } from "@/app/vaccination-actions";
 
-export function VaccinationCheck({ kind, ownerId, entryKey, label, checked }: {
+export function VaccinationCheck({ kind, ownerId, entryKey, label, checked, compact = false }: {
   kind: "baby" | "mother";
   ownerId: string;
   entryKey: string;
   label: string;
   checked: boolean;
+  compact?: boolean;
 }) {
   const [state, action, pending] = useActionState(toggleScheduledDose.bind(null, kind, ownerId, entryKey, !checked), {});
   return (
@@ -21,9 +22,9 @@ export function VaccinationCheck({ kind, ownerId, entryKey, label, checked }: {
         aria-label={`Đã tiêm ${label}`}
         aria-busy={pending}
         disabled={pending}
-        className="inline-flex min-h-11 items-center gap-2 rounded-xl px-1 text-sm font-medium text-primary disabled:opacity-60"
+        className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-1 text-sm font-medium text-primary disabled:opacity-60 ${compact ? "flex-col text-xs" : ""}`}
       >
-        <span className={`grid size-6 shrink-0 place-items-center rounded-lg border-2 ${checked ? "border-emerald-600 bg-emerald-600 text-white" : "border-primary/50 bg-background"}`}>
+        <span className={`grid shrink-0 place-items-center border-2 ${compact ? "size-14 rounded-full" : "size-6 rounded-lg"} ${checked ? "border-emerald-600 bg-emerald-600 text-white" : "border-primary/50 bg-background"}`}>
           {pending ? <LoaderCircle className="size-4 animate-spin" /> : checked ? <Check className="size-4" /> : null}
         </span>
         {pending ? "Đang lưu…" : checked ? "Đã tiêm" : "Đánh dấu đã tiêm"}

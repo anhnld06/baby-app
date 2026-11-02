@@ -1,22 +1,44 @@
+import { GrowthLineChart } from "@/components/growth-line-chart";
+import { GrowthMetricTabs } from "@/components/growth-metric-tabs";
 import { ExternalLink, TrendingUp } from "lucide-react";
 import {
   buildGrowthSeries,
-  chartCoordinates,
   growthChange,
   type GrowthMeasurement,
   type GrowthMetric,
 } from "@/features/growth/trend";
 
 const WHO_URLS: Record<GrowthMetric, string> = {
-  weightKg: "https://www.who.int/tools/child-growth-standards/standards/weight-for-age",
-  heightCm: "https://www.who.int/tools/child-growth-standards/standards/length-height-for-age",
-  headCircumferenceCm: "https://www.who.int/tools/child-growth-standards/standards/head-circumference-for-age",
+  weightKg:
+    "https://www.who.int/tools/child-growth-standards/standards/weight-for-age",
+  heightCm:
+    "https://www.who.int/tools/child-growth-standards/standards/length-height-for-age",
+  headCircumferenceCm:
+    "https://www.who.int/tools/child-growth-standards/standards/head-circumference-for-age",
 };
 
-const metrics: Array<{ key: GrowthMetric; vi: string; en: string; unit: string; digits: number }> = [
+const metrics: Array<{
+  key: GrowthMetric;
+  vi: string;
+  en: string;
+  unit: string;
+  digits: number;
+}> = [
   { key: "weightKg", vi: "Cân nặng", en: "Weight", unit: "kg", digits: 2 },
-  { key: "heightCm", vi: "Chiều dài / chiều cao", en: "Length / height", unit: "cm", digits: 1 },
-  { key: "headCircumferenceCm", vi: "Vòng đầu", en: "Head circumference", unit: "cm", digits: 1 },
+  {
+    key: "heightCm",
+    vi: "Chiều dài / chiều cao",
+    en: "Length / height",
+    unit: "cm",
+    digits: 1,
+  },
+  {
+    key: "headCircumferenceCm",
+    vi: "Vòng đầu",
+    en: "Head circumference",
+    unit: "cm",
+    digits: 1,
+  },
 ];
 
 function ageLabel(days: number, locale: "vi" | "en") {
@@ -44,27 +66,45 @@ function MetricChart({
     metric.key,
     gestationalAgeAtBirth,
   );
-  if (series.length === 0) return null;
-  const points = chartCoordinates(series);
-  const path = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  if (series.length === 0)
+    return (
+      <p className="rounded-2xl border border-dashed p-5 text-sm text-muted-foreground">
+        {locale === "vi"
+          ? "Chưa có số đo cho chỉ số này."
+          : "No measurements for this metric yet."}
+      </p>
+    );
   const latest = series.at(-1)!;
   const change = growthChange(series);
   const title = locale === "vi" ? metric.vi : metric.en;
-  const number = new Intl.NumberFormat(locale, { maximumFractionDigits: metric.digits });
-  const chartDescription = locale === "vi"
-    ? `${title}: ${series.length} lần đo từ ${ageLabel(series[0].ageDays, locale)} đến ${ageLabel(latest.ageDays, locale)}`
-    : `${title}: ${series.length} measurements from ${ageLabel(series[0].ageDays, locale)} to ${ageLabel(latest.ageDays, locale)}`;
+  const number = new Intl.NumberFormat(locale, {
+    maximumFractionDigits: metric.digits,
+  });
+  const chartDescription =
+    locale === "vi"
+      ? `${title}: ${series.length} lần đo từ ${ageLabel(series[0].ageDays, locale)} đến ${ageLabel(latest.ageDays, locale)}`
+      : `${title}: ${series.length} measurements from ${ageLabel(series[0].ageDays, locale)} to ${ageLabel(latest.ageDays, locale)}`;
 
   return (
-    <article className="rounded-2xl border bg-card p-4 shadow-sm">
+    <article className="surface-panel p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-semibold">{title}</h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {locale === "vi" ? "Mới nhất" : "Latest"}: {number.format(latest.value)} {metric.unit}
+          <p className="mt-3 text-3xl font-semibold tracking-tight tabular-nums">
+            {number.format(latest.value)}{" "}
+            <span className="text-sm font-normal text-muted-foreground">
+              {metric.unit}
+            </span>
             {change !== undefined && (
-              <span className={change < 0 ? "ml-2 text-amber-700 dark:text-amber-300" : "ml-2 text-emerald-700 dark:text-emerald-300"}>
-                {change >= 0 ? "+" : ""}{number.format(change)} {metric.unit}
+              <span
+                className={
+                  change < 0
+                    ? "ml-2 inline-flex rounded-full bg-amber-50 px-2 py-1 text-xs text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                    : "ml-2 inline-flex rounded-full bg-secondary px-2 py-1 text-xs text-primary"
+                }
+              >
+                {change >= 0 ? "+" : ""}
+                {number.format(change)} {metric.unit}
               </span>
             )}
           </p>
@@ -73,24 +113,32 @@ function MetricChart({
           <TrendingUp className="size-5" />
         </span>
       </div>
-      {series.length > 1 ? (
-        <svg viewBox="0 0 320 150" className="mt-3 h-auto w-full overflow-visible" role="img" aria-label={chartDescription}>
-          <line x1="28" y1="122" x2="292" y2="122" className="stroke-border" />
-          <line x1="28" y1="28" x2="28" y2="122" className="stroke-border" />
-          <path d={path} fill="none" className="stroke-primary" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-          {points.map((point, index) => (
-            <circle key={`${point.measuredAt.toISOString()}-${point.value}-${index}`} cx={point.x} cy={point.y} r="4" className="fill-card stroke-primary" strokeWidth="3" />
-          ))}
-          <text x="28" y="143" className="fill-muted-foreground text-[10px]">{ageLabel(series[0].ageDays, locale)}</text>
-          <text x="292" y="143" textAnchor="end" className="fill-muted-foreground text-[10px]">{ageLabel(latest.ageDays, locale)}</text>
-        </svg>
-      ) : (
-        <p className="mt-4 rounded-xl bg-muted/50 p-3 text-xs leading-5 text-muted-foreground">
-          {locale === "vi" ? "Cần thêm một lần đo để vẽ xu hướng." : "Add one more measurement to draw a trend."}
-        </p>
-      )}
-      <a href={WHO_URLS[metric.key]} target="_blank" rel="noreferrer" className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-xs font-medium text-primary underline-offset-4 hover:underline">
-        {locale === "vi" ? "Mở bảng tham chiếu WHO" : "Open WHO reference tables"}
+      <GrowthLineChart
+        label={chartDescription}
+        unit={metric.unit}
+        locale={locale}
+        points={series.map((point, index) => ({
+          key: `${point.measuredAt.toISOString()}-${index}`,
+          value: point.value,
+          age: point.ageDays,
+          label: new Intl.DateTimeFormat(locale, {
+            timeZone: "UTC",
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          }).format(point.measuredAt),
+          ageLabel: ageLabel(point.ageDays, locale),
+        }))}
+      />
+      <a
+        href={WHO_URLS[metric.key]}
+        target="_blank"
+        rel="noreferrer"
+        className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-xs font-medium text-primary underline-offset-4 hover:underline"
+      >
+        {locale === "vi"
+          ? "Mở bảng tham chiếu WHO"
+          : "Open WHO reference tables"}
         <ExternalLink className="size-3.5" />
       </a>
     </article>
@@ -108,7 +156,15 @@ export function GrowthTrends({
   gestationalAgeAtBirth?: number | null;
   locale: "vi" | "en";
 }) {
-  if (!measurements.some((item) => item.weightKg != null || item.heightCm != null || item.headCircumferenceCm != null)) return null;
+  if (
+    !measurements.some(
+      (item) =>
+        item.weightKg != null ||
+        item.heightCm != null ||
+        item.headCircumferenceCm != null,
+    )
+  )
+    return null;
   const premature = gestationalAgeAtBirth != null && gestationalAgeAtBirth < 37;
 
   return (
@@ -130,11 +186,21 @@ export function GrowthTrends({
             : "Born before 37 weeks: the age axis uses corrected age during the first two years. This remains a reference; clinical assessment may differ."}
         </p>
       )}
-      <div className="grid gap-3 lg:grid-cols-3">
-        {metrics.map((metric) => (
-          <MetricChart key={metric.key} metric={metric} measurements={measurements} dateOfBirth={dateOfBirth} gestationalAgeAtBirth={gestationalAgeAtBirth} locale={locale} />
-        ))}
-      </div>
+      <GrowthMetricTabs
+        panels={metrics.map((metric) => ({
+          id: metric.key,
+          title: locale === "vi" ? metric.vi : metric.en,
+          content: (
+            <MetricChart
+              metric={metric}
+              measurements={measurements}
+              dateOfBirth={dateOfBirth}
+              gestationalAgeAtBirth={gestationalAgeAtBirth}
+              locale={locale}
+            />
+          ),
+        }))}
+      />
     </section>
   );
 }

@@ -1,4 +1,4 @@
-export const APP_ROOTS = ["/", "/mother", "/baby", "/knowledge", "/profile"];
+export const APP_ROOTS = ["/", "/statistics", "/mother", "/baby", "/knowledge", "/profile"];
 
 export function isRouteActive(pathname: string, root: string) {
   return root === "/" ? pathname === "/" : pathname === root || pathname.startsWith(`${root}/`);

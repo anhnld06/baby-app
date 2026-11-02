@@ -1,3 +1,4 @@
+import { RecordScene } from "@/components/record-scene";
 import { ChoiceFields } from "@/components/choice-fields";
 import { Shell } from "lucide-react";
 import { deleteDiaperAction, saveDiaperAction } from "@/app/actions";
@@ -73,18 +74,19 @@ export default async function DiaperPage({
         subtitle={baby.name}
         backHref="/baby"
       />
-      <MetricGrid
+      {!(params.new === "1" || editing) && <MetricGrid
         items={[
           { label: t.dashboard.wet, value: String(wet) },
           { label: t.dashboard.stool, value: String(stool) },
         ]}
-      />
+      />}
       <CollapsibleRecordForm editingId={editing?.id}
         key={`${editing?.id ?? "new"}-${params.new ?? ""}-${items.length}`}
         defaultOpen={!!editing || params.new === "1"}
         addLabel={t.tracking.newDiaper}
         closeLabel={t.common.cancel}
       >
+      <RecordScene kind="diaper" timeZone={user.timezone} initialValues={{type: editing?.type ?? "WET"}}>
       <Card className="border-0 shadow-sm">
         <CardContent className="p-5">
           <form
@@ -118,7 +120,7 @@ export default async function DiaperPage({
       <FormActionBar
         formId="diaper-form"
         saveAction={saveDiaperAction}
-        saveLabel={editing ? t.common.update : t.common.save}
+        saveLabel={editing ? t.common.update : locale === "vi" ? "Lưu thay tã" : t.common.save}
         cancelHref={editing || params.new === "1" ? "/tracking/diaper" : undefined}
         cancelLabel={t.common.cancel}
         deleteAction={editing ? deleteDiaperAction : undefined}
@@ -126,6 +128,7 @@ export default async function DiaperPage({
         deleteLabel={t.common.delete}
         offlineMutationType={editing ? undefined : "CREATE_DIAPER"}
       />
+      </RecordScene>
       </CollapsibleRecordForm>
       <h2 className="mb-2 mt-7 text-lg font-semibold">{t.tracking.history}</h2>
       <div className="space-y-2">

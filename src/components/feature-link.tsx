@@ -27,7 +27,7 @@ export function FeatureLink({
   return (
     <Link
       href={href}
-      className="group flex min-w-0 items-center gap-3 rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-transform active:scale-[.99]"
+      className="surface-panel group flex min-w-0 items-center gap-3 p-4 transition-[border-color,transform] hover:border-primary/25 active:scale-[.99]"
     >
       <span className={cn("grid size-11 shrink-0 place-items-center rounded-2xl", tones[tone])}>
         <Icon className="size-5" />
