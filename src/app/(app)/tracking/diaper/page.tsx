@@ -1,7 +1,8 @@
+import { ChoiceFields } from "@/components/choice-fields";
 import { Shell } from "lucide-react";
 import { deleteDiaperAction, saveDiaperAction } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
-import { Field, SelectField, TextAreaField } from "@/components/form-fields";
+import { Field, TextAreaField } from "@/components/form-fields";
 import { FormActionBar } from "@/components/form-action-bar";
 import { HistoryLoadMore } from "@/components/history-load-more";
 import { MetricGrid } from "@/components/metric-grid";
@@ -93,41 +94,19 @@ export default async function DiaperPage({
           >
             <input type="hidden" name="babyId" value={baby.id} />
             {editing && <input type="hidden" name="id" value={editing.id} />}
-            <SelectField
-              name="type"
-              label={t.tracking.type}
-              defaultValue={editing?.type ?? "WET"}
+            <ChoiceFields
+              name="type" label={t.tracking.type} initialValue={editing?.type ?? "WET"}
+              options={Object.entries(labels[locale]).map(([value, label]) => ({ value, label }))}
+              groups={[{ values: ["STOOL", "BOTH"], fields: <>
+                <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+                  <Field name="stoolColor" label={t.tracking.stoolColor} defaultValue={editing?.stoolColor ?? ""} />
+                  <Field name="consistency" label={t.tracking.consistency} defaultValue={editing?.consistency ?? ""} />
+                </div>
+                <Field name="amount" label={locale === "vi" ? "Lượng phân" : "Stool amount"} defaultValue={editing?.amount ?? ""} />
+              </> }]}
             >
-              {Object.entries(labels[locale]).map(([value, label]) => (
-                <option value={value} key={value}>
-                  {label}
-                </option>
-              ))}
-            </SelectField>
-            <Field
-              name="changedAt"
-              type="datetime-local"
-              required
-              label={t.tracking.changedAt}
-              defaultValue={toDateTimeLocal(editing?.changedAt, user.timezone)}
-            />
-            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-              <Field
-                name="stoolColor"
-                label={t.tracking.stoolColor}
-                defaultValue={editing?.stoolColor ?? ""}
-              />
-              <Field
-                name="consistency"
-                label={t.tracking.consistency}
-                defaultValue={editing?.consistency ?? ""}
-              />
-            </div>
-            <Field
-              name="amount"
-              label={t.tracking.amount}
-              defaultValue={editing?.amount ?? ""}
-            />
+              <Field name="changedAt" type="datetime-local" required label={t.tracking.changedAt} defaultValue={toDateTimeLocal(editing?.changedAt, user.timezone)} />
+            </ChoiceFields>
             <TextAreaField
               name="notes"
               label={t.common.notes}
@@ -168,7 +147,7 @@ export default async function DiaperPage({
                   hour: "2-digit",
                   minute: "2-digit",
                 }).format(item.changedAt)}
-                {item.stoolColor ? ` · ${item.stoolColor}` : ""}
+                {item.type !== "WET" && item.stoolColor ? ` · ${item.stoolColor}` : ""}
               </p>
             </div>
             <RecordActions

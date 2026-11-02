@@ -97,9 +97,9 @@ function textValue(value: unknown, current: string) {
   return typeof value === "string" && value.trim() ? value : current;
 }
 
-function FormSection({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+function FormSection({ title, description, children, active = true }: { title: string; description?: string; children: ReactNode; active?: boolean }) {
   return (
-    <fieldset className="min-w-0 space-y-4 rounded-2xl border bg-card/40 p-4">
+    <fieldset hidden={!active} disabled={!active} className="min-w-0 space-y-4 rounded-2xl border bg-card/40 p-4">
       <legend className="px-2 text-sm font-semibold">{title}</legend>
       {description && <p className="text-xs leading-5 text-muted-foreground">{description}</p>}
       {children}
@@ -220,7 +220,7 @@ export function PregnancyCheckupForm({ pregnancyId, editing, defaultGestationalW
         </div>
       </FormSection>
 
-      <FormSection title="Chỉ số của mẹ" description="Có thể để trống nếu phiếu chỉ có kết quả siêu âm.">
+      <FormSection title="Chỉ số của mẹ" active={values.visitType !== "ULTRASOUND"}>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field name="weightKg" type="number" min="0" step="0.1" label="Cân nặng mẹ (kg)" value={values.weightKg} onChange={(event) => set("weightKg", event.target.value)} />
           <Field name="bloodPressure" inputMode="numeric" label="Huyết áp (mmHg)" placeholder="110/70" value={values.bloodPressure} onChange={(event) => set("bloodPressure", event.target.value)} />
@@ -228,7 +228,7 @@ export function PregnancyCheckupForm({ pregnancyId, editing, defaultGestationalW
         <Field name="fundalHeightCm" type="number" min="0" step="0.1" label="Bề cao tử cung (cm)" value={values.fundalHeightCm} onChange={(event) => set("fundalHeightCm", event.target.value)} />
       </FormSection>
 
-      <FormSection title="Tổng quan thai trên siêu âm" description="Ghi theo đúng nội dung trên phiếu; không tự suy diễn khi phiếu không đề cập.">
+      <FormSection title="Tình trạng thai" description="Ghi theo đúng nội dung trên phiếu; không tự suy diễn khi phiếu không đề cập.">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field name="fetusCount" type="number" min="1" max="10" label="Số lượng thai" placeholder="1" value={values.fetusCount} onChange={(event) => set("fetusCount", event.target.value)} />
           <Field name="fetalPresentation" label="Ngôi thai / tư thế" placeholder="Dao động, ngôi đầu…" value={values.fetalPresentation} onChange={(event) => set("fetalPresentation", event.target.value)} />
@@ -241,10 +241,12 @@ export function PregnancyCheckupForm({ pregnancyId, editing, defaultGestationalW
           </SelectField>
           <Field name="fetalHeartRate" type="number" min="0" max="300" label="Tim thai (lần/phút)" value={values.fetalHeartRate} onChange={(event) => set("fetalHeartRate", event.target.value)} />
         </div>
+        <fieldset hidden={values.visitType === "PRENATAL_VISIT"} disabled={values.visitType === "PRENATAL_VISIT"}>
         <Field name="ultrasoundDueDate" type="date" label="Ngày dự sinh theo siêu âm" value={values.ultrasoundDueDate} onChange={(event) => set("ultrasoundDueDate", event.target.value)} />
+        </fieldset>
       </FormSection>
 
-      <FormSection title="Sinh trắc học thai" description="CRL thường dùng ở giai đoạn sớm; BPD, HC, AC và FL thường xuất hiện ở các lần siêu âm sau.">
+      <FormSection title="Sinh trắc học thai" active={values.visitType !== "PRENATAL_VISIT"} description="CRL thường dùng ở giai đoạn sớm; BPD, HC, AC và FL thường xuất hiện ở các lần siêu âm sau.">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field name="crlMm" type="number" min="0" step="0.1" label="CRL – đầu mông (mm)" value={values.crlMm} onChange={(event) => set("crlMm", event.target.value)} />
           <Field name="ntMm" type="number" min="0" step="0.1" label="NT – độ mờ da gáy (mm)" value={values.ntMm} onChange={(event) => set("ntMm", event.target.value)} />
@@ -256,7 +258,7 @@ export function PregnancyCheckupForm({ pregnancyId, editing, defaultGestationalW
         <Field name="estimatedFetalWeightG" type="number" min="0" step="1" label="Trọng lượng thai ước tính (g)" value={values.estimatedFetalWeightG} onChange={(event) => set("estimatedFetalWeightG", event.target.value)} />
       </FormSection>
 
-      <FormSection title="Nhau thai, nước ối và cổ tử cung">
+      <FormSection title="Nhau thai, nước ối và cổ tử cung" active={values.visitType !== "PRENATAL_VISIT"}>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field name="placentaPosition" label="Vị trí nhau bám" placeholder="Đáy thân mặt trước…" value={values.placentaPosition} onChange={(event) => set("placentaPosition", event.target.value)} />
           <Field name="placentaGrade" type="number" min="0" max="3" label="Độ trưởng thành nhau (0–3)" value={values.placentaGrade} onChange={(event) => set("placentaGrade", event.target.value)} />
@@ -268,7 +270,9 @@ export function PregnancyCheckupForm({ pregnancyId, editing, defaultGestationalW
       </FormSection>
 
       <FormSection title="Khảo sát và kết luận">
+        <fieldset hidden={values.visitType === "PRENATAL_VISIT"} disabled={values.visitType === "PRENATAL_VISIT"}>
         <TextAreaField name="fetalAnatomy" label="Khảo sát hình thái thai" placeholder="Não, đầu mặt, tim, cột sống, tứ chi…" value={values.fetalAnatomy} onChange={(event) => set("fetalAnatomy", event.target.value)} />
+        </fieldset>
         <TextAreaField name="otherFindings" label="Khảo sát khác" placeholder="Tử cung, phần phụ, dịch túi cùng hoặc ghi nhận khác…" value={values.otherFindings} onChange={(event) => set("otherFindings", event.target.value)} />
         <TextAreaField name="findings" label="Kết luận trên phiếu" value={values.findings} onChange={(event) => set("findings", event.target.value)} />
       </FormSection>

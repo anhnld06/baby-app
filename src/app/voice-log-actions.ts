@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { zonedDateTimeToUtc } from "@/lib/date";
 import { db } from "@/lib/db";
+import { feedingSchema } from "@/lib/validation";
 import { activeFeedingWhere } from "@/features/timeline/active-feeding";
 
 export type VoiceLogActionState = {
@@ -136,19 +137,12 @@ export async function saveVoiceLogAction(
           data: { endTime: data.endTime },
         });
       } else {
-        await db.feeding.create({
-          data: {
-            babyId: data.babyId,
-            type: data.type,
-            startTime: data.startTime!,
-            endTime: data.operation === "complete" ? data.endTime : undefined,
-            leftBreastDuration: data.leftBreastDuration,
-            rightBreastDuration: data.rightBreastDuration,
-            firstSide: data.firstSide,
-            amountMl: data.amountMl,
-            milkType: data.milkType || undefined,
-          },
+        const feeding = feedingSchema.parse({
+          ...data,
+          startTime: data.startTime!,
+          endTime: data.operation === "complete" ? data.endTime : undefined,
         });
+        await db.feeding.create({ data: { ...feeding, id: undefined } });
       }
     } else if (raw.kind === "sleep") {
       const data = sleepInput.parse(raw);

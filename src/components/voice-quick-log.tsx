@@ -13,6 +13,7 @@ import {
   saveVoiceLogAction,
   type VoiceLogActionState,
 } from "@/app/voice-log-actions";
+import { FeedingFields } from "@/components/feeding-fields";
 import { Field, SelectField } from "@/components/form-fields";
 import { Button } from "@/components/ui/button";
 import {
@@ -165,29 +166,13 @@ function DraftFields({ draft, locale }: { draft: VoiceLogDraft; locale: Locale }
           </>
         ) : (
           <>
-        <SelectField name="type" label={t.type} defaultValue={draft.type}>
-          <option value="BREASTFEEDING">{t.breastfeeding}</option>
-          <option value="BOTTLE_BREAST_MILK">{t.breastMilkBottle}</option>
-          <option value="FORMULA">{t.formula}</option>
-          <option value="MIXED">{t.mixed}</option>
-        </SelectField>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field name="startTime" type="datetime-local" required label={t.startTime} defaultValue={draft.startTime} />
-          <Field name="endTime" type="datetime-local" label={t.endTime} defaultValue={draft.endTime} />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field name="leftBreastDuration" type="number" min="0" label={t.leftMinutes} defaultValue={draft.leftBreastDuration ?? ""} />
-          <Field name="rightBreastDuration" type="number" min="0" label={t.rightMinutes} defaultValue={draft.rightBreastDuration ?? ""} />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field name="amountMl" type="number" min="0" step="0.1" label={t.amountMl} defaultValue={draft.amountMl ?? ""} />
-          <SelectField name="firstSide" label={t.firstSide} defaultValue={draft.firstSide ?? ""}>
-            <option value="">—</option>
-            <option value="LEFT">{t.left}</option>
-            <option value="RIGHT">{t.right}</option>
-          </SelectField>
-        </div>
-        <Field name="milkType" label={t.milkType} defaultValue={draft.milkType} />
+            <FeedingFields initial={draft} locale={locale} labels={t}
+              typeLabels={{ BREASTFEEDING: t.breastfeeding, BOTTLE_BREAST_MILK: t.breastMilkBottle, FORMULA: t.formula, MIXED: t.mixed }}>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field name="startTime" type="datetime-local" required label={t.startTime} defaultValue={draft.startTime} />
+                <Field name="endTime" type="datetime-local" label={t.endTime} defaultValue={draft.endTime} />
+              </div>
+            </FeedingFields>
           </>
         )}
       </>

@@ -1,6 +1,7 @@
+import { ChoiceFields } from "@/components/choice-fields";
 import { CalendarClock, ShieldCheck } from "lucide-react";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
-import { Field, SelectField, TextAreaField } from "@/components/form-fields";
+import { Field, TextAreaField } from "@/components/form-fields";
 import { FormActionBar } from "@/components/form-action-bar";
 import { PageHeader } from "@/components/page-header";
 import { RecordActions } from "@/components/record-actions";
@@ -32,10 +33,13 @@ export function InsuranceBook({ title, subtitle, backHref, basePath, ownerField,
     <CollapsibleRecordForm key={`${editing?.id ?? "new"}-${items.length}`} defaultOpen={!!editing} addLabel="Thêm bảo hiểm" closeLabel="Hủy">
       <Card className="border-0 shadow-sm"><CardContent className="p-5"><form id="insurance-form" action={saveAction} className="space-y-4">
         <input type="hidden" name={ownerField} value={ownerId} />{editing && <input type="hidden" name="id" value={editing.id} />}
-        <SelectField name="insuranceType" required label="Loại bảo hiểm" defaultValue={editing?.insuranceType ?? "BHYT"}><option value="BHYT">Bảo hiểm y tế</option><option value="PRIVATE">Bảo hiểm tư nhân</option><option value="OTHER">Khác</option></SelectField>
-        <Field name="policyNumber" required label="Mã thẻ / số hợp đồng" defaultValue={editing?.policyNumber ?? ""} />
-        <Field name="provider" label="Đơn vị bảo hiểm" defaultValue={editing?.provider ?? ""} />
-        <Field name="registeredCare" label="Nơi đăng ký khám ban đầu" defaultValue={editing?.registeredCare ?? ""} />
+        <ChoiceFields name="insuranceType" label="Loại bảo hiểm" initialValue={editing?.insuranceType ?? "BHYT"}
+          options={Object.entries(typeLabels).map(([value, label]) => ({ value, label }))}
+          groups={[{ values: ["BHYT"], fields: <Field name="registeredCare" label="Nơi đăng ký khám ban đầu" defaultValue={editing?.registeredCare ?? ""} /> }]}
+        >
+          <Field name="policyNumber" required label="Mã thẻ / số hợp đồng" defaultValue={editing?.policyNumber ?? ""} />
+          <Field name="provider" label="Đơn vị bảo hiểm" defaultValue={editing?.provider ?? ""} />
+        </ChoiceFields>
         <div className="grid gap-4 sm:grid-cols-2"><Field name="validFrom" type="date" label="Có hiệu lực từ" defaultValue={dateInput(editing?.validFrom)} /><Field name="validUntil" type="date" label="Có hiệu lực đến" defaultValue={dateInput(editing?.validUntil)} /></div>
         <Field name="contact" label="Hotline / liên hệ" defaultValue={editing?.contact ?? ""} />
         <TextAreaField name="benefits" label="Quyền lợi chính" defaultValue={editing?.benefits ?? ""} />

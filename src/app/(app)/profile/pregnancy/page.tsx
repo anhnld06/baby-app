@@ -1,6 +1,7 @@
+import { ChoiceFields } from "@/components/choice-fields";
 import Link from "next/link";
 import { deletePregnancyAction, savePregnancyAction } from "@/app/actions";
-import { Field, SelectField, TextAreaField } from "@/components/form-fields";
+import { Field, TextAreaField } from "@/components/form-fields";
 import { FormActionBar } from "@/components/form-action-bar";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,36 +54,18 @@ export default async function PregnancyProfilePage() {
             {pregnancy && (
               <input type="hidden" name="id" value={pregnancy.id} />
             )}
-            <SelectField
-              name="pregnancyStatus"
-              label={t.profile.status}
-              defaultValue={pregnancy?.pregnancyStatus ?? "PREGNANT"}
+            <ChoiceFields name="pregnancyStatus" label={t.profile.status} initialValue={pregnancy?.pregnancyStatus ?? "PREGNANT"}
+              options={[
+                { value: "PLANNING", label: t.profile.planning }, { value: "PREGNANT", label: t.profile.pregnant },
+                { value: "DELIVERED", label: t.profile.delivered }, { value: "ENDED", label: t.profile.ended },
+              ]}
+              groups={[
+                { values: ["PREGNANT", "DELIVERED", "ENDED"], fields: <Field name="estimatedDueDate" type="date" label={t.profile.dueDate} defaultValue={dateInput(pregnancy?.estimatedDueDate)} /> },
+                { values: ["DELIVERED"], fields: <Field name="actualDeliveryDate" type="date" label={t.profile.deliveryDate} defaultValue={dateInput(pregnancy?.actualDeliveryDate)} /> },
+              ]}
             >
-              <option value="PLANNING">{t.profile.planning}</option>
-              <option value="PREGNANT">{t.profile.pregnant}</option>
-              <option value="DELIVERED">{t.profile.delivered}</option>
-              <option value="ENDED">{t.profile.ended}</option>
-            </SelectField>
-            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-              <Field
-                name="lastMenstrualPeriod"
-                type="date"
-                label={t.profile.lmp}
-                defaultValue={dateInput(pregnancy?.lastMenstrualPeriod)}
-              />
-              <Field
-                name="estimatedDueDate"
-                type="date"
-                label={t.profile.dueDate}
-                defaultValue={dateInput(pregnancy?.estimatedDueDate)}
-              />
-            </div>
-            <Field
-              name="actualDeliveryDate"
-              type="date"
-              label={t.profile.deliveryDate}
-              defaultValue={dateInput(pregnancy?.actualDeliveryDate)}
-            />
+              <Field name="lastMenstrualPeriod" type="date" label={t.profile.lmp} defaultValue={dateInput(pregnancy?.lastMenstrualPeriod)} />
+            </ChoiceFields>
             <TextAreaField
               name="notes"
               label={t.common.notes}

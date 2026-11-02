@@ -1,3 +1,4 @@
+import { HeightFields } from "@/components/height-fields";
 import { Ruler } from "lucide-react";
 import {
   deleteGrowthAction,
@@ -5,7 +6,7 @@ import {
   saveGrowthAction,
 } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
-import { Field, SelectField, TextAreaField } from "@/components/form-fields";
+import { Field, TextAreaField } from "@/components/form-fields";
 import { FormActionBar } from "@/components/form-action-bar";
 import { GrowthTrends } from "@/components/growth-trends";
 import { HistoryLoadMore } from "@/components/history-load-more";
@@ -96,15 +97,6 @@ export default async function GrowthPage({
                 label={t.tracking.measuredAt}
                 defaultValue={toDateTimeLocal(editing?.measuredAt, user.timezone)}
               />
-              <SelectField
-                name="measurementPosition"
-                label="Tư thế đo chiều dài/chiều cao"
-                defaultValue={editing?.measurementPosition ?? ""}
-              >
-                <option value="">Không ghi nhận</option>
-                <option value="RECUMBENT">Nằm đo chiều dài</option>
-                <option value="STANDING">Đứng đo chiều cao</option>
-              </SelectField>
               <div className="grid min-w-0 gap-4 sm:grid-cols-2">
                 <Field
                   name="weightKg"
@@ -115,15 +107,7 @@ export default async function GrowthPage({
                   label={t.tracking.weight}
                   defaultValue={editing?.weightKg ?? ""}
                 />
-                <Field
-                  name="heightCm"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  inputMode="decimal"
-                  label={t.tracking.height}
-                  defaultValue={editing?.heightCm ?? ""}
-                />
+                <HeightFields label={t.tracking.height} initialHeight={editing?.heightCm} initialPosition={editing?.measurementPosition} />
               </div>
               <Field
                 name="headCircumferenceCm"

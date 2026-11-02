@@ -38,7 +38,11 @@ export const pregnancySchema = z.object({
   actualDeliveryDate: optionalDate,
   pregnancyStatus: z.enum(["PLANNING", "PREGNANT", "DELIVERED", "ENDED"]),
   notes: optionalText,
-});
+}).transform((value) => ({
+  ...value,
+  estimatedDueDate: value.pregnancyStatus === "PLANNING" ? null : value.estimatedDueDate ?? null,
+  actualDeliveryDate: value.pregnancyStatus === "DELIVERED" ? value.actualDeliveryDate ?? null : null,
+}));
 
 export const menstrualCycleSchema = z.object({
   id: optionalText,
@@ -123,7 +127,25 @@ export const pregnancyCheckupSchema = z.object({
   findings: optionalText,
   nextCheckupAt: optionalDate,
   notes: optionalText,
-});
+}).transform((value) => ({
+  ...value,
+  weightKg: value.visitType === "ULTRASOUND" ? null : value.weightKg ?? null,
+  bloodPressure: value.visitType === "ULTRASOUND" ? null : value.bloodPressure ?? null,
+  fundalHeightCm: value.visitType === "ULTRASOUND" ? null : value.fundalHeightCm ?? null,
+  crlMm: value.visitType === "PRENATAL_VISIT" ? null : value.crlMm ?? null,
+  ntMm: value.visitType === "PRENATAL_VISIT" ? null : value.ntMm ?? null,
+  bpdMm: value.visitType === "PRENATAL_VISIT" ? null : value.bpdMm ?? null,
+  hcMm: value.visitType === "PRENATAL_VISIT" ? null : value.hcMm ?? null,
+  acMm: value.visitType === "PRENATAL_VISIT" ? null : value.acMm ?? null,
+  flMm: value.visitType === "PRENATAL_VISIT" ? null : value.flMm ?? null,
+  estimatedFetalWeightG: value.visitType === "PRENATAL_VISIT" ? null : value.estimatedFetalWeightG ?? null,
+  placentaPosition: value.visitType === "PRENATAL_VISIT" ? null : value.placentaPosition ?? null,
+  placentaGrade: value.visitType === "PRENATAL_VISIT" ? null : value.placentaGrade ?? null,
+  amnioticFluid: value.visitType === "PRENATAL_VISIT" ? null : value.amnioticFluid ?? null,
+  cervicalLengthMm: value.visitType === "PRENATAL_VISIT" ? null : value.cervicalLengthMm ?? null,
+  ultrasoundDueDate: value.visitType === "PRENATAL_VISIT" ? null : value.ultrasoundDueDate ?? null,
+  fetalAnatomy: value.visitType === "PRENATAL_VISIT" ? null : value.fetalAnatomy ?? null,
+}));
 
 const medicalVisitFields = {
   id: optionalText,
@@ -164,12 +186,12 @@ const insuranceFields = {
 export const motherInsuranceSchema = z.object({
   ...insuranceFields,
   motherId: z.string().min(1),
-}).refine((value) => !value.validFrom || !value.validUntil || value.validUntil >= value.validFrom, { message: "Ngày hết hạn phải sau ngày bắt đầu", path: ["validUntil"] });
+}).refine((value) => !value.validFrom || !value.validUntil || value.validUntil >= value.validFrom, { message: "Ngày hết hạn phải sau ngày bắt đầu", path: ["validUntil"] }).transform((value) => ({ ...value, registeredCare: value.insuranceType === "BHYT" ? value.registeredCare ?? null : null }));
 
 export const babyInsuranceSchema = z.object({
   ...insuranceFields,
   babyId: z.string().min(1),
-}).refine((value) => !value.validFrom || !value.validUntil || value.validUntil >= value.validFrom, { message: "Ngày hết hạn phải sau ngày bắt đầu", path: ["validUntil"] });
+}).refine((value) => !value.validFrom || !value.validUntil || value.validUntil >= value.validFrom, { message: "Ngày hết hạn phải sau ngày bắt đầu", path: ["validUntil"] }).transform((value) => ({ ...value, registeredCare: value.insuranceType === "BHYT" ? value.registeredCare ?? null : null }));
 
 export const feedingSchema = z.object({
   id: optionalText,
@@ -216,7 +238,12 @@ export const diaperSchema = z.object({
   consistency: optionalText,
   amount: optionalText,
   notes: optionalText,
-});
+}).transform((value) => ({
+  ...value,
+  stoolColor: value.type === "WET" ? null : value.stoolColor ?? null,
+  consistency: value.type === "WET" ? null : value.consistency ?? null,
+  amount: value.type === "WET" ? null : value.amount ?? null,
+}));
 
 export const growthSchema = z.object({
   id: optionalText,
@@ -230,7 +257,11 @@ export const growthSchema = z.object({
     z.enum(["RECUMBENT", "STANDING"]).optional(),
   ),
   notes: optionalText,
-}).refine((value) => value.weightKg !== undefined || value.heightCm !== undefined || value.headCircumferenceCm !== undefined, { message: "Hãy nhập ít nhất một số đo" });
+}).refine((value) => value.weightKg !== undefined || value.heightCm !== undefined || value.headCircumferenceCm !== undefined, { message: "Hãy nhập ít nhất một số đo" }).transform((value) => ({
+  ...value,
+  heightCm: value.heightCm ?? null,
+  measurementPosition: value.heightCm === undefined ? null : value.measurementPosition ?? null,
+}));
 
 export const TOOTH_POSITIONS = [
   "UPPER_RIGHT_CENTRAL_INCISOR",
