@@ -19,6 +19,7 @@ Màn hình lớn dùng sidebar; điện thoại dùng thanh điều hướng 5 m
 - Lần đầu đăng nhập chọn giai đoạn: mang thai, đã có bé hoặc theo dõi sức khỏe mẹ. Khi đang mang thai và chưa có bé, Hôm nay hiển thị hành trình của mẹ.
 - Hôm nay ưu tiên ghi bú/ngủ/tã, hẹn giờ và số liệu trong ngày. Ghi nhanh mở sẵn biểu mẫu; cữ bú gần nhất vẫn hiện khi đã qua nửa đêm.
 - Bấm “Kết thúc” ở đồng hồ bú sẽ dừng và lưu thời gian, rồi mở cữ vừa ghi để bổ sung loại sữa, bên bú và lượng bé uống nếu biết. Có thể để trống ml khi bú mẹ trực tiếp; nếu rời biểu mẫu, thời gian đã ghi vẫn được giữ lại.
+- Biểu mẫu cữ bú hiện trường theo loại đã chọn: bú mẹ trực tiếp ghi bên/thời gian; sữa mẹ bình và sữa công thức ghi lượng uống, không hiện bên trái/phải; cữ kết hợp có cả hai nhóm và ml chỉ tính phần bú bình. Khi sửa đổi loại cữ, các trường không còn liên quan được xóa khi lưu.
 - “Nhịp sinh hoạt của bé” trên Hôm nay tóm tắt bú, ngủ và tã theo 24 giờ gần nhất; cân nặng hiển thị ngày đo thật và chênh lệch hai lần cân. Khoảng ngủ tham khảo AASM theo tuổi chỉ để đối chiếu khi đã ghi đủ giấc. Không tự kết luận bú/ngủ đủ hay thiếu từ nhật ký chưa đầy đủ.
 - “Bàn giao chăm bé” tạo tóm tắt có thời điểm cập nhật và nút sao chép để người dùng tự chia sẻ.
 - Nút quay lại dùng lịch sử thực tế trong ứng dụng, hỗ trợ Back/Forward. Truy cập trực tiếp có đường về mục cha. Chỉnh sửa, lưu và tải thêm lịch sử dùng replace để tránh vòng lặp.

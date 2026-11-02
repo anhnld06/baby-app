@@ -1,7 +1,8 @@
 import { Baby as BabyIcon } from "lucide-react";
 import { deleteFeedingAction, saveFeedingAction } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
-import { Field, SelectField, TextAreaField } from "@/components/form-fields";
+import { Field, TextAreaField } from "@/components/form-fields";
+import { FeedingFields } from "@/components/feeding-fields";
 import { FormActionBar } from "@/components/form-action-bar";
 import { HistoryLoadMore } from "@/components/history-load-more";
 import { MetricGrid } from "@/components/metric-grid";
@@ -111,82 +112,38 @@ export default async function FeedingPage({
           >
             <input type="hidden" name="babyId" value={baby.id} />
             {editing && <input type="hidden" name="id" value={editing.id} />}
-            <SelectField
-              name="type"
-              label={t.tracking.type}
-              defaultValue={editing?.type ?? "BREASTFEEDING"}
+            <FeedingFields
+              key={editing?.id ?? "new"}
+              locale={locale}
+              labels={t.tracking}
+              typeLabels={typeLabels[locale]}
+              initial={editing ? {
+                type: editing.type,
+                leftBreastDuration: editing.leftBreastDuration,
+                rightBreastDuration: editing.rightBreastDuration,
+                firstSide: editing.firstSide,
+                amountMl: editing.amountMl,
+                milkType: editing.milkType,
+              } : undefined}
             >
-              {Object.entries(typeLabels[locale]).map(([value, label]) => (
-                <option value={value} key={value}>
-                  {label}
-                </option>
-              ))}
-            </SelectField>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field
-                name="startTime"
-                type="datetime-local"
-                required
-                label={t.tracking.startTime}
-                defaultValue={toDateTimeLocal(editing?.startTime, user.timezone)}
-              />
-              <Field
-                name="endTime"
-                type="datetime-local"
-                label={t.tracking.endTime}
-                defaultValue={
-                  editing?.endTime ? toDateTimeLocal(editing.endTime, user.timezone) : ""
-                }
-              />
-            </div>
-            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-              <Field
-                name="leftBreastDuration"
-                type="number"
-                min="0"
-                inputMode="numeric"
-                label={t.tracking.leftMinutes}
-                defaultValue={editing?.leftBreastDuration ?? ""}
-              />
-              <Field
-                name="rightBreastDuration"
-                type="number"
-                min="0"
-                inputMode="numeric"
-                label={t.tracking.rightMinutes}
-                defaultValue={editing?.rightBreastDuration ?? ""}
-              />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {locale === "vi"
-                ? "Bú mẹ trực tiếp: ghi bên bú và thời gian, để trống ml nếu không biết. Bú bình: chọn loại sữa và nhập lượng bé thực tế uống."
-                : "Direct breastfeeding: record the side and duration; leave ml blank if unknown. Bottle feeding: select the milk type and enter the amount actually consumed."}
-            </p>
-            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-              <Field
-                name="amountMl"
-                type="number"
-                min="0"
-                step="1"
-                inputMode="decimal"
-                label={t.tracking.amountMl}
-                defaultValue={editing?.amountMl ?? ""}
-              />
-              <SelectField
-                name="firstSide"
-                label={t.tracking.firstSide}
-                defaultValue={editing?.firstSide ?? ""}
-              >
-                <option value="">—</option>
-                <option value="LEFT">{t.tracking.left}</option>
-                <option value="RIGHT">{t.tracking.right}</option>
-              </SelectField>
-            </div>
-            <Field
-              name="milkType"
-              label={t.tracking.milkType}
-              defaultValue={editing?.milkType ?? ""}
-            />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field
+                  name="startTime"
+                  type="datetime-local"
+                  required
+                  label={t.tracking.startTime}
+                  defaultValue={toDateTimeLocal(editing?.startTime, user.timezone)}
+                />
+                <Field
+                  name="endTime"
+                  type="datetime-local"
+                  label={t.tracking.endTime}
+                  defaultValue={
+                    editing?.endTime ? toDateTimeLocal(editing.endTime, user.timezone) : ""
+                  }
+                />
+              </div>
+            </FeedingFields>
             <TextAreaField
               name="notes"
               label={t.common.notes}

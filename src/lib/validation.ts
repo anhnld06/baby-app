@@ -183,7 +183,19 @@ export const feedingSchema = z.object({
   amountMl: optionalNumber.refine((value) => value === undefined || value <= 3000, "Lượng sữa không hợp lệ"),
   milkType: optionalText,
   notes: optionalText,
-}).refine((value) => !value.endTime || value.endTime >= value.startTime, { message: "Giờ kết thúc phải sau giờ bắt đầu", path: ["endTime"] });
+}).refine((value) => !value.endTime || value.endTime >= value.startTime, { message: "Giờ kết thúc phải sau giờ bắt đầu", path: ["endTime"] })
+  .transform((value) => {
+    const breast = value.type === "BREASTFEEDING" || value.type === "MIXED";
+    return {
+      ...value,
+      // Explicit nulls clear fields from the previous type when editing a record.
+      leftBreastDuration: breast ? value.leftBreastDuration ?? null : null,
+      rightBreastDuration: breast ? value.rightBreastDuration ?? null : null,
+      firstSide: breast ? value.firstSide ?? null : null,
+      amountMl: value.type === "BREASTFEEDING" ? null : value.amountMl ?? null,
+      milkType: value.type === "FORMULA" || value.type === "MIXED" ? value.milkType ?? null : null,
+    };
+  });
 
 export const sleepSchema = z.object({
   id: optionalText,
