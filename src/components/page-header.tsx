@@ -1,3 +1,4 @@
+import { ProfileShortcut } from "@/components/profile-shortcut";
 import { NotificationShortcut } from "@/components/notification-shortcut";
 import type { ReactNode } from "react";
 import { BackLink } from "@/components/back-link";
@@ -16,8 +17,8 @@ export function PageHeader({
   meta?: ReactNode;
 }) {
   return (
-    <header className="mb-6 flex items-start justify-between gap-3">
-      <div className="flex min-w-0 items-start gap-2">
+    <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
+      <div className="flex min-w-32 flex-1 items-start gap-2">
         {backHref && (
           <BackLink fallback={backHref} />
         )}
@@ -29,7 +30,7 @@ export function PageHeader({
           {meta}
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-1"><NotificationShortcut /><VoiceLogShortcut /><ThemeToggle /></div>
+      <div className="ml-auto flex shrink-0 items-center gap-1"><NotificationShortcut /><VoiceLogShortcut /><ThemeToggle /><ProfileShortcut /></div>
     </header>
   );
 }

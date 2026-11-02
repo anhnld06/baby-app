@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { ProfileLabelContext } from "@/components/profile-shortcut";
 import { NotificationCountContext } from "@/components/notification-shortcut";
 import { QuickLogSheet } from "@/components/quick-log-sheet";
 import Link from "next/link";
@@ -45,7 +46,6 @@ export function AppShell({
   const owner = query.get("owner");
   const recordEditor = (query.get("new") === "1" || !!query.get("edit")) && (["/tracking/feeding", "/tracking/sleep", "/tracking/diaper", "/mother/pumping", "/baby/meals"].includes(pathname));
   const motherVaccinations = owner === "mother";
-  const statisticsActive = isRouteActive(pathname, "/statistics");
   const links = [
     { href: "/", label: labels.home, icon: House, paths: ["/"] },
     { href: "/mother", label: labels.mother, icon: HeartPulse, paths: ["/mother", ...(motherVaccinations ? ["/vaccination-schedule"] : [])] },
@@ -53,8 +53,11 @@ export function AppShell({
     { href: "/knowledge", label: labels.handbook, icon: BookHeart, paths: ["/knowledge", "/stories", "/assistant"] },
     { href: "/profile", label: labels.profile, icon: UserRound, paths: ["/profile"] },
   ];
-  const desktopLinks = [links[0], { href: "/statistics", label: voiceLog?.locale === "en" ? "Statistics" : "Thống kê", icon: ChartColumn, paths: ["/statistics"] }, ...links.slice(1)];
+  const statisticsLink = { href: "/statistics", label: voiceLog?.locale === "en" ? "Statistics" : "Thống kê", icon: ChartColumn, paths: ["/statistics"] };
+  const desktopLinks = [links[0], statisticsLink, ...links.slice(1)];
+  const mobileLinks = [links[0], links[1], links[2], statisticsLink, links[3]];
   return (
+    <ProfileLabelContext.Provider value={labels.profile}>
     <VoiceLogContext.Provider value={voiceLog}>
     <NotificationCountContext.Provider value={unreadCount}>
     <div className="mx-auto min-h-dvh w-full max-w-[1440px] overflow-x-clip bg-background lg:flex lg:border-x lg:border-border/50">
@@ -88,8 +91,8 @@ export function AppShell({
         hidden={recordEditor}
         className="safe-bottom fixed inset-x-0 bottom-0 z-40 mx-auto grid w-full grid-cols-5 border-t border-border/60 bg-card/95 px-2 pt-2 shadow-[0_-8px_32px_-20px_rgba(0,0,0,0.2)] supports-[backdrop-filter:blur(12px)]:bg-card/85 supports-[backdrop-filter:blur(12px)]:backdrop-blur-xl lg:hidden"
       >
-        {links.map(({ href, label, icon: Icon, paths }) => {
-          const active = paths.some((path) => isRouteActive(pathname, path)) || (statisticsActive && href === (owner === "mother" || !owner && !voiceLog ? "/mother" : "/baby"));
+        {mobileLinks.map(({ href, label, icon: Icon, paths }) => {
+          const active = paths.some((path) => isRouteActive(pathname, path));
           return (
             <Link
               key={href}
@@ -111,5 +114,6 @@ export function AppShell({
     </div>
     </NotificationCountContext.Provider>
     </VoiceLogContext.Provider>
+    </ProfileLabelContext.Provider>
   );
 }

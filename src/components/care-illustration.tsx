@@ -82,20 +82,24 @@ export function CareIllustration({
   const [playing, setPlaying] = useState(false);
   useEffect(() => {
     if (small || !node.current) return;
-    let inView = false;
+    let inView = true;
     const update = () =>
       setPlaying(inView && document.visibilityState === "visible");
-    const observer = new IntersectionObserver(
+    const observer = typeof IntersectionObserver === "undefined" ? null : new IntersectionObserver(
       (entries) => {
         inView = entries[0].isIntersecting;
         update();
       },
       { threshold: 0.15 },
     );
-    observer.observe(node.current);
+    observer?.observe(node.current);
+    const frame = requestAnimationFrame(update);
+    window.addEventListener("pageshow", update);
     document.addEventListener("visibilitychange", update);
     return () => {
-      observer.disconnect();
+      observer?.disconnect();
+      cancelAnimationFrame(frame);
+      window.removeEventListener("pageshow", update);
       document.removeEventListener("visibilitychange", update);
     };
   }, [small]);
