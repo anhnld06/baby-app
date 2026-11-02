@@ -53,7 +53,7 @@ export function AppShell({
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-border/70 bg-card/60 p-4 lg:flex">
         <Link href="/" className="mb-7 flex items-center gap-3 px-2 py-2">
           <Image
-            src="/icons/vani-family-192.png"
+            src="/icons/vani-photo-192.png"
             alt=""
             width={40}
             height={40}

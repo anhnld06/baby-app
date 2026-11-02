@@ -17,7 +17,7 @@ export default async function LoginPage() {
       <div className="relative flex w-full max-w-md flex-col items-center">
         <div className="mb-5 size-16 overflow-hidden rounded-[1.6rem] shadow-lg shadow-primary/25">
           <Image
-            src="/icons/vani-family-192.png"
+            src="/icons/vani-photo-192.png"
             alt="Biểu tượng Vani Family"
             width={64}
             height={64}

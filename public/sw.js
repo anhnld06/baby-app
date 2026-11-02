@@ -1,9 +1,9 @@
-const CACHE_NAME = "vani-static-v2";
+const CACHE_NAME = "vani-static-v3";
 const PRECACHE = [
   "/offline",
   "/manifest.webmanifest",
-  "/icons/vani-family-192.png",
-  "/icons/vani-family-512.png",
+  "/icons/vani-photo-192.png",
+  "/icons/vani-photo-512.png",
 ];
 
 async function precacheOffline() {
@@ -75,8 +75,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title ?? "Vani Family", {
       body: data.body ?? "Bạn có một lịch cần kiểm tra.",
-      icon: "/icons/vani-family-192.png",
-      badge: "/icons/vani-family-192.png",
+      icon: "/icons/vani-photo-192.png",
+      badge: "/icons/vani-photo-192.png",
       tag: data.tag,
       data: { url: data.url ?? "/" },
     }),

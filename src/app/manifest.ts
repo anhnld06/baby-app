@@ -14,9 +14,9 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: "portrait-primary",
     lang: "vi",
     icons: [
-      { src: "/icons/vani-family-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: "/icons/vani-family-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: "/icons/vani-family-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: "/icons/vani-photo-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icons/vani-photo-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icons/vani-photo-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
 }
