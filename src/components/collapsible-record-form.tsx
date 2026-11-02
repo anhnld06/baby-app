@@ -1,22 +1,25 @@
 "use client";
 
+import { EditFormTarget } from "@/components/edit-record-navigation";
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
 
 export function CollapsibleRecordForm({
   defaultOpen,
+  editingId,
   addLabel,
   closeLabel,
   children,
 }: {
   defaultOpen: boolean;
+  editingId?: string;
   addLabel: string;
   closeLabel: string;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
 
-  if (!open) {
+  if (!open && !defaultOpen) {
     return (
       <button
         type="button"
@@ -30,6 +33,7 @@ export function CollapsibleRecordForm({
   }
 
   return (
+    <EditFormTarget recordId={editingId}>
     <div className="relative">
       {!defaultOpen && (
         <button
@@ -43,5 +47,6 @@ export function CollapsibleRecordForm({
       )}
       {children}
     </div>
+    </EditFormTarget>
   );
 }

@@ -30,7 +30,7 @@ export function InsuranceBook({ title, subtitle, backHref, basePath, ownerField,
 }) {
   return <>
     <PageHeader title={title} subtitle={subtitle} backHref={backHref} />
-    <CollapsibleRecordForm key={`${editing?.id ?? "new"}-${items.length}`} defaultOpen={!!editing} addLabel="Thêm bảo hiểm" closeLabel="Hủy">
+    <CollapsibleRecordForm editingId={editing?.id} key={`${editing?.id ?? "new"}-${items.length}`} defaultOpen={!!editing} addLabel="Thêm bảo hiểm" closeLabel="Hủy">
       <Card className="border-0 shadow-sm"><CardContent className="p-5"><form id="insurance-form" action={saveAction} className="space-y-4">
         <input type="hidden" name={ownerField} value={ownerId} />{editing && <input type="hidden" name="id" value={editing.id} />}
         <ChoiceFields name="insuranceType" label="Loại bảo hiểm" initialValue={editing?.insuranceType ?? "BHYT"}

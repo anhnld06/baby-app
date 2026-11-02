@@ -63,7 +63,7 @@ export default async function PumpingPage({ searchParams }: {
       { label: vi ? "Từ cữ hút gần nhất" : "Since last session", value: items[0] ? formatDuration(Math.max(0, (now.getTime() - items[0].startTime.getTime()) / 60_000), locale) : "—" },
     ]} />
     {params.edit && !editing && <p role="alert" className="mb-4 text-sm text-destructive">{vi ? "Không tìm thấy cữ hút sữa." : "Pumping session not found."}</p>}
-    <CollapsibleRecordForm key={`${editing?.id ?? "new"}-${params.new ?? ""}-${items.length}`} defaultOpen={!!editing || params.new === "1"} addLabel={addLabel} closeLabel={cancelLabel}>
+    <CollapsibleRecordForm editingId={editing?.id} key={`${editing?.id ?? "new"}-${params.new ?? ""}-${items.length}`} defaultOpen={!!editing || params.new === "1"} addLabel={addLabel} closeLabel={cancelLabel}>
       <form id="pumping-form" action={savePumpingAction} className="space-y-4 rounded-2xl bg-card p-5 shadow-sm">
         {editing && <input type="hidden" name="id" value={editing.id} />}
         <Field name="startTime" type="datetime-local" required label={vi ? "Thời điểm bắt đầu" : "Start time"} defaultValue={toDateTimeLocal(editing?.startTime, user.timezone)} />

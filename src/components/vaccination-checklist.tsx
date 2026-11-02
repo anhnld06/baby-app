@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { EditRecordLink } from "@/components/edit-record-navigation";
 import { BABY_SCHEDULE, MOTHER_PRENATAL_SCHEDULE } from "@/features/vaccination/schedule";
 import { babyMilestoneDate, babyMilestoneLabel, findChecklistRecord, recordMatchesEntry, type ChecklistRecord } from "@/features/vaccination/checklist";
 import { VaccinationCheck } from "@/components/vaccination-check";
@@ -52,8 +52,8 @@ export function VaccinationChecklist({ kind, ownerId, name, birth, records, appo
               </p>
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                 <VaccinationCheck kind={kind} ownerId={ownerId} entryKey={entry.key} label={entry.label} checked={Boolean(record)} />
-                {record && <Link scroll={false} replace href={record.appointment ? `/vaccination-schedule?edit=${record.appointment.id}` : `/vaccination-schedule?record=${record.id}&owner=${kind}`} className="inline-flex min-h-11 items-center text-xs text-primary">Sửa ngày / ghi chú</Link>}
-                {!record && appointment && <Link scroll={false} replace href={`/vaccination-schedule?edit=${appointment.id}`} className="inline-flex min-h-11 items-center text-xs text-primary">Sửa ngày hẹn</Link>}
+                {record && <EditRecordLink scroll={false} replace href={record.appointment ? `/vaccination-schedule?edit=${record.appointment.id}&owner=${kind}` : `/vaccination-schedule?record=${record.id}&owner=${kind}`} className="inline-flex min-h-11 items-center text-xs text-primary">Sửa ngày / ghi chú</EditRecordLink>}
+                {!record && appointment && <EditRecordLink scroll={false} replace href={`/vaccination-schedule?edit=${appointment.id}&owner=${kind}`} className="inline-flex min-h-11 items-center text-xs text-primary">Sửa ngày hẹn</EditRecordLink>}
               </div>
               {entry.note && <details className="mt-1 text-xs text-muted-foreground"><summary className="min-h-9 cursor-pointer content-center">Lưu ý mũi này</summary><p className="pb-2 leading-5">{entry.note}</p></details>}
             </article>

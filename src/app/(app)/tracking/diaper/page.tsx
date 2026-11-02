@@ -79,7 +79,7 @@ export default async function DiaperPage({
           { label: t.dashboard.stool, value: String(stool) },
         ]}
       />
-      <CollapsibleRecordForm
+      <CollapsibleRecordForm editingId={editing?.id}
         key={`${editing?.id ?? "new"}-${params.new ?? ""}-${items.length}`}
         defaultOpen={!!editing || params.new === "1"}
         addLabel={t.tracking.newDiaper}

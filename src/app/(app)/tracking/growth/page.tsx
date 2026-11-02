@@ -75,7 +75,7 @@ export default async function GrowthPage({
         subtitle={`${baby.name} · Xu hướng và chuẩn WHO khi khả dụng`}
         backHref="/baby"
       />
-      <CollapsibleRecordForm
+      <CollapsibleRecordForm editingId={editing?.id}
         key={`${editing?.id ?? "new"}-${items.length}`}
         defaultOpen={!!editing}
         addLabel={t.tracking.newGrowth}

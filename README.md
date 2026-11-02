@@ -23,6 +23,7 @@ Màn hình lớn dùng sidebar; điện thoại dùng thanh điều hướng 5 m
 - Biểu mẫu cữ bú hiện trường theo loại đã chọn: bú mẹ trực tiếp ghi bên/thời gian; sữa mẹ bình và sữa công thức ghi lượng uống, không hiện bên trái/phải; cữ kết hợp có cả hai nhóm và ml chỉ tính phần bú bình. Khi sửa đổi loại cữ, các trường không còn liên quan được xóa khi lưu.
 - “Nhịp sinh hoạt của bé” trên Hôm nay tóm tắt bú, ngủ và tã theo 24 giờ gần nhất; cân nặng hiển thị ngày đo thật và chênh lệch hai lần cân. Khoảng ngủ tham khảo AASM theo tuổi chỉ để đối chiếu khi đã ghi đủ giấc. Không tự kết luận bú/ngủ đủ hay thiếu từ nhật ký chưa đầy đủ.
 - “Bàn giao chăm bé” tạo tóm tắt có thời điểm cập nhật và nút sao chép để người dùng tự chia sẻ.
+- Nút Sửa mở đúng bản ghi, tự cuộn đến biểu mẫu và chuyển focus vào vùng chỉnh sửa; đổi bản ghi sẽ nạp lại giá trị. Áp dụng cho các nhật ký, tiêm chủng, kỳ kinh và sơ đồ răng.
 - Nút quay lại dùng lịch sử thực tế trong ứng dụng, hỗ trợ Back/Forward. Truy cập trực tiếp có đường về mục cha. Chỉnh sửa, lưu và tải thêm lịch sử dùng replace để tránh vòng lặp.
 - Bộ lọc và tìm kiếm cẩm nang lưu trên URL; quay lại từ bài viết giữ nguyên lựa chọn.
 - Nút giọng nói nằm cạnh tiêu đề. Chuyển động ngắn, tôn trọng chế độ giảm chuyển động; OCR chỉ tải thư viện nhận diện khi bắt đầu quét.

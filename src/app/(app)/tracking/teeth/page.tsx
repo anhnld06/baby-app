@@ -1,3 +1,4 @@
+import { EditFormTarget } from "@/components/edit-record-navigation";
 import type { ToothPosition } from "@prisma/client";
 import { deleteToothAction, saveToothAction } from "@/app/actions";
 import { Field, TextAreaField } from "@/components/form-fields";
@@ -81,6 +82,7 @@ export default async function TeethPage({
         </CardContent>
       </Card>
       {selectedPosition && selectedInfo ? (
+        <EditFormTarget recordId={selectedPosition}>
         <Card className="mt-4 border-0 shadow-sm">
           <CardContent className="space-y-4 p-5">
             <div>
@@ -128,6 +130,7 @@ export default async function TeethPage({
             </form>
           </CardContent>
         </Card>
+        </EditFormTarget>
       ) : (
         <p className="mt-6 text-center text-sm text-muted-foreground">
           {t.tracking.selectTooth}

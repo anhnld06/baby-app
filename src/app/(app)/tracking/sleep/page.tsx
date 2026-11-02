@@ -111,7 +111,7 @@ export default async function SleepPage({
           },
         ]}
       />
-      <CollapsibleRecordForm
+      <CollapsibleRecordForm editingId={editing?.id}
         key={`${editing?.id ?? "new"}-${params.new ?? ""}-${items.length}`}
         defaultOpen={!!editing || params.new === "1"}
         addLabel={t.tracking.newSleep}

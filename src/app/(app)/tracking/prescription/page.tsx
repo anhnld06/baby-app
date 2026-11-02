@@ -56,7 +56,7 @@ export default async function PrescriptionPage({
         subtitle={baby.name}
         backHref="/baby"
       />
-      <CollapsibleRecordForm
+      <CollapsibleRecordForm editingId={editing?.id}
         key={`${editing?.id ?? "new"}-${items.length}`}
         defaultOpen={!!editing}
         addLabel={t.tracking.newPrescription}

@@ -118,7 +118,7 @@ export default async function PregnancyTrackingPage({ searchParams }: { searchPa
           </CardContent>
         </Card>
       )}
-      <CollapsibleRecordForm key={`${editing?.id ?? "new"}-${items.length}`} defaultOpen={!!editing} addLabel="Thêm lần khám mới" closeLabel="Hủy">
+      <CollapsibleRecordForm editingId={editing?.id} key={`${editing?.id ?? "new"}-${items.length}`} defaultOpen={!!editing} addLabel="Thêm lần khám mới" closeLabel="Hủy">
         <Card className="border-0 shadow-sm"><CardContent className="p-5">
           <PregnancyCheckupForm pregnancyId={pregnancy.id} editing={editing} defaultGestationalWeek={age?.weeks} timeZone={user.timezone} />
         </CardContent></Card>

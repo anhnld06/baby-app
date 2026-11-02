@@ -1,3 +1,4 @@
+import { EditFormTarget, EditRecordLink } from "@/components/edit-record-navigation";
 import Link from "next/link";
 import {
   CheckCircle2,
@@ -198,6 +199,7 @@ export default async function VaccinationSchedulePage({
           {!editing && !recordEditing && baby && params.owner !== "mother" && <VaccinationChecklist kind="baby" ownerId={baby.id} name={baby.name} birth={baby.dateOfBirth} records={babyChecklistRecords} appointments={pending.filter((item) => item.babyId === baby.id)} today={today} />}
           {!editing && !recordEditing && mother && (params.owner === "mother" || !baby) && <VaccinationChecklist kind="mother" ownerId={mother.id} name={mother.name} records={motherChecklistRecords} appointments={pending.filter((item) => item.motherId === mother.id)} today={today} />}
           {editing || recordEditing ? (
+            <EditFormTarget recordId={editing?.id ?? recordEditing?.id}>
             <section className="mb-6 rounded-3xl border bg-card p-5">
               <h2 className="mb-4 text-lg font-semibold">
                 {editing ? "Sửa lịch / lần tiêm" : "Sửa lần tiêm"}
@@ -247,12 +249,13 @@ export default async function VaccinationSchedulePage({
               </VaccinationActionForm>
               <Link
                 replace
-                href="/vaccination-schedule"
+                href={`/vaccination-schedule?owner=${editing ? (editing.motherId ? "mother" : "baby") : params.owner === "mother" ? "mother" : "baby"}`}
                 className="mt-3 inline-flex min-h-11 items-center text-sm text-muted-foreground"
               >
                 Hủy chỉnh sửa
               </Link>
             </section>
+            </EditFormTarget>
           ) : (
             <div className="mb-6 space-y-3" key={revision}>
               <details className="rounded-3xl border border-primary/20 bg-card p-4">
@@ -387,13 +390,13 @@ export default async function VaccinationSchedulePage({
                         </VaccinationActionForm>
                       </div>
                     </details>
-                    <Link
+                    <EditRecordLink
                       replace
-                      href={`/vaccination-schedule?edit=${item.id}`}
+                      href={`/vaccination-schedule?edit=${item.id}&owner=${item.babyId ? "baby" : "mother"}`}
                       className="inline-flex min-h-11 items-center px-2 text-sm text-muted-foreground"
                     >
                       Sửa hẹn
-                    </Link>
+                    </EditRecordLink>
                     <VaccinationActionForm
                       action={changeAppointment.bind(null, item.id, "delete")}
                       label="Xóa hẹn"
@@ -450,14 +453,14 @@ export default async function VaccinationSchedulePage({
                   </div>
                   {item.appointment ? (
                     <div className="mt-3 flex flex-wrap items-center gap-3">
-                      <Link
+                      <EditRecordLink
                         replace
-                        href={`/vaccination-schedule?edit=${item.id}`}
+                        href={`/vaccination-schedule?edit=${item.id}&owner=${item.mother ? "mother" : "baby"}`}
                         className="inline-flex min-h-11 items-center text-sm text-primary"
                       >
                         Sửa lần tiêm
                         <ChevronRight className="size-4" />
-                      </Link>
+                      </EditRecordLink>
                       <VaccinationActionForm
                         action={changeAppointment.bind(null, item.id, "undo")}
                         label="Bỏ đánh dấu đã tiêm"

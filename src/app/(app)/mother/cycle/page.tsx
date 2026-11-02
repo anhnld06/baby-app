@@ -1,3 +1,4 @@
+import { EditFormTarget, EditRecordLink } from "@/components/edit-record-navigation";
 import Link from "next/link";
 import { CalendarDays, Pencil, Settings2, Trash2 } from "lucide-react";
 import {
@@ -38,7 +39,7 @@ export default async function CyclePage({ searchParams }: { searchParams: Promis
     db.menstrualCycle.findMany({ where: { motherId: mother.id }, orderBy: { periodStart: "desc" }, take: 24 }),
     db.motherDailyHealthLog.findMany({ where: { motherId: mother.id }, orderBy: { loggedAt: "desc" }, take: 370 }),
   ]);
-  const editing = params.edit ? cycles.find((cycle) => cycle.id === params.edit) : undefined;
+  const editing = params.edit ? await db.menstrualCycle.findFirst({ where: { id: params.edit, motherId: mother.id } }) : null;
   const flowStarts = periodStartsFromFlowLogs(dailyLogs.filter((log) => log.flow).map((log) => log.loggedAt));
   const allStarts = [...new Map([...cycles.map((cycle) => cycle.periodStart), ...flowStarts].map((date) => [dateInput(date), date])).values()];
   const analysis = analyzeCycles(allStarts);
@@ -128,6 +129,7 @@ export default async function CyclePage({ searchParams }: { searchParams: Promis
         </form>
       </details>
 
+      <EditFormTarget recordId={editing?.id}>
       <details open={Boolean(editing)} className="mt-5 rounded-2xl border bg-card p-4 shadow-sm">
         <summary className="cursor-pointer font-medium">{editing ? "Chỉnh sửa kỳ kinh" : "Thêm kỳ kinh theo khoảng ngày"}</summary>
         <form action={saveMenstrualCycleAction} className="mt-5 space-y-4">
@@ -148,6 +150,7 @@ export default async function CyclePage({ searchParams }: { searchParams: Promis
           </div>
         </form>
       </details>
+      </EditFormTarget>
 
       {cycles.length > 0 && (
         <div className="mt-4 space-y-2">
@@ -158,7 +161,7 @@ export default async function CyclePage({ searchParams }: { searchParams: Promis
                 <p className="text-sm font-medium">{new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long", year: "numeric" }).format(cycle.periodStart)}</p>
                 <p className="text-xs text-muted-foreground">{cycle.periodEnd ? `Đến ${new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" }).format(cycle.periodEnd)}` : "Chưa ghi ngày kết thúc"}</p>
               </div>
-              <Link href={`/mother/cycle?edit=${cycle.id}`} aria-label="Sửa kỳ kinh" className="grid size-11 place-items-center rounded-lg text-muted-foreground hover:bg-secondary"><Pencil className="size-4" /></Link>
+              <EditRecordLink href={`/mother/cycle?edit=${cycle.id}`} aria-label="Sửa kỳ kinh" className="grid size-11 place-items-center rounded-lg text-muted-foreground hover:bg-secondary"><Pencil className="size-4" /></EditRecordLink>
               <form action={deleteMenstrualCycleAction}>
                 <input type="hidden" name="id" value={cycle.id} />
                 <Button type="submit" variant="ghost" size="icon" className="text-destructive"><Trash2 className="size-4" /></Button>

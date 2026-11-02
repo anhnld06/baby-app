@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { EditRecordLink } from "@/components/edit-record-navigation";
 import { Pencil, Trash2 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,7 @@ export function RecordActions({
 }) {
   return (
     <div className="flex items-center gap-1">
-      <Link
+      <EditRecordLink
         href={editHref}
         replace
         scroll={false}
@@ -31,7 +31,7 @@ export function RecordActions({
         )}
       >
         <Pencil className="size-4" />
-      </Link>
+      </EditRecordLink>
       <form
         action={deleteAction}
         onSubmit={(event) => {

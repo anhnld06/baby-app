@@ -1,5 +1,5 @@
 import type { ToothPosition } from "@prisma/client";
-import Link from "next/link";
+import { EditRecordLink } from "@/components/edit-record-navigation";
 import {
   LOWER_TOOTH_ORDER,
   TOOTH_ERUPTION_INFO,
@@ -100,7 +100,7 @@ function ToothRow({
         const stateLabel = erupted ? labels.erupted : labels.notErupted;
 
         return (
-          <Link
+          <EditRecordLink
             key={position}
             href={href(position)}
             aria-current={active ? "true" : undefined}
@@ -129,7 +129,7 @@ function ToothRow({
             <span className="mt-1 whitespace-nowrap text-[7px] font-medium leading-none opacity-80 sm:text-[8px]">
               {info.expectedMonths[0]}–{info.expectedMonths[1]}
             </span>
-          </Link>
+          </EditRecordLink>
         );
       })}
     </div>
