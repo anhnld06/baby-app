@@ -16,7 +16,17 @@ export default async function KnowledgePage() {
   const stage = stageForAge(ageDays);
   const articles = await db.knowledgeArticle.findMany({
     where: { NOT: { slug: { startsWith: "demo-" } } },
-    include: { sources: true },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      summary: true,
+      category: true,
+      stage: true,
+      evidenceLevel: true,
+      knowledgeType: true,
+      _count: { select: { sources: true } },
+    },
     orderBy: [{ stage: "asc" }, { title: "asc" }],
   });
   return (
@@ -33,7 +43,7 @@ export default async function KnowledgePage() {
           stage: article.stage,
           evidenceLevel: article.evidenceLevel,
           knowledgeType: article.knowledgeType,
-          sourceCount: article.sources.length,
+          sourceCount: article._count.sources,
         }))}
       />
       <Link

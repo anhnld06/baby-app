@@ -19,7 +19,9 @@ async function ownedBabyId(formData: FormData) {
 }
 
 function refreshTracking() {
-  revalidatePath("/", "layout");
+  revalidatePath("/");
+  revalidatePath("/tracking/feeding");
+  revalidatePath("/tracking/sleep");
   revalidatePath("/activity");
 }
 

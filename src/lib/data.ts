@@ -1,11 +1,13 @@
 import "server-only";
 
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { db } from "@/lib/db";
 
-export async function listBabies(userId: string) {
+// Share this read between the layout and page within one server render only.
+export const listBabies = cache(async (userId: string) => {
   return db.baby.findMany({ where: { userId }, orderBy: { createdAt: "asc" } });
-}
+});
 
 export function pickSelectedBaby<T extends { id: string }>(babies: T[], selectedId?: string) {
   return (selectedId ? babies.find((baby) => baby.id === selectedId) : undefined) ?? babies[0] ?? null;

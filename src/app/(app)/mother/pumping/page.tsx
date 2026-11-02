@@ -1,3 +1,5 @@
+import { PumpingChart } from "@/components/pumping-chart";
+import { pumpingChartData, pumpingChartPeriod } from "@/features/pumping/chart";
 import { PumpingTrends } from "@/components/pumping-trends";
 import { pumpingTrends, pumpingTrendWindow } from "@/features/pumping/trends";
 import { getSelectedBaby } from "@/lib/data";
@@ -20,7 +22,7 @@ import { getLocale } from "@/lib/i18n";
 import { parseHistoryLimit } from "@/lib/pagination";
 
 export default async function PumpingPage({ searchParams }: {
-  searchParams: Promise<{ edit?: string; limit?: string; new?: string }>;
+  searchParams: Promise<{ edit?: string; limit?: string; new?: string; chart?: string; date?: string }>;
 }) {
   const [user, locale, params] = await Promise.all([requireUser(), getLocale(), searchParams]);
   const vi = locale === "vi";
@@ -34,14 +36,16 @@ export default async function PumpingPage({ searchParams }: {
   const { start, end } = getLocalDayRange(now, user.timezone);
   const baby = await getSelectedBaby(user.id);
   const window = pumpingTrendWindow(now, user.timezone);
+  const chartPeriod = pumpingChartPeriod(params.chart, params.date, now, user.timezone);
   const limit = parseHistoryLimit(params.limit);
-  const [history, today, editing, active, trendEntries, bottles] = await Promise.all([
+  const [history, today, editing, active, trendEntries, bottles, chartEntries] = await Promise.all([
     db.pumpingEntry.findMany({ where: { motherId: mother.id, isRunning: false }, orderBy: [{ startTime: "desc" }, { id: "desc" }], take: limit + 1 }),
     db.pumpingEntry.findMany({ where: { motherId: mother.id, isRunning: false, startTime: { gte: start, lt: end } } }),
     params.edit ? db.pumpingEntry.findFirst({ where: { id: params.edit, motherId: mother.id, isRunning: false } }) : null,
     db.pumpingEntry.findFirst({ where: { motherId: mother.id, isRunning: true } }),
     db.pumpingEntry.findMany({ where: { motherId: mother.id, isRunning: false, startTime: { gte: window.start, lt: window.end } } }),
     baby ? db.feeding.findMany({ where: { babyId: baby.id, type: "BOTTLE_BREAST_MILK", startTime: { gte: window.start, lt: window.end } }, select: { startTime: true, type: true, amountMl: true } }) : [],
+    db.pumpingEntry.findMany({ where: { motherId: mother.id, isRunning: false, startTime: { gte: chartPeriod.start, lt: chartPeriod.end } }, select: { id: true, startTime: true, leftAmountMl: true, rightAmountMl: true } }),
   ]);
   const items = history.slice(0, limit);
   const summary = pumpingSummary(today);
@@ -73,6 +77,7 @@ export default async function PumpingPage({ searchParams }: {
       </form>
       <FormActionBar formId="pumping-form" saveAction={savePumpingAction} saveLabel={editing ? (vi ? "Cập nhật" : "Update") : (vi ? "Lưu" : "Save")} cancelHref={editing || params.new === "1" ? "/mother/pumping" : undefined} cancelLabel={cancelLabel} />
     </CollapsibleRecordForm>
+    <PumpingChart key={`${chartPeriod.mode}-${chartPeriod.anchor}`} rows={pumpingChartData(chartPeriod, chartEntries, user.timezone)} mode={chartPeriod.mode} anchor={chartPeriod.anchor} previous={chartPeriod.previous} next={chartPeriod.next} today={chartPeriod.today} locale={locale} />
     <PumpingTrends trend={pumpingTrends(now, user.timezone, trendEntries, bottles)} babyName={baby?.name} locale={locale} />
     <h2 className="mb-2 mt-7 text-lg font-semibold">{vi ? "Lịch sử hút sữa" : "Pumping history"}</h2>
     <div className="space-y-2">
