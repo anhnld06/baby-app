@@ -42,7 +42,7 @@ export async function saveMedicationAction(form: FormData) {
     if (!topic || fields.name !== topic.name || form.get("confirmed") !== "on" || fields.startDate !== today) throw new Error("Hãy xác nhận hướng dẫn sử dụng phù hợp trước khi tạo lịch bổ sung.");
     const schedules = await db.medicationSchedule.findMany({ where: { babyId }, select: { id: true, name: true } });
     const existing = schedules.find(schedule => matchesSupplement(schedule.name, topic));
-    if (existing) redirect(`/tracking/medication?edit=${existing.id}`, RedirectType.replace);
+    if (existing) redirect(`/tracking/medication?edit=${existing.id}&baby=${encodeURIComponent(babyId)}`, RedirectType.replace);
   }
   const id = String(form.get("id") ?? "");
   const data = { ...fields, startDate: new Date(`${fields.startDate}T00:00Z`), endDate: fields.endDate ? new Date(`${fields.endDate}T00:00Z`) : null, active: form.get("active") === "on" };
@@ -50,7 +50,7 @@ export async function saveMedicationAction(form: FormData) {
     const result = await db.medicationSchedule.updateMany({ where: { id, babyId }, data });
     if (!result.count) throw new Error("Không tìm thấy lịch thuốc");
   } else await db.medicationSchedule.create({ data: { ...data, babyId } });
-  refresh(); redirect("/tracking/medication?saved=1", RedirectType.replace);
+  refresh(); redirect(`/tracking/medication?saved=1&baby=${encodeURIComponent(babyId)}`, RedirectType.replace);
 }
 export async function deleteMedicationAction(form: FormData) {
   const user = await requireUser();

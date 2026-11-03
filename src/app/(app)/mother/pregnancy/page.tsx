@@ -1,173 +1,64 @@
+import { PushNotificationSettings } from "@/components/push-notification-settings";
 import Link from "next/link";
-import { AlertTriangle, CalendarCheck, CheckCircle2, Scale, ShieldAlert } from "lucide-react";
-import { WellbeingIcon as HeartPulse } from "@/components/app-icons";
-import { deletePregnancyCheckupAction, savePregnancyCheckupAction } from "@/app/actions";
-import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
-import { FormActionBar } from "@/components/form-action-bar";
-import { PageHeader } from "@/components/page-header";
-import { PregnancyCheckupForm } from "@/components/pregnancy-checkup-form";
-import { RecordActions } from "@/components/record-actions";
-import { Card, CardContent } from "@/components/ui/card";
-import { getAIProvider } from "@/features/ai/provider";
-import { assessCheckup } from "@/features/mother/checkup-assessment";
-import { gestationalAge } from "@/features/mother/insights";
-import { selectRelevantPregnancy } from "@/features/mother/pregnancy";
-import { requireUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { Activity, Archive, BookHeart, CalendarDays, ChevronRight, Footprints, Heart, Scale, ScanLine } from "lucide-react";
+import { PregnancyEmpty } from "@/components/pregnancy-section";
+import { PregnancyWeekJourney } from "@/components/pregnancy-week-journey";
+import { PregnancyInsights } from "@/components/pregnancy-insights";
+import { getMaternalData } from "@/features/mother/maternal-data";
+import { maternalMetricSummary } from "@/features/mother/maternal-observations";
+import { getPregnancyContext } from "@/features/mother/pregnancy-data";
+import { getLibraryIndex } from "@/features/knowledge/library-data";
+import { explicitPrenatalFollowupDate } from "@/features/reminders/prenatal";
 import { db } from "@/lib/db";
-import { getLocale } from "@/lib/i18n";
+import { toDateTimeLocal } from "@/lib/date";
+import styles from "@/components/pregnancy.module.css";
 
-const LEVEL_STYLE = {
-  GOOD: { icon: CheckCircle2, label: "Ổn định", className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" },
-  WATCH: { icon: AlertTriangle, label: "Cần theo dõi", className: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },
-  URGENT: { icon: ShieldAlert, label: "Cần khám sớm", className: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300" },
-} as const;
-
-const VISIT_TYPE_LABEL = {
-  PRENATAL_VISIT: "Khám thai",
-  ULTRASOUND: "Siêu âm",
-  COMBINED: "Khám thai và siêu âm",
-} as const;
-
-function gestationalAgeLabel(week: number | null | undefined, day: number | null | undefined) {
-  if (week == null) return undefined;
-  return `${week} tuần${day != null ? ` ${day} ngày` : ""}`;
-}
-
-export default async function PregnancyTrackingPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
-  const [user, locale, params] = await Promise.all([requireUser(), getLocale(), searchParams]);
-  const mother = await db.mother.findUnique({ where: { userId: user.id }, include: { pregnancies: { orderBy: { createdAt: "desc" } } } });
-  const pregnancy = selectRelevantPregnancy(mother?.pregnancies ?? []);
-  if (!mother || !pregnancy) return <><PageHeader compact title="Theo dõi thai kỳ" backHref="/mother" /><div className="rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground">Hãy thêm thông tin thai kỳ trong Hồ sơ trước.<Link href="/profile/pregnancy" className="mt-3 block font-medium text-primary">Thêm thai kỳ</Link></div></>;
-  const [items, editing] = await Promise.all([
-    db.pregnancyCheckup.findMany({ where: { pregnancyId: pregnancy.id }, orderBy: { checkedAt: "desc" }, take: 30 }),
-    params.edit ? db.pregnancyCheckup.findFirst({ where: { id: params.edit, pregnancyId: pregnancy.id } }) : null,
+export default async function PregnancyPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
+  const params = await searchParams;
+  if (params.edit) redirect(`/mother/pregnancy/checkups?edit=${encodeURIComponent(params.edit)}`);
+  const { user, mother, pregnancy, age } = await getPregnancyContext();
+  if (!pregnancy || !mother) return <PregnancyEmpty />;
+  const [checkups, library, memories, maternal, journey] = await Promise.all([
+    db.pregnancyCheckup.findMany({ where: { pregnancyId: pregnancy.id }, orderBy: { checkedAt: "desc" }, select: { id: true, checkedAt: true, checkedAtTimeKnown: true, findings: true, followupInstruction: true, gestationalWeek: true, careInstructions: true, visitType: true, weightKg: true, fetalHeartRate: true, estimatedFetalWeightG: true } }),
+    getLibraryIndex(),
+    db.pregnancyJournalEntry.count({ where: { pregnancyId: pregnancy.id, kind: "MEMORY" } }),
+    getMaternalData(pregnancy.id, user.timezone),
+    db.pregnancyJourneyTask.findMany({ where: { pregnancyId: pregnancy.id } }),
   ]);
-  const age = gestationalAge(pregnancy.lastMenstrualPeriod);
-  const latest = items[0];
-  const assessment = latest
-    ? assessCheckup({
-        gestationalWeek: latest.gestationalWeek,
-        bloodPressure: latest.bloodPressure,
-        fetalHeartRate: latest.fetalHeartRate,
-        fundalHeightCm: latest.fundalHeightCm,
-      })
-    : null;
-  let aiNote: { summary: string; suggestions: string[] } | null = null;
-  if (assessment) {
-    try {
-      aiNote = await getAIProvider().assessCheckup({
-        checkup: {
-          gestationalWeek: latest.gestationalWeek ?? undefined,
-          weightKg: latest.weightKg ?? undefined,
-          bloodPressure: latest.bloodPressure ?? undefined,
-          fetalHeartRate: latest.fetalHeartRate ?? undefined,
-          fundalHeightCm: latest.fundalHeightCm ?? undefined,
-          findings: latest.findings ?? undefined,
-        },
-        flags: assessment.flags,
-        level: assessment.level,
-        locale: "vi",
-      });
-    } catch {
-      aiNote = null;
-    }
-  }
-  const levelStyle = assessment ? LEVEL_STYLE[assessment.level] : null;
-  const LevelIcon = levelStyle?.icon;
-  return (
-    <>
-      <PageHeader compact title="Theo dõi thai kỳ" subtitle={mother.name} backHref="/mother" />
-      <section className="mb-5 overflow-hidden rounded-3xl border border-border/60 bg-secondary/40 p-5">
-        <p className="text-xs font-medium text-muted-foreground">Thai kỳ hiện tại</p>
-        <div className="mt-2 flex items-end justify-between gap-3"><div><strong className="text-3xl">{age ? `${age.weeks} tuần` : "Chưa có tuổi thai"}</strong>{age && <span className="ml-2 text-sm text-muted-foreground">{age.days} ngày</span>}</div><HeartPulse className="size-8 text-primary" /></div>
-        <p className="mt-3 text-sm text-muted-foreground">Ngày dự sinh: {pregnancy.estimatedDueDate ? new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long", year: "numeric" }).format(pregnancy.estimatedDueDate) : "chưa ghi"}</p>
-        <Link href="/profile/pregnancy" className="mt-3 inline-block text-xs font-medium underline underline-offset-4">Chỉnh thông tin thai kỳ</Link>
-      </section>
-      {assessment && levelStyle && LevelIcon && (
-        <Card className="mb-5 border-0 shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-semibold">Phân tích lần khám gần nhất</h2>
-              <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${levelStyle.className}`}>
-                <LevelIcon className="size-3.5" />
-                {levelStyle.label}
-              </span>
-            </div>
-            <ul className="mt-3 space-y-1.5 text-sm">
-              {assessment.flags.map((flag) => (
-                <li key={flag} className="flex gap-2">
-                  <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-muted-foreground" />
-                  {flag}
-                </li>
-              ))}
-            </ul>
-            {aiNote && (
-              <div className="mt-4 border-t pt-4">
-                <p className="text-sm leading-6">{aiNote.summary}</p>
-                {aiNote.suggestions.length > 0 && (
-                  <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                    {aiNote.suggestions.map((suggestion) => (
-                      <li key={suggestion}>• {suggestion}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-            <p className="mt-4 text-xs text-muted-foreground">
-              Đây chỉ là gợi ý sàng lọc dựa trên ngưỡng chung, không thay thế chẩn đoán của bác sĩ. Khi có dấu hiệu bất thường, hãy liên hệ cơ sở y tế ngay.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-      <CollapsibleRecordForm prominent editingId={editing?.id} key={`${editing?.id ?? "new"}-${items.length}`} defaultOpen={!!editing} addLabel="Thêm lần khám mới" closeLabel="Hủy">
-        <Card className="border-0 shadow-sm"><CardContent className="p-5">
-          <PregnancyCheckupForm pregnancyId={pregnancy.id} editing={editing} defaultGestationalWeek={age?.weeks} timeZone={user.timezone} />
-        </CardContent></Card>
-        <FormActionBar formId="checkup-form" saveAction={savePregnancyCheckupAction} saveLabel={editing ? "Cập nhật" : "Lưu lần khám"} cancelHref={editing ? "/mother/pregnancy" : undefined} cancelLabel="Hủy" deleteAction={editing ? deletePregnancyCheckupAction : undefined} deleteId={editing?.id} deleteLabel="Xóa" />
-      </CollapsibleRecordForm>
-      <h2 className="mb-3 mt-7 text-lg font-semibold">Các lần khám và siêu âm</h2>
-      <div className="space-y-2">
-        {items.map((item) => {
-          const ageLabel = gestationalAgeLabel(item.gestationalWeek, item.gestationalDay);
-          const metrics = [
-            item.weightKg != null ? `Mẹ ${item.weightKg} kg` : undefined,
-            item.bloodPressure ? `HA ${item.bloodPressure}` : undefined,
-            item.fetalHeartRate != null ? `Tim thai ${item.fetalHeartRate}` : undefined,
-            item.estimatedFetalWeightG != null ? `Thai ~${item.estimatedFetalWeightG} g` : undefined,
-          ].filter(Boolean);
-          const ultrasoundSummary = [
-            item.placentaPosition ? `Nhau: ${item.placentaPosition}` : undefined,
-            item.amnioticFluid ? `Ối: ${item.amnioticFluid}` : undefined,
-          ].filter(Boolean);
-
-          return (
-            <div key={item.id} className="flex items-start gap-3 rounded-2xl bg-card p-3 shadow-sm">
-              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
-                <CalendarCheck className="size-5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">
-                  {VISIT_TYPE_LABEL[item.visitType] ?? "Lần khám"}{ageLabel ? ` · ${ageLabel}` : ""}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long", year: "numeric" }).format(item.checkedAt)}
-                  {item.facility ? ` · ${item.facility}` : ""}
-                </p>
-                {metrics.length > 0 && (
-                  <p className="mt-1 flex items-start gap-1.5 text-xs text-muted-foreground">
-                    <Scale className="mt-0.5 size-3 shrink-0" />
-                    <span>{metrics.join(" · ")}</span>
-                  </p>
-                )}
-                {ultrasoundSummary.length > 0 && <p className="mt-1 text-xs text-muted-foreground">{ultrasoundSummary.join(" · ")}</p>}
-                {item.findings && <p className="mt-1 line-clamp-2 text-sm">{item.findings}</p>}
-              </div>
-              <RecordActions id={item.id} editHref={`/mother/pregnancy?edit=${item.id}`} deleteAction={deletePregnancyCheckupAction} editLabel="Sửa" deleteLabel="Xóa" />
-            </div>
-          );
-        })}
-        {!items.length && <p className="rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground">Chưa có lần khám hoặc siêu âm nào.</p>}
-      </div>
-    </>
-  );
+  const active = pregnancy.pregnancyStatus === "PREGNANT";
+  const today = toDateTimeLocal(new Date(), user.timezone).slice(0, 10);
+  const nextAppointment = active ? checkups.flatMap((item) => {
+    const date = explicitPrenatalFollowupDate(item.followupInstruction);
+    return date && date.toISOString().slice(0, 10) >= today ? [{ date, id: item.id }] : [];
+  }).sort((a, b) => a.date.getTime() - b.date.getTime())[0] : null;
+  const format = (date: Date) => new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium", timeZone: "UTC" }).format(date);
+  const latest = checkups[0];
+  const latestAdvice = checkups.find((item) => item.careInstructions?.trim());
+  const latestHeart = checkups.find((item) => item.visitType !== "PRENATAL_VISIT" && item.fetalHeartRate != null);
+  const latestFetalWeight = checkups.find((item) => item.visitType !== "PRENATAL_VISIT" && item.estimatedFetalWeightG != null);
+  const recordedDate = (item: typeof latest) => new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium", timeZone: item.checkedAtTimeKnown ? user.timezone : "UTC" }).format(item.checkedAt);
+  const weightSummary = maternalMetricSummary(maternal.observations, "weightKg");
+  const weight = weightSummary?.latest.value;
+  const weightDay = weightSummary?.latest.day;
+  const status = { PREGNANT: "Hành trình của mẹ", PLANNING: "Chuẩn bị đón con", DELIVERED: "Hành trình đã đón con", ENDED: "Hành trình đã lưu" }[pregnancy.pregnancyStatus];
+  return <>
+    <div className="mb-5 flex items-end justify-between gap-3"><div><p className={styles.eyebrow}>{status}</p><h2 className={styles.heading}>{active ? "Chào mẹ, hôm nay thế nào?" : "Những ngày mình chờ con"}</h2></div><Heart className="mb-1 shrink-0 text-rose-300" size={22} /></div>
+    {!active && <div className={styles.archive}><Archive size={17} className="shrink-0" /><span>{pregnancy.pregnancyStatus === "DELIVERED" ? `Bé đã chào đời${pregnancy.actualDeliveryDate ? ` ngày ${format(pregnancy.actualDeliveryDate)}` : ""}. Cùng nhìn lại những dấu mốc của mẹ.` : pregnancy.pregnancyStatus === "PLANNING" ? "Mẹ có thể khám phá các tuần thai và chuẩn bị cho hành trình sắp tới." : "Thai kỳ đã kết thúc. Những ghi chép của mẹ được giữ lại tại đây."}</span></div>}
+    {active && <PushNotificationSettings publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY} description="Dùng chung cài đặt với Hồ sơ. Nhắc khi bắt đầu tuần thai mới (tuần 4–40) và trước lịch khám đã lưu; không tự tạo chỉ định khám hay bổ sung."/>}
+    <PregnancyWeekJourney care={{ pregnancyId: pregnancy.id, today, saved: journey.map((row) => ({ taskKey: row.taskKey, done: row.done, note: row.note, remindOn: row.remindOn?.toISOString().slice(0, 10) ?? "" })), visits: checkups.map((row) => ({ id: row.id, week: row.gestationalWeek, scan: row.visitType !== "PRENATAL_VISIT", date: recordedDate(row) })), advice: latestAdvice?.careInstructions, adviceId: latestAdvice?.id }} key={pregnancy.id} initialWeek={age?.weeks ?? latest?.gestationalWeek ?? undefined} currentWeek={age?.weeks} days={age?.days} active={active} dueDate={pregnancy.estimatedDueDate ? format(pregnancy.estimatedDueDate) : undefined} deliveredOn={pregnancy.actualDeliveryDate ? format(pregnancy.actualDeliveryDate) : undefined} />
+    <div className={styles.sectionHeading}><h2>{active ? "Dành một chút cho mẹ & bé" : "Công cụ & nhật ký"}</h2><span className={styles.muted}>Gọn trong một chạm</span></div>
+    <div className={styles.tools}>{[
+      { href: "baby/kicks", label: "Cử động thai", icon: Footprints }, { href: "health/contractions", label: "Cơn co", icon: Activity },
+      { href: "health/measurements", label: "Cân nặng", icon: Scale }, { href: "health?new=1", label: "Nhật ký mẹ", icon: BookHeart },
+    ].map(({ href, label, icon: Icon }) => <Link key={href} href={`/mother/pregnancy/${href}`} className={styles.tool}><span className={styles.toolIcon}><Icon size={22} strokeWidth={1.6} /></span><strong>{label}</strong></Link>)}</div>
+    <div className={styles.sectionHeading}><h2>{active ? "Hành trình tuần này" : "Hành trình của gia đình"}</h2><Link href="/mother/pregnancy/checkups" className={styles.textLink}>Sổ khám <ChevronRight size={13} /></Link></div>
+    <div className={styles.dashboardGrid}>
+      <section className={styles.panel}><div className={styles.appointment}><div className={styles.dateBadge}>{nextAppointment ? <><strong>{nextAppointment.date.getUTCDate()}</strong><span>THÁNG {nextAppointment.date.getUTCMonth() + 1}</span></> : <CalendarDays size={25} strokeWidth={1.5} />}</div><div><p className={styles.eyebrow}>{active ? "Lịch khám tiếp theo" : "Sổ khám thai"}</p><h3 className="mt-1 text-sm font-semibold">{nextAppointment ? format(nextAppointment.date) : `${checkups.length} lần khám đã ghi`}</h3><p className={styles.muted}>{nextAppointment ? "Theo ngày hẹn trên phiếu khám" : active ? "Chưa có lịch hẹn sắp tới" : "Khám, siêu âm và lời dặn của bác sĩ"}</p></div></div><Link href="/mother/pregnancy/checkups" className={`${styles.textLink} mt-2`}>{nextAppointment ? "Xem lịch & phiếu khám" : "Mở Khám & lịch"}<ChevronRight size={13} /></Link></section>
+      <Link href="/mother/pregnancy/memories" className={`${styles.panel} ${styles.paper}`}><BookHeart size={22} className="text-rose-400" strokeWidth={1.5} /><h3 className="mb-1 mt-3 text-sm font-semibold">Có những điều chỉ mẹ nhớ</h3><p className={styles.muted}>{memories ? `${memories} kỷ niệm đã được cất giữ. Thêm một chút hôm nay vào hành trình của con.` : "Một lá thư, một dấu mốc. Giữ lại những ngày con còn trong bụng mẹ."}</p><span className={styles.textLink}>Mở hộp kỷ niệm <ChevronRight size={13} /></span></Link>
+    </div>
+    <section className={styles.panel}><div className="mb-4 flex items-center gap-2"><ScanLine size={17} className="text-rose-400" /><h2 className="text-sm font-semibold">Ghi nhận gần nhất</h2></div><dl className={styles.numbers}><div className={styles.number}><dt className={styles.muted}>Cân nặng mẹ</dt><dd><strong>{weight != null ? `${weight} kg` : "—"}</strong>{weightDay && <span>{weightDay.split("-").reverse().join("/")}</span>}</dd></div><div className={styles.number}><dt className={styles.muted}>Tim thai siêu âm</dt><dd><strong>{latestHeart?.fetalHeartRate != null ? `${latestHeart.fetalHeartRate}` : "—"}</strong>{latestHeart && <span>{recordedDate(latestHeart)}</span>}<span>lần/phút</span></dd></div><div className={styles.number}><dt className={styles.muted}>Thai ước tính</dt><dd><strong>{latestFetalWeight?.estimatedFetalWeightG != null ? `${latestFetalWeight.estimatedFetalWeightG} g` : "—"}</strong>{latestFetalWeight && <span>{recordedDate(latestFetalWeight)}</span>}</dd></div></dl><p className={`${styles.muted} mt-3`}>{latest ? `Phiếu khám gần nhất: ${new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium", timeZone: latest.checkedAtTimeKnown ? user.timezone : "UTC" }).format(latest.checkedAt)}. Chỉ số thuộc ngày đo, không phải đánh giá hiện tại.` : "Thêm phiếu khám để lưu chỉ số của mẹ và bé."}</p></section>
+    <div className={styles.sectionHeading}><h2>Mỗi ngày, hiểu thêm một chút</h2><Link href="/knowledge?stage=PREGNANCY" className={styles.textLink}>Xem tất cả <ChevronRight size={13} /></Link></div>
+    <PregnancyInsights articles={library.map((row) => row.article).filter((article) => article.stage === "PREGNANCY")} />
+  </>;
 }

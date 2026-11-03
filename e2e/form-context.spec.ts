@@ -75,7 +75,8 @@ test("hồ sơ và phiếu thai kỳ hiện đúng nhóm trường", async ({ pa
   await expect(page.locator('#actualDeliveryDate')).toBeVisible();
   await status.selectOption("PREGNANT");
   expect(await keys(page, "#pregnancy-form")).not.toContain("actualDeliveryDate");
-  await page.goto("/mother/pregnancy");
+  await page.goto("/mother/pregnancy/checkups");
+  await expect(page.getByRole("heading", { name: "Khám & lịch", exact: true })).toBeVisible();
   if (!(await page.locator('[name="visitType"]').isVisible())) {
     const add = page.getByRole("button", { name: "Thêm lần khám mới", exact: true });
     test.skip(await add.count() === 0, "Hồ sơ chưa có thai kỳ để kiểm tra phiếu khám.");
@@ -85,11 +86,11 @@ test("hồ sơ và phiếu thai kỳ hiện đúng nhóm trường", async ({ pa
   await visit.selectOption("PRENATAL_VISIT");
   await expect(page.locator('[name="weightKg"]')).toBeVisible();
   await expect(page.locator('[name="crlMm"]')).toBeHidden();
-  expect(await keys(page, "#checkup-form")).not.toContain("crlMm");
+  expect(await keys(page, "#checkup-form")).toContain("crlMm");
   await visit.selectOption("ULTRASOUND");
   await expect(page.locator('[name="weightKg"]')).toBeHidden();
   await expect(page.locator('[name="crlMm"]')).toBeVisible();
-  expect(await keys(page, "#checkup-form")).not.toContain("weightKg");
+  expect(await keys(page, "#checkup-form")).toContain("weightKg");
   await visit.selectOption("COMBINED");
   await expect(page.locator('[name="weightKg"]')).toBeVisible();
   await expect(page.locator('[name="crlMm"]')).toBeVisible();

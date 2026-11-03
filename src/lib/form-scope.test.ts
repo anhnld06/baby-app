@@ -33,12 +33,27 @@ describe("fields scoped to the selected record type", () => {
     expect(growthSchema.parse({ babyId: "baby", measuredAt: now, heightCm: 55, measurementPosition: "RECUMBENT" }))
       .toMatchObject({ heightCm: 55, measurementPosition: "RECUMBENT" });
   });
-  it("scopes checkup fields while keeping shared clinical findings", () => {
-    const input = { pregnancyId: "pregnancy", checkedAt: now, weightKg: 60, bloodPressure: "110/70", crlMm: 20, placentaPosition: "anterior", fetalAnatomy: "recorded", fetalHeartRate: 140, findings: "note" };
-    expect(pregnancyCheckupSchema.parse({ ...input, visitType: "PRENATAL_VISIT" }))
-      .toMatchObject({ weightKg: 60, crlMm: null, placentaPosition: null, fetalAnatomy: null, fetalHeartRate: 140, findings: "note" });
-    expect(pregnancyCheckupSchema.parse({ ...input, visitType: "ULTRASOUND" }))
-      .toMatchObject({ weightKg: null, bloodPressure: null, crlMm: 20, fetalHeartRate: 140 });
-    expect(pregnancyCheckupSchema.parse({ ...input, visitType: "COMBINED" })).toMatchObject(input);
+  it("preserves recorded observations when the visit type changes", () => {
+    const input = { pregnancyId: "pregnancy", checkedAt: now, weightKg: 60, bloodPressure: "110/70", crlMm: 20, placentaPosition: "anterior", fetalAnatomy: "recorded", fetalHeartRate: 147, clinicalFetalHeartRate: 140, findings: "note" };
+    for (const visitType of ["PRENATAL_VISIT", "ULTRASOUND", "COMBINED"]) {
+      expect(pregnancyCheckupSchema.parse({ ...input, visitType })).toMatchObject(input);
+    }
+  });
+  it("keeps independent clinical and ultrasound measurements", () => {
+    const result = pregnancyCheckupSchema.parse({ pregnancyId: "pregnancy", checkedAt: "2026-08-07", checkedAtTimeKnown: "false", visitType: "COMBINED", maternalPulse: "118", fetalHeartRate: "150", clinicalFetalHeartRate: "150", bloodPressure: "115/71", edema: "ABSENT", placentaGrade: "2", placentaGradeUpper: "3", followupInstruction: "Sau 1 tuần" });
+    expect(result).toMatchObject({ checkedAtTimeKnown: false, maternalPulse: 118, fetalHeartRate: 150, clinicalFetalHeartRate: 150, edema: "ABSENT", placentaGrade: 2, placentaGradeUpper: 3, urineTestResult: null, followupInstruction: "Sau 1 tuần" });
+  });
+  it("distinguishes unknown edema from explicitly absent edema", () => {
+    const input = { pregnancyId: "pregnancy", checkedAt: now, visitType: "COMBINED" };
+    expect(pregnancyCheckupSchema.parse({ ...input, edema: "" }).edema).toBeNull();
+    expect(pregnancyCheckupSchema.parse({ ...input, edema: "ABSENT" }).edema).toBe("ABSENT");
+  });
+  it("allows clearing optional treatment and follow-up text", () => {
+    expect(pregnancyCheckupSchema.parse({ pregnancyId: "pregnancy", checkedAt: now, visitType: "COMBINED", otherFindings: "", treatment: "", followupInstruction: "" })).toMatchObject({ otherFindings: null, treatment: null, followupInstruction: null });
+  });
+  it("rejects reversed placental grade ranges and out-of-range percentiles", () => {
+    const input = { pregnancyId: "pregnancy", checkedAt: now, visitType: "ULTRASOUND" };
+    expect(pregnancyCheckupSchema.safeParse({ ...input, placentaGrade: 3, placentaGradeUpper: 2 }).success).toBe(false);
+    expect(pregnancyCheckupSchema.safeParse({ ...input, estimatedFetalWeightPercentile: 101 }).success).toBe(false);
   });
 });

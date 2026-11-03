@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-const optionalNumber = z.preprocess((value) => value === "" || value === null ? undefined : Number(value), z.number().nonnegative().optional());
-const optionalInteger = z.preprocess((value) => value === "" || value === null ? undefined : Number(value), z.number().int().nonnegative().optional());
+const optionalNumber = z.preprocess((value) => value === "" || value === null || value === undefined ? undefined : Number(value), z.number().nonnegative().optional());
+const optionalInteger = z.preprocess((value) => value === "" || value === null || value === undefined ? undefined : Number(value), z.number().int().nonnegative().optional());
 const optionalText = z.preprocess((value) => value === "" || value === null ? undefined : value, z.string().trim().max(1000).optional());
 const dateValue = z.preprocess((value) => value instanceof Date ? value : new Date(String(value)), z.date());
 const optionalDate = z.preprocess((value) => value === "" || value === null || value === undefined ? undefined : new Date(String(value)), z.date().optional());
@@ -89,6 +89,26 @@ export const motherDailyHealthLogSchema = z.object({
 });
 
 export const pregnancyCheckupSchema = z.object({
+  checkedAtTimeKnown: z.preprocess((value) => value === undefined ? true : value === true || value === "true", z.boolean()),
+  maternalPulse: optionalInteger.refine((v) => v === undefined || v <= 300, "Nhịp không hợp lệ").transform((v) => v ?? null),
+  edema: z.preprocess((value) => value === "" || value === null ? undefined : value, z.enum(["PRESENT", "ABSENT"]).optional()).transform((v) => v ?? null),
+  urineTestResult: optionalText.transform((v) => v ?? null),
+  maternalHealthStatus: optionalText.transform((v) => v ?? null),
+  clinicalFetalHeartRate: optionalInteger.refine((v) => v === undefined || v <= 300, "Nhịp không hợp lệ").transform((v) => v ?? null),
+  placentaGradeUpper: optionalInteger.refine((v) => v === undefined || v <= 3, "Độ nhau không hợp lệ").transform((v) => v ?? null),
+  afiMm: optionalNumber.transform((v) => v ?? null),
+  umbilicalArteryPi: optionalNumber.transform((v) => v ?? null),
+  middleCerebralArteryPi: optionalNumber.transform((v) => v ?? null),
+  middleCerebralArteryPsvCmS: optionalNumber.transform((v) => v ?? null),
+  uterineArteryPiRight: optionalNumber.transform((v) => v ?? null),
+  uterineArteryPiLeft: optionalNumber.transform((v) => v ?? null),
+  ductusVenosusAWave: optionalText.transform((v) => v ?? null),
+  nuchalCordLoops: optionalInteger.transform((v) => v ?? null),
+  estimatedFetalWeightPercentile: optionalNumber.refine((v) => v === undefined || v <= 100, "Bách phân vị không hợp lệ").transform((v) => v ?? null),
+  estimatedFetalWeightErrorG: optionalNumber.transform((v) => v ?? null),
+  followupInstruction: optionalText.transform((v) => v ?? null),
+  treatment: optionalText.transform((v) => v ?? null),
+  careInstructions: optionalText.transform((v) => v ?? null),
   id: optionalText,
   pregnancyId: z.string().min(1),
   visitType: z.enum(["PRENATAL_VISIT", "ULTRASOUND", "COMBINED"]),
@@ -101,7 +121,6 @@ export const pregnancyCheckupSchema = z.object({
   weightKg: optionalNumber,
   bloodPressure: optionalText,
   fetalHeartRate: optionalInteger.refine((value) => value === undefined || value <= 300, "Nhịp tim thai không hợp lệ"),
-  fundalHeightCm: optionalNumber,
   fetusCount: optionalInteger.refine((value) => value === undefined || value <= 10, "Số lượng thai không hợp lệ"),
   fetalPresentation: optionalText,
   fetalMovement: z.preprocess(
@@ -125,26 +144,33 @@ export const pregnancyCheckupSchema = z.object({
   facility: optionalText,
   doctor: optionalText,
   findings: optionalText,
-  nextCheckupAt: optionalDate,
-  notes: optionalText,
+}).refine((value) => value.placentaGradeUpper == null || (value.placentaGrade != null && value.placentaGradeUpper >= value.placentaGrade), {
+  path: ["placentaGradeUpper"], message: "Độ nhau cuối khoảng phải lớn hơn hoặc bằng đầu khoảng",
 }).transform((value) => ({
   ...value,
-  weightKg: value.visitType === "ULTRASOUND" ? null : value.weightKg ?? null,
-  bloodPressure: value.visitType === "ULTRASOUND" ? null : value.bloodPressure ?? null,
-  fundalHeightCm: value.visitType === "ULTRASOUND" ? null : value.fundalHeightCm ?? null,
-  crlMm: value.visitType === "PRENATAL_VISIT" ? null : value.crlMm ?? null,
-  ntMm: value.visitType === "PRENATAL_VISIT" ? null : value.ntMm ?? null,
-  bpdMm: value.visitType === "PRENATAL_VISIT" ? null : value.bpdMm ?? null,
-  hcMm: value.visitType === "PRENATAL_VISIT" ? null : value.hcMm ?? null,
-  acMm: value.visitType === "PRENATAL_VISIT" ? null : value.acMm ?? null,
-  flMm: value.visitType === "PRENATAL_VISIT" ? null : value.flMm ?? null,
-  estimatedFetalWeightG: value.visitType === "PRENATAL_VISIT" ? null : value.estimatedFetalWeightG ?? null,
-  placentaPosition: value.visitType === "PRENATAL_VISIT" ? null : value.placentaPosition ?? null,
-  placentaGrade: value.visitType === "PRENATAL_VISIT" ? null : value.placentaGrade ?? null,
-  amnioticFluid: value.visitType === "PRENATAL_VISIT" ? null : value.amnioticFluid ?? null,
-  cervicalLengthMm: value.visitType === "PRENATAL_VISIT" ? null : value.cervicalLengthMm ?? null,
-  ultrasoundDueDate: value.visitType === "PRENATAL_VISIT" ? null : value.ultrasoundDueDate ?? null,
-  fetalAnatomy: value.visitType === "PRENATAL_VISIT" ? null : value.fetalAnatomy ?? null,
+  fetusCount: value.fetusCount ?? null,
+  fetalPresentation: value.fetalPresentation ?? null,
+  fetalMovement: value.fetalMovement ?? null,
+  fetalHeartRate: value.fetalHeartRate ?? null,
+  otherFindings: value.otherFindings ?? null,
+  findings: value.findings ?? null,
+  facility: value.facility ?? null,
+  doctor: value.doctor ?? null,
+  weightKg: value.weightKg ?? null,
+  bloodPressure: value.bloodPressure ?? null,
+  crlMm: value.crlMm ?? null,
+  ntMm: value.ntMm ?? null,
+  bpdMm: value.bpdMm ?? null,
+  hcMm: value.hcMm ?? null,
+  acMm: value.acMm ?? null,
+  flMm: value.flMm ?? null,
+  estimatedFetalWeightG: value.estimatedFetalWeightG ?? null,
+  placentaPosition: value.placentaPosition ?? null,
+  placentaGrade: value.placentaGrade ?? null,
+  amnioticFluid: value.amnioticFluid ?? null,
+  cervicalLengthMm: value.cervicalLengthMm ?? null,
+  ultrasoundDueDate: value.ultrasoundDueDate ?? null,
+  fetalAnatomy: value.fetalAnatomy ?? null,
 }));
 
 const medicalVisitFields = {

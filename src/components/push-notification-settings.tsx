@@ -18,7 +18,7 @@ function pushSupported() {
   );
 }
 
-export function PushNotificationSettings({ publicKey }: { publicKey?: string }) {
+export function PushNotificationSettings({ publicKey, description }: { publicKey?: string; description?: string }) {
   const [enabled, setEnabled] = useState(false);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
@@ -75,11 +75,12 @@ export function PushNotificationSettings({ publicKey }: { publicKey?: string }) 
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
-        await fetch("/api/push/subscription", {
+        const response = await fetch("/api/push/subscription", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ endpoint: subscription.endpoint }),
         });
+        if (!response.ok) throw new Error("delete failed");
         await subscription.unsubscribe();
       }
       setEnabled(false);
@@ -101,7 +102,7 @@ export function PushNotificationSettings({ publicKey }: { publicKey?: string }) 
           <div>
             <p className="font-medium">Nhắc lịch trên thiết bị</p>
             <p className="text-xs text-muted-foreground">
-              Nhắc lịch tiêm, tái khám và khám thai kể cả khi ứng dụng đã đóng.
+              {description ?? "Nhắc lịch tiêm, tái khám, hành trình thai kỳ và giờ dùng thuốc kể cả khi ứng dụng đã đóng. Dùng chung cài đặt cho thiết bị này."}
             </p>
           </div>
         </div>

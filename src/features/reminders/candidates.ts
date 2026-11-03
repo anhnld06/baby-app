@@ -4,6 +4,9 @@ import type { CalendarReminder } from "@/features/calendar/ics";
 import { selectRelevantPregnancy } from "@/features/mother/pregnancy";
 import { toDateTimeLocal } from "@/lib/date";
 import { appointmentReminders } from "@/features/vaccination/reminders";
+import { explicitPrenatalFollowupDate } from "@/features/reminders/prenatal";
+import { pregnancyJourneyReminder } from "@/features/reminders/pregnancy-journey";
+import { journeyTaskReminders } from "@/features/mother/journey-tasks";
 import { db } from "@/lib/db";
 
 export async function listUserReminders(
@@ -27,7 +30,7 @@ export async function listUserReminders(
         medicalVisits: { select: { id: true, nextVisitAt: true } },
         pregnancies: {
           orderBy: { createdAt: "desc" },
-          include: { checkups: { select: { id: true, nextCheckupAt: true } } },
+          include: { checkups: { select: { id: true, followupInstruction: true } }, journeyTasks: true },
         },
       },
     }),
@@ -83,20 +86,26 @@ export async function listUserReminders(
             ]
           : [],
       ),
-      ...(pregnancy?.checkups ?? []).flatMap((checkup) =>
-        checkup.nextCheckupAt && checkup.nextCheckupAt >= today
+      ...(pregnancy?.pregnancyStatus === "PREGNANT" ? pregnancy.checkups : []).flatMap((checkup) => {
+        const date = explicitPrenatalFollowupDate(checkup.followupInstruction);
+        return date && date >= today
           ? [
               {
                 uid: `pregnancy-checkup-${checkup.id}`,
                 title: "Lịch khám thai tiếp theo",
-                date: checkup.nextCheckupAt,
+                date,
                 description: "Ngày khám do gia đình đã lưu trong Vani Family.",
+                url: "/mother/pregnancy/checkups",
               },
             ]
-          : [],
-      ),
+          : [];
+      }),
     );
   }
+
+  if (pregnancy) reminders.push(...pregnancyJourneyReminder(pregnancy, timezone, now));
+
+  if (pregnancy?.pregnancyStatus === "PREGNANT") reminders.push(...journeyTaskReminders(pregnancy.journeyTasks));
 
   return reminders;
 }

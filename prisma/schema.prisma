@@ -198,6 +198,23 @@ model Pregnancy {
   updatedAt           DateTime           @updatedAt
   mother              Mother             @relation(fields: [motherId], references: [id], onDelete: Cascade)
   checkups            PregnancyCheckup[]
+  journalEntries      PregnancyJournalEntry[]
+  trackingSessions    PregnancyTrackingSession[]
+  measurements        PregnancyMeasurement[]
+  journeyTasks        PregnancyJourneyTask[]
+}
+
+model PregnancyJourneyTask {
+  id          String    @id @default(cuid())
+  pregnancyId String
+  taskKey     String
+  done        Boolean   @default(false)
+  note        String    @default("")
+  remindOn    DateTime? @db.Date
+  updatedAt   DateTime  @updatedAt
+  pregnancy   Pregnancy @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+
+  @@unique([pregnancyId, taskKey])
 }
 
 model Baby {
@@ -282,6 +299,27 @@ model MotherDailyHealthLog {
 }
 
 model PregnancyCheckup {
+  checkedAtTimeKnown Boolean @default(true)
+  sourceMetadata Json?
+  maternalPulse Int?
+  edema String?
+  urineTestResult String?
+  maternalHealthStatus String?
+  clinicalFetalHeartRate Int?
+  placentaGradeUpper Int?
+  afiMm Float?
+  umbilicalArteryPi Float?
+  middleCerebralArteryPi Float?
+  middleCerebralArteryPsvCmS Float?
+  uterineArteryPiRight Float?
+  uterineArteryPiLeft Float?
+  ductusVenosusAWave String?
+  nuchalCordLoops Int?
+  estimatedFetalWeightPercentile Float?
+  estimatedFetalWeightErrorG Float?
+  followupInstruction String?
+  treatment String?
+  careInstructions String?
   id                    String               @id @default(cuid())
   pregnancyId           String
   visitType             PregnancyCheckupType @default(COMBINED)
@@ -290,7 +328,6 @@ model PregnancyCheckup {
   gestationalDay        Int                  @default(0)
   weightKg              Float?
   bloodPressure         String?
-  fundalHeightCm        Float?
   fetusCount            Int?
   fetalPresentation     String?
   fetalMovement         FetalMovementStatus?
@@ -312,8 +349,6 @@ model PregnancyCheckup {
   facility              String?
   doctor                String?
   findings              String?
-  nextCheckupAt         DateTime?            @db.Date
-  notes                 String?
   source                RecordSource         @default(MANUAL)
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
@@ -794,4 +829,46 @@ model BabyMemory {
   baby Baby @relation(fields: [babyId], references: [id], onDelete: Cascade)
   @@index([babyId, occurredAt])
   @@index([babyId, milestoneKey])
+}
+
+model PregnancyJournalEntry {
+  id          String    @id @default(cuid())
+  pregnancyId String
+  kind        String
+  occurredOn  DateTime  @db.Date
+  title       String
+  content     String
+  createdAt   DateTime  @default(now())
+  pregnancy   Pregnancy @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+
+  @@index([pregnancyId, kind, occurredOn])
+}
+
+model PregnancyTrackingSession {
+  id          String    @id @default(cuid())
+  pregnancyId String
+  clientId    String
+  kind        String
+  startedAt   DateTime
+  endedAt     DateTime
+  events      Json
+  notes       String?
+  createdAt   DateTime  @default(now())
+  pregnancy   Pregnancy @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+
+  @@unique([pregnancyId, clientId])
+  @@index([pregnancyId, kind, startedAt])
+}
+
+model PregnancyMeasurement {
+  id          String    @id @default(cuid())
+  pregnancyId String
+  measuredOn  DateTime  @db.Date
+  weightKg    Float?
+  bellyCm     Float?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  pregnancy   Pregnancy @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+
+  @@unique([pregnancyId, measuredOn])
 }

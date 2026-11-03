@@ -92,6 +92,7 @@ export default async function DashboardPage() {
         <FamilyStart
           mother={mother}
           name={user.name}
+          timeZone={user.timezone}
           nextVaccination={nextVaccination}
         />
         {pumpingTimer}

@@ -9,7 +9,7 @@ export type ExtractionInput = { imageDataUrl: string; recordType: HealthRecordTy
 const EXTRACTION_FIELDS: Record<HealthRecordType, string[]> = {
   vaccination: ["vaccineName", "doseNumber", "administeredAt", "facility", "batchNumber", "nextDueAt", "notes"],
   prescription: ["prescribedBy", "diagnosis", "issuedAt", "notes", "items"],
-  pregnancyCheckup: ["gestationalWeek", "weightKg", "bloodPressure", "fetalHeartRate", "fundalHeightCm", "facility", "doctor", "findings", "nextCheckupAt", "notes"],
+  pregnancyCheckup: ["gestationalWeek", "weightKg", "bloodPressure", "fetalHeartRate", "facility", "doctor", "findings", "followupInstruction", "treatment", "careInstructions"],
 };
 
 export type CheckupValues = {
@@ -17,7 +17,6 @@ export type CheckupValues = {
   weightKg?: number;
   bloodPressure?: string;
   fetalHeartRate?: number;
-  fundalHeightCm?: number;
   findings?: string;
 };
 

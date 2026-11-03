@@ -1,4 +1,5 @@
 import { ChoiceFields } from "@/components/choice-fields";
+import { PregnancyDueDateField } from "@/components/pregnancy-due-date-field";
 import Link from "next/link";
 import { deletePregnancyAction, savePregnancyAction } from "@/app/actions";
 import { Field, TextAreaField } from "@/components/form-fields";
@@ -8,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { selectRelevantPregnancy } from "@/features/mother/pregnancy";
+import { dueDateFromGestationalAge } from "@/features/mother/due-date";
+import { toDateTimeLocal } from "@/lib/date";
 import { getDictionary } from "@/lib/i18n";
 
 function dateInput(date?: Date | null) {
@@ -36,6 +39,20 @@ export default async function PregnancyProfilePage() {
       </>
     );
   const pregnancy = selectRelevantPregnancy(mother.pregnancies);
+  const earliestCheckup = pregnancy && !pregnancy.estimatedDueDate
+    ? await db.pregnancyCheckup.findFirst({
+        where: { pregnancyId: pregnancy.id, gestationalWeek: { not: null } },
+        orderBy: { checkedAt: "asc" },
+      })
+    : null;
+  const examinedOn = earliestCheckup
+    ? earliestCheckup.checkedAtTimeKnown
+      ? toDateTimeLocal(earliestCheckup.checkedAt, user.timezone).slice(0, 10)
+      : dateInput(earliestCheckup.checkedAt)
+    : undefined;
+  const suggestedDate = examinedOn && earliestCheckup
+    ? dueDateFromGestationalAge(examinedOn, earliestCheckup.gestationalWeek, earliestCheckup.gestationalDay)
+    : undefined;
   return (
     <>
       <PageHeader
@@ -60,17 +77,23 @@ export default async function PregnancyProfilePage() {
                 { value: "DELIVERED", label: t.profile.delivered }, { value: "ENDED", label: t.profile.ended },
               ]}
               groups={[
-                { values: ["PREGNANT", "DELIVERED", "ENDED"], fields: <Field name="estimatedDueDate" type="date" label={t.profile.dueDate} defaultValue={dateInput(pregnancy?.estimatedDueDate)} /> },
+                { values: ["PREGNANT", "DELIVERED", "ENDED"], fields: <PregnancyDueDateField label={t.profile.dueDate} initialValue={dateInput(pregnancy?.estimatedDueDate)} suggestedDate={suggestedDate} examinedOn={examinedOn} /> },
                 { values: ["DELIVERED"], fields: <Field name="actualDeliveryDate" type="date" label={t.profile.deliveryDate} defaultValue={dateInput(pregnancy?.actualDeliveryDate)} /> },
               ]}
             >
-              <Field name="lastMenstrualPeriod" type="date" label={t.profile.lmp} defaultValue={dateInput(pregnancy?.lastMenstrualPeriod)} />
+              <details open={Boolean(pregnancy?.lastMenstrualPeriod)} className="space-y-4">
+                <summary className="cursor-pointer text-sm font-medium">{t.profile.lmp} (nếu biết)</summary>
+                <Field name="lastMenstrualPeriod" type="date" label={t.profile.lmp} defaultValue={dateInput(pregnancy?.lastMenstrualPeriod)} />
+              </details>
             </ChoiceFields>
-            <TextAreaField
-              name="notes"
-              label={t.common.notes}
-              defaultValue={pregnancy?.notes ?? ""}
-            />
+            <details open={Boolean(pregnancy?.notes)} className="space-y-4">
+              <summary className="cursor-pointer text-sm font-medium">{t.common.notes}</summary>
+              <TextAreaField
+                name="notes"
+                label={t.common.notes}
+                defaultValue={pregnancy?.notes ?? ""}
+              />
+            </details>
           </form>
         </CardContent>
       </Card>

@@ -2,8 +2,8 @@ import { CalendarDays } from "lucide-react";
 import { PumpingIcon as Droplets, MedicalIcon as FileHeart, WellbeingIcon as HeartPulse, ShieldIcon as ShieldCheck, VaccineIcon as Syringe, ProfileIcon as UserRound } from "@/components/app-icons";
 import { FeatureLink } from "@/components/feature-link";
 import { PageHeader } from "@/components/page-header";
-import { gestationalAge } from "@/features/mother/insights";
-import { selectRelevantPregnancy } from "@/features/mother/pregnancy";
+
+import { pregnancyAge, selectRelevantPregnancy } from "@/features/mother/pregnancy";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { profileCoverUrl } from "@/lib/profile-cover";
@@ -28,7 +28,7 @@ export default async function MotherHubPage() {
     );
 
   const pregnancy = selectRelevantPregnancy(mother.pregnancies);
-  const age = pregnancy?.pregnancyStatus === "PREGNANT" ? gestationalAge(pregnancy.lastMenstrualPeriod) : undefined;
+  const age = pregnancy?.pregnancyStatus === "PREGNANT" ? pregnancyAge(pregnancy, new Date(), user.timezone) : undefined;
   const coverImageUrl = mother.coverImage
     ? profileCoverUrl("mother", mother.id, mother.coverImage.updatedAt)
     : undefined;
@@ -51,7 +51,7 @@ export default async function MotherHubPage() {
       <div className="space-y-3">
         <FeatureLink href="/mother/pumping" icon={Droplets} title="Nhật ký hút sữa" description="Ghi cữ hút, lượng sữa từng bên và tổng lượng theo ngày." tone="blue" />
         <FeatureLink href="/mother/cycle" icon={CalendarDays} title="Chu kỳ kinh" description="Ngày bắt đầu, kết thúc, lượng kinh và triệu chứng." meta={`${mother._count.menstrualCycles} chu kỳ đã ghi`} tone="rose" />
-        <FeatureLink href="/mother/pregnancy" icon={HeartPulse} title="Theo dõi thai kỳ" description="Tuổi thai, ngày dự sinh và lịch sử khám thai." meta={age ? `Hiện tại khoảng ${age.weeks} tuần ${age.days} ngày` : `${pregnancy?._count.checkups ?? 0} lần khám đã ghi`} tone="violet" />
+        <FeatureLink href="/mother/pregnancy" icon={HeartPulse} title="Theo dõi thai kỳ" description="Hành trình tuần thai, sức khỏe mẹ, lịch khám và kỷ niệm." meta={age ? `Hiện tại khoảng ${age.weeks} tuần ${age.days} ngày` : `${pregnancy?._count.checkups ?? 0} lần khám đã ghi`} tone="violet" />
         <FeatureLink href="/mother/medical" icon={FileHeart} title="Sổ khám bệnh của mẹ" description="Lý do khám, chẩn đoán, điều trị và lịch tái khám." meta={`${mother._count.medicalVisits} lượt khám`} tone="amber" />
         <FeatureLink href="/mother/insurance" icon={ShieldCheck} title="Bảo hiểm của mẹ" description="BHYT, bảo hiểm tư nhân, thời hạn và nơi đăng ký." meta={`${mother._count.insurancePolicies} thẻ / hợp đồng`} tone="emerald" />
         <FeatureLink href="/vaccination-schedule?owner=mother" icon={Syringe} title="Tiêm chủng của mẹ" description="Lịch hẹn và các lần đã tiêm, cùng một nơi." meta={`${mother._count.vaccinationRecords} mũi đã ghi`} tone="blue" />

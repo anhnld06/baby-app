@@ -1,0 +1,306 @@
+[
+  {
+    "week": 4,
+    "length": 2,
+    "unit": "mm",
+    "basis": "headToBottom",
+    "comparison": "hạt anh túc",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/1st-trimester/week-4/"
+  },
+  {
+    "week": 5,
+    "length": 2,
+    "unit": "mm",
+    "basis": "headToBottom",
+    "comparison": "hạt mè",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/1st-trimester/week-5/"
+  },
+  {
+    "week": 6,
+    "length": 6,
+    "unit": "mm",
+    "basis": "headToBottom",
+    "comparison": "hạt đậu",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/1st-trimester/week-6/"
+  },
+  {
+    "week": 7,
+    "length": 10,
+    "unit": "mm",
+    "basis": "headToBottom",
+    "comparison": "quả nho",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/1st-trimester/week-7/"
+  },
+  {
+    "week": 8,
+    "length": 16,
+    "unit": "mm",
+    "basis": "headToBottom",
+    "comparison": "quả mâm xôi",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/1st-trimester/week-8/"
+  },
+  {
+    "week": 9,
+    "length": 22,
+    "unit": "mm",
+    "basis": "headToBottom",
+    "comparison": "quả dâu tây",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/1st-trimester/week-9/"
+  },
+  {
+    "week": 10,
+    "length": 30,
+    "unit": "mm",
+    "basis": "headToBottom",
+    "comparison": "quả mơ nhỏ",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/1st-trimester/week-10/"
+  },
+  {
+    "week": 11,
+    "length": 41,
+    "unit": "mm",
+    "basis": "headToBottom",
+    "comparison": "quả sung",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/1st-trimester/week-11/"
+  },
+  {
+    "week": 12,
+    "length": 5.4,
+    "unit": "cm",
+    "basis": "headToBottom",
+    "comparison": "quả mận",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/1st-trimester/week-12/"
+  },
+  {
+    "week": 13,
+    "length": 7.4,
+    "unit": "cm",
+    "basis": "headToBottom",
+    "comparison": "quả đào",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/2nd-trimester/week-13/"
+  },
+  {
+    "week": 14,
+    "length": 8.5,
+    "unit": "cm",
+    "basis": "headToBottom",
+    "comparison": "quả kiwi",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/2nd-trimester/week-14/"
+  },
+  {
+    "week": 15,
+    "length": 10.1,
+    "unit": "cm",
+    "basis": "headToBottom",
+    "comparison": "quả táo",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/2nd-trimester/week-15/"
+  },
+  {
+    "week": 16,
+    "length": 11.6,
+    "unit": "cm",
+    "basis": "headToBottom",
+    "comparison": "quả bơ",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/2nd-trimester/week-16/"
+  },
+  {
+    "week": 17,
+    "length": 12,
+    "unit": "cm",
+    "basis": "headToBottom",
+    "comparison": "quả lựu",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/2nd-trimester/week-17/"
+  },
+  {
+    "week": 18,
+    "length": 14.2,
+    "unit": "cm",
+    "basis": "headToBottom",
+    "comparison": "quả ớt chuông",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/2nd-trimester/week-18/"
+  },
+  {
+    "week": 19,
+    "length": 15.3,
+    "unit": "cm",
+    "basis": "headToBottom",
+    "comparison": "quả cà chua lớn",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/2nd-trimester/week-19/"
+  },
+  {
+    "week": 20,
+    "length": 25.6,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "quả chuối",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/2nd-trimester/week-20/"
+  },
+  {
+    "week": 21,
+    "length": 26.7,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "củ cà rốt",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/2nd-trimester/week-21/"
+  },
+  {
+    "week": 22,
+    "length": 27.8,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "củ khoai lang",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/2nd-trimester/week-22/"
+  },
+  {
+    "week": 23,
+    "length": 28.9,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "quả xoài lớn",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/2nd-trimester/week-23/"
+  },
+  {
+    "week": 24,
+    "length": 30,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "bắp ngô",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/2nd-trimester/week-24/"
+  },
+  {
+    "week": 25,
+    "length": 34.6,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "quả bí ngòi",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/2nd-trimester/week-25/"
+  },
+  {
+    "week": 26,
+    "length": 35.6,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "quả dưa chuột",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/2nd-trimester/week-26/"
+  },
+  {
+    "week": 27,
+    "length": 36.6,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "bông súp lơ",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/2nd-trimester/week-27/"
+  },
+  {
+    "week": 28,
+    "length": 37.6,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "quả cà tím",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/3rd-trimester/week-28/"
+  },
+  {
+    "week": 29,
+    "length": 38.6,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "quả bí đỏ hồ lô",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/3rd-trimester/week-29/"
+  },
+  {
+    "week": 30,
+    "length": 39.9,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "bắp cải",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/3rd-trimester/week-30/"
+  },
+  {
+    "week": 31,
+    "length": 41.1,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "quả dừa",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/3rd-trimester/week-31/"
+  },
+  {
+    "week": 32,
+    "length": 42.4,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "bó cần tây",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/3rd-trimester/week-32/"
+  },
+  {
+    "week": 33,
+    "length": 43.7,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "quả dứa",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/3rd-trimester/week-33/"
+  },
+  {
+    "week": 34,
+    "length": 45,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "quả dưa lưới",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/3rd-trimester/week-34/"
+  },
+  {
+    "week": 35,
+    "length": 46.2,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "quả dưa lê",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/3rd-trimester/week-35/"
+  },
+  {
+    "week": 36,
+    "length": 47.4,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "cây xà lách romaine",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/3rd-trimester/week-36/"
+  },
+  {
+    "week": 37,
+    "length": 48.6,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "cây tỏi tây",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/3rd-trimester/week-37/"
+  },
+  {
+    "week": 38,
+    "length": 49.8,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "cuống đại hoàng",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/3rd-trimester/week-38/"
+  },
+  {
+    "week": 39,
+    "length": 50.7,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "quả dưa hấu",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/3rd-trimester/week-39/"
+  },
+  {
+    "week": 40,
+    "length": 51.2,
+    "unit": "cm",
+    "basis": "headToHeel",
+    "comparison": "quả bí ngô",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/3rd-trimester/week-40/"
+  },
+  {
+    "week": 41,
+    "length": null,
+    "unit": null,
+    "basis": "headToHeel",
+    "comparison": "quả bí ngô hoặc dưa hấu",
+    "source": "https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/3rd-trimester/week-41/"
+  }
+]

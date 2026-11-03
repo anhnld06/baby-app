@@ -241,8 +241,8 @@ export async function savePregnancyCheckupAction(formData: FormData) {
       data: { ...data, id: undefined, source },
     });
   else await db.pregnancyCheckup.create({ data: { ...data, id: undefined, source } });
-  revalidatePath("/mother/pregnancy");
-  redirect("/mother/pregnancy", RedirectType.replace);
+  revalidatePath("/mother/pregnancy", "layout");
+  redirect("/mother/pregnancy/checkups", RedirectType.replace);
 }
 
 export async function deletePregnancyCheckupAction(formData: FormData) {
@@ -251,7 +251,7 @@ export async function deletePregnancyCheckupAction(formData: FormData) {
   await db.pregnancyCheckup.deleteMany({
     where: { id, pregnancy: { mother: { userId: user.id } } },
   });
-  revalidatePath("/mother/pregnancy");
+  revalidatePath("/mother/pregnancy", "layout");
 }
 
 export async function saveMotherVaccinationAction(formData: FormData) {

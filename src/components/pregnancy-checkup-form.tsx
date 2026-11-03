@@ -1,23 +1,28 @@
 "use client";
 
 import type { ReactNode } from "react";
+import type { PregnancyCheckup } from "@prisma/client";
+import { CHECKUP_EXTRA_FIELDS, type CheckupExtraName } from "@/features/mother/checkup-fields";
+import { explicitPrenatalFollowupDate, withPrenatalFollowupDate } from "@/features/reminders/prenatal";
+import { pregnancyAge } from "@/features/mother/pregnancy";
+import { dueDateFromGestationalAge } from "@/features/mother/due-date";
 import { useState } from "react";
 import { savePregnancyCheckupAction } from "@/app/actions";
 import { Field, SelectField, TextAreaField } from "@/components/form-fields";
 import { OcrScanField } from "@/components/ocr-scan-field";
-import { toDateInputValue, toDateTimeLocal } from "@/lib/date";
+import { formatDateInputDisplay, toDateInputValue, toDateTimeLocal } from "@/lib/date";
 
 type VisitType = "PRENATAL_VISIT" | "ULTRASOUND" | "COMBINED";
 type FetalMovement = "" | "PRESENT" | "ABSENT";
 
-type CheckupValues = {
+type CheckupValues = Record<CheckupExtraName, string> & {
+  checkedAtTimeKnown: boolean;
   visitType: VisitType;
   checkedAt: string;
   gestationalWeek: string;
   gestationalDay: string;
   weightKg: string;
   bloodPressure: string;
-  fundalHeightCm: string;
   fetusCount: string;
   fetalPresentation: string;
   fetalMovement: FetalMovement;
@@ -39,43 +44,9 @@ type CheckupValues = {
   facility: string;
   doctor: string;
   findings: string;
-  nextCheckupAt: string;
-  notes: string;
 };
 
-type EditingCheckup = {
-  id: string;
-  visitType: VisitType;
-  checkedAt: Date;
-  gestationalWeek: number | null;
-  gestationalDay: number | null;
-  weightKg: number | null;
-  bloodPressure: string | null;
-  fundalHeightCm: number | null;
-  fetusCount: number | null;
-  fetalPresentation: string | null;
-  fetalMovement: Exclude<FetalMovement, ""> | null;
-  fetalHeartRate: number | null;
-  crlMm: number | null;
-  ntMm: number | null;
-  bpdMm: number | null;
-  hcMm: number | null;
-  acMm: number | null;
-  flMm: number | null;
-  estimatedFetalWeightG: number | null;
-  placentaPosition: string | null;
-  placentaGrade: number | null;
-  amnioticFluid: string | null;
-  cervicalLengthMm: number | null;
-  ultrasoundDueDate: Date | null;
-  fetalAnatomy: string | null;
-  otherFindings: string | null;
-  facility: string | null;
-  doctor: string | null;
-  findings: string | null;
-  nextCheckupAt: Date | null;
-  notes: string | null;
-};
+type EditingCheckup = PregnancyCheckup;
 
 function toDateInput(value: unknown) {
   if (typeof value !== "string" || value.length === 0) return undefined;
@@ -99,7 +70,7 @@ function textValue(value: unknown, current: string) {
 
 function FormSection({ title, description, children, active = true }: { title: string; description?: string; children: ReactNode; active?: boolean }) {
   return (
-    <fieldset hidden={!active} disabled={!active} className="min-w-0 space-y-4 rounded-2xl border bg-card/40 p-4">
+    <fieldset hidden={!active} className="min-w-0 space-y-4 rounded-2xl border bg-card/40 p-4">
       <legend className="px-2 text-sm font-semibold">{title}</legend>
       {description && <p className="text-xs leading-5 text-muted-foreground">{description}</p>}
       {children}
@@ -107,20 +78,27 @@ function FormSection({ title, description, children, active = true }: { title: s
   );
 }
 
-export function PregnancyCheckupForm({ pregnancyId, editing, defaultGestationalWeek, timeZone }: {
+export function PregnancyCheckupForm({ pregnancyId, editing, estimatedDueDate, lastMenstrualPeriod, active, timeZone }: {
   pregnancyId: string;
   editing?: EditingCheckup | null;
-  defaultGestationalWeek?: number;
+  estimatedDueDate?: string;
+  lastMenstrualPeriod?: string;
+  active?: boolean;
   timeZone: string;
 }) {
+  function ageOn(date: string) {
+    return pregnancyAge({ pregnancyStatus: active ? "PREGNANT" : "ENDED", estimatedDueDate: estimatedDueDate ? new Date(estimatedDueDate) : null, lastMenstrualPeriod: lastMenstrualPeriod ? new Date(lastMenstrualPeriod) : null }, new Date(`${date.slice(0, 10)}T12:00:00Z`), "UTC");
+  }
+  const initialAge = ageOn(toDateTimeLocal(new Date(), timeZone));
   const [values, setValues] = useState<CheckupValues>({
+    ...Object.fromEntries(CHECKUP_EXTRA_FIELDS.map(({name}) => [name, editing?.[name]?.toString() ?? ""])) as Record<CheckupExtraName, string>,
+    checkedAtTimeKnown: editing?.checkedAtTimeKnown ?? false,
     visitType: editing?.visitType ?? "COMBINED",
-    checkedAt: editing ? toDateTimeLocal(editing.checkedAt, timeZone) : toDateTimeLocal(new Date(), timeZone),
-    gestationalWeek: editing?.gestationalWeek?.toString() ?? defaultGestationalWeek?.toString() ?? "",
-    gestationalDay: editing?.gestationalDay?.toString() ?? "0",
+    checkedAt: editing ? (editing.checkedAtTimeKnown ? toDateTimeLocal(editing.checkedAt, timeZone) : editing.checkedAt.toISOString().slice(0, 10)) : toDateTimeLocal(new Date(), timeZone).slice(0, 10),
+    gestationalWeek: editing?.gestationalWeek?.toString() ?? initialAge?.weeks.toString() ?? "",
+    gestationalDay: editing?.gestationalDay?.toString() ?? initialAge?.days.toString() ?? "",
     weightKg: editing?.weightKg?.toString() ?? "",
     bloodPressure: editing?.bloodPressure ?? "",
-    fundalHeightCm: editing?.fundalHeightCm?.toString() ?? "",
     fetusCount: editing?.fetusCount?.toString() ?? "",
     fetalPresentation: editing?.fetalPresentation ?? "",
     fetalMovement: editing?.fetalMovement ?? "",
@@ -142,13 +120,28 @@ export function PregnancyCheckupForm({ pregnancyId, editing, defaultGestationalW
     facility: editing?.facility ?? "",
     doctor: editing?.doctor ?? "",
     findings: editing?.findings ?? "",
-    nextCheckupAt: editing?.nextCheckupAt ? toDateInputValue(editing.nextCheckupAt) : "",
-    notes: editing?.notes ?? "",
   });
-  const [source, setSource] = useState<"MANUAL" | "OCR">("MANUAL");
+  const [source, setSource] = useState<"MANUAL" | "OCR">(editing?.source ?? "MANUAL");
+  const calculatedDueDate = dueDateFromGestationalAge(
+    values.checkedAt,
+    values.gestationalWeek === "" ? undefined : Number(values.gestationalWeek),
+    values.gestationalDay === "" ? undefined : Number(values.gestationalDay),
+  );
 
   function set<K extends keyof CheckupValues>(key: K, value: CheckupValues[K]) {
-    setValues((current) => ({ ...current, [key]: value }));
+    setValues((current) => {
+      const age = key === "checkedAt" && !editing ? ageOn(String(value)) : undefined;
+      return { ...current, [key]: value, ...(key === "checkedAt" && !editing ? { gestationalWeek: age?.weeks.toString() ?? "", gestationalDay: age?.days.toString() ?? "" } : {}) };
+    });
+  }
+
+  function extraInputs(group: "maternal" | "ultrasound" | "followup") {
+    return <div className="grid gap-4 sm:grid-cols-2">{CHECKUP_EXTRA_FIELDS.filter((f) => f.group === group).map((field) => {
+      const shared = { name: field.name, label: field.label, value: values[field.name], onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => set(field.name, event.target.value) };
+      if (field.kind === "presence") return <SelectField key={field.name} {...shared}><option value="">Chưa ghi nhận</option><option value="PRESENT">Có (+)</option><option value="ABSENT">Không (-)</option></SelectField>;
+      if (field.kind === "textarea") return <div key={field.name} className="sm:col-span-2"><TextAreaField {...shared} placeholder={field.name === "followupInstruction" ? "Sau 1 tuần, khi thai 38 tuần hoặc Ngày tái khám: 25/11/2026" : undefined} /></div>;
+      return <Field key={field.name} {...shared} type={field.kind === "number" ? "number" : "text"} min={field.kind === "number" ? 0 : undefined} step={field.kind === "number" ? "any" : undefined} />;
+    })}</div>;
   }
 
   return (
@@ -169,12 +162,11 @@ export function PregnancyCheckupForm({ pregnancyId, editing, defaultGestationalW
             setValues((current) => ({
               ...current,
               visitType: data.visitType === "ULTRASOUND" ? "ULTRASOUND" : current.visitType,
-              checkedAt: toRecognizedDateTime(data.checkedAt, current.checkedAt),
+              checkedAt: current.checkedAtTimeKnown ? toRecognizedDateTime(data.checkedAt, current.checkedAt) : toDateInput(data.checkedAt) ?? current.checkedAt,
               gestationalWeek: numberValue(data.gestationalWeek, current.gestationalWeek),
               gestationalDay: numberValue(data.gestationalDay, current.gestationalDay),
               weightKg: numberValue(data.weightKg, current.weightKg),
               bloodPressure: textValue(data.bloodPressure, current.bloodPressure),
-              fundalHeightCm: numberValue(data.fundalHeightCm, current.fundalHeightCm),
               fetusCount: numberValue(data.fetusCount, current.fetusCount),
               fetalPresentation: textValue(data.fetalPresentation, current.fetalPresentation),
               fetalMovement: data.fetalMovement === "PRESENT" || data.fetalMovement === "ABSENT" ? data.fetalMovement : current.fetalMovement,
@@ -196,8 +188,6 @@ export function PregnancyCheckupForm({ pregnancyId, editing, defaultGestationalW
               facility: textValue(data.facility, current.facility),
               doctor: textValue(data.doctor, current.doctor),
               findings: textValue(data.findings, current.findings),
-              nextCheckupAt: toDateInput(data.nextCheckupAt) ?? current.nextCheckupAt,
-              notes: textValue(data.notes, current.notes),
             }));
           }}
         />
@@ -209,7 +199,9 @@ export function PregnancyCheckupForm({ pregnancyId, editing, defaultGestationalW
           <option value="ULTRASOUND">Siêu âm</option>
           <option value="PRENATAL_VISIT">Khám thai</option>
         </SelectField>
-        <Field name="checkedAt" type="datetime-local" required label="Ngày giờ thực hiện" value={values.checkedAt} onChange={(event) => set("checkedAt", event.target.value)} />
+        <input type="hidden" name="checkedAtTimeKnown" value={String(values.checkedAtTimeKnown)} />
+        <Field name="checkedAt" type={values.checkedAtTimeKnown ? "datetime-local" : "date"} required label={values.checkedAtTimeKnown ? "Ngày giờ thực hiện" : "Ngày thực hiện"} value={values.checkedAt} onChange={(event) => set("checkedAt", event.target.value)} />
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={values.checkedAtTimeKnown} onChange={(event) => { const known = event.target.checked; setValues((current) => ({ ...current, checkedAtTimeKnown: known, checkedAt: known ? `${current.checkedAt.slice(0, 10)}T00:00` : current.checkedAt.slice(0, 10) })); }} />Phiếu có ghi giờ thực hiện</label>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field name="facility" label="Cơ sở thực hiện" value={values.facility} onChange={(event) => set("facility", event.target.value)} />
           <Field name="doctor" label="Bác sĩ" value={values.doctor} onChange={(event) => set("doctor", event.target.value)} />
@@ -218,14 +210,18 @@ export function PregnancyCheckupForm({ pregnancyId, editing, defaultGestationalW
           <Field name="gestationalWeek" type="number" min="0" max="45" label="Tuổi thai (tuần)" value={values.gestationalWeek} onChange={(event) => set("gestationalWeek", event.target.value)} />
           <Field name="gestationalDay" type="number" min="0" max="6" label="Ngày lẻ" value={values.gestationalDay} onChange={(event) => set("gestationalDay", event.target.value)} />
         </div>
+        <Field name="calculatedDueDate" label="Ngày dự sinh ước tính (tự tính)" readOnly value={calculatedDueDate ? formatDateInputDisplay(calculatedDueDate) : ""} placeholder="Nhập ngày khám và tuổi thai để tự tính" />
       </FormSection>
 
-      <FormSection title="Chỉ số của mẹ" active={values.visitType !== "ULTRASOUND"}>
+      <FormSection title="Khám mẹ" active={values.visitType !== "ULTRASOUND"}>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field name="weightKg" type="number" min="0" step="0.1" label="Cân nặng mẹ (kg)" value={values.weightKg} onChange={(event) => set("weightKg", event.target.value)} />
           <Field name="bloodPressure" inputMode="numeric" label="Huyết áp (mmHg)" placeholder="110/70" value={values.bloodPressure} onChange={(event) => set("bloodPressure", event.target.value)} />
         </div>
-        <Field name="fundalHeightCm" type="number" min="0" step="0.1" label="Bề cao tử cung (cm)" value={values.fundalHeightCm} onChange={(event) => set("fundalHeightCm", event.target.value)} />
+        <details open={CHECKUP_EXTRA_FIELDS.some((f) => f.group === "maternal" && values[f.name])} className="space-y-4">
+          <summary className="cursor-pointer text-sm font-medium">Chỉ số khám bổ sung</summary>
+          {extraInputs("maternal")}
+        </details>
       </FormSection>
 
       <FormSection title="Tình trạng thai" description="Ghi theo đúng nội dung trên phiếu; không tự suy diễn khi phiếu không đề cập.">
@@ -239,10 +235,13 @@ export function PregnancyCheckupForm({ pregnancyId, editing, defaultGestationalW
             <option value="PRESENT">Có (+)</option>
             <option value="ABSENT">Không (-)</option>
           </SelectField>
-          <Field name="fetalHeartRate" type="number" min="0" max="300" label="Tim thai (lần/phút)" value={values.fetalHeartRate} onChange={(event) => set("fetalHeartRate", event.target.value)} />
+          <Field name="fetalHeartRate" type="number" min="0" max="300" label={values.visitType === "PRENATAL_VISIT" ? "Tim thai (lần/phút)" : "Tim thai trên phiếu siêu âm (lần/phút)"} value={values.fetalHeartRate} onChange={(event) => set("fetalHeartRate", event.target.value)} />
         </div>
-        <fieldset hidden={values.visitType === "PRENATAL_VISIT"} disabled={values.visitType === "PRENATAL_VISIT"}>
-        <Field name="ultrasoundDueDate" type="date" label="Ngày dự sinh theo siêu âm" value={values.ultrasoundDueDate} onChange={(event) => set("ultrasoundDueDate", event.target.value)} />
+        <fieldset hidden={values.visitType === "PRENATAL_VISIT"} >
+          <details open={Boolean(values.ultrasoundDueDate)} className="space-y-4">
+            <summary className="cursor-pointer text-sm font-medium">Ngày dự sinh bác sĩ ghi trên phiếu</summary>
+            <Field name="ultrasoundDueDate" type="date" label="Ngày dự sinh ghi trên phiếu siêu âm (nếu có)" value={values.ultrasoundDueDate} onChange={(event) => set("ultrasoundDueDate", event.target.value)} />
+          </details>
         </fieldset>
       </FormSection>
 
@@ -269,17 +268,25 @@ export function PregnancyCheckupForm({ pregnancyId, editing, defaultGestationalW
         </div>
       </FormSection>
 
+      <FormSection title="Chỉ số siêu âm bổ sung" active={values.visitType !== "PRENATAL_VISIT"}>
+        <details open={CHECKUP_EXTRA_FIELDS.some((f) => f.group === "ultrasound" && values[f.name])} className="space-y-4">
+          <summary className="cursor-pointer text-sm font-medium">AFI, Doppler, bách phân vị và rốn quấn cổ</summary>
+          {extraInputs("ultrasound")}
+        </details>
+      </FormSection>
+
       <FormSection title="Khảo sát và kết luận">
-        <fieldset hidden={values.visitType === "PRENATAL_VISIT"} disabled={values.visitType === "PRENATAL_VISIT"}>
+        <fieldset hidden={values.visitType === "PRENATAL_VISIT"} >
         <TextAreaField name="fetalAnatomy" label="Khảo sát hình thái thai" placeholder="Não, đầu mặt, tim, cột sống, tứ chi…" value={values.fetalAnatomy} onChange={(event) => set("fetalAnatomy", event.target.value)} />
         </fieldset>
         <TextAreaField name="otherFindings" label="Khảo sát khác" placeholder="Tử cung, phần phụ, dịch túi cùng hoặc ghi nhận khác…" value={values.otherFindings} onChange={(event) => set("otherFindings", event.target.value)} />
         <TextAreaField name="findings" label="Kết luận trên phiếu" value={values.findings} onChange={(event) => set("findings", event.target.value)} />
       </FormSection>
 
-      <FormSection title="Theo dõi tiếp theo">
-        <Field name="nextCheckupAt" type="date" label="Ngày tái khám" value={values.nextCheckupAt} onChange={(event) => set("nextCheckupAt", event.target.value)} />
-        <TextAreaField name="notes" label="Ghi chú cá nhân" value={values.notes} onChange={(event) => set("notes", event.target.value)} />
+      <FormSection title="Điều trị và theo dõi">
+        <Field name="followupDatePicker" type="date" label="Ngày hẹn tái khám cụ thể (nếu có)" value={explicitPrenatalFollowupDate(values.followupInstruction)?.toISOString().slice(0, 10) ?? ""} onChange={(event) => set("followupInstruction", withPrenatalFollowupDate(values.followupInstruction, event.target.value))} />
+        <p className="text-xs leading-5 text-muted-foreground">Ngày được chọn sẽ được lưu cùng lời hẹn để tạo lịch nhắc. Lời hẹn theo khoảng thời gian vẫn được giữ nguyên.</p>
+        {extraInputs("followup")}
       </FormSection>
     </form>
   );

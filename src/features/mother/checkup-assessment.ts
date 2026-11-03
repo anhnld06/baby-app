@@ -1,10 +1,9 @@
-export type CheckupLevel = "GOOD" | "WATCH" | "URGENT";
+export type CheckupLevel = "GOOD" | "WATCH" | "URGENT" | "UNKNOWN";
 
 export type CheckupInput = {
   gestationalWeek?: number | null;
   bloodPressure?: string | null;
   fetalHeartRate?: number | null;
-  fundalHeightCm?: number | null;
 };
 
 export type CheckupAssessmentResult = {
@@ -27,10 +26,12 @@ function parseBloodPressure(value?: string | null) {
 // Screening thresholds are standard obstetric reference ranges (not a diagnosis):
 // - Blood pressure >=140/90 is the standard pre-eclampsia screening threshold; >=130/85 warrants watching.
 // - Fetal heart rate 110-160 bpm is the normal range; outside 100-180 bpm is an urgent flag.
-// - Fundal height (cm) approximates gestational week (+/-3cm) after week 20 as a rough screening rule of thumb.
 export function assessCheckup(checkup: CheckupInput): CheckupAssessmentResult {
   let level: CheckupLevel = "GOOD";
   const flags: string[] = [];
+  if (!parseBloodPressure(checkup.bloodPressure) && checkup.fetalHeartRate == null) {
+    return { level: "UNKNOWN", flags: ["Chưa đủ dữ liệu: cần huyết áp hoặc tim thai hợp lệ để kiểm tra."] };
+  }
 
   const bp = parseBloodPressure(checkup.bloodPressure);
   if (bp) {
@@ -54,20 +55,7 @@ export function assessCheckup(checkup: CheckupInput): CheckupAssessmentResult {
     }
   }
 
-  if (
-    checkup.fundalHeightCm !== undefined &&
-    checkup.fundalHeightCm !== null &&
-    checkup.gestationalWeek !== undefined &&
-    checkup.gestationalWeek !== null &&
-    checkup.gestationalWeek >= 20
-  ) {
-    const diff = Math.abs(checkup.fundalHeightCm - checkup.gestationalWeek);
-    if (diff > 3) {
-      level = raise(level, "WATCH");
-      flags.push("Bề cao tử cung lệch khá nhiều so với tuổi thai, nên trao đổi với bác sĩ");
-    }
-  }
 
-  if (flags.length === 0) flags.push("Các chỉ số đã nhập đều trong ngưỡng thông thường");
+  if (flags.length === 0) flags.push("Chưa phát hiện vượt ngưỡng ở huyết áp / tim thai đã kiểm tra");
   return { level, flags };
 }

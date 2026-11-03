@@ -180,10 +180,6 @@ function parsePregnancyCheckup(text: string): ExtractedFields {
   const bloodPressureMatch = /(?:huyet ap|\bha\b)\s*[:;.-]?\s*(\d{2,3}\s*\/\s*\d{2,3})/.exec(
     fold(lines.join("\n")),
   );
-  const fundalHeightCm = numberFrom(
-    lines.join("\n"),
-    /(?:be cao tu cung|fundal height)\s*[:;.-]?\s*(\d+(?:[.,]\d+)?)/,
-  );
   const fullText = lines.join("\n");
   const measurement = (label: string) => numberFrom(
     fullText,
@@ -250,7 +246,6 @@ function parsePregnancyCheckup(text: string): ExtractedFields {
   if (fetalMovement) fields.fetalMovement = fetalMovement;
   if (fetalHeartRate !== undefined && fetalHeartRate >= 50 && fetalHeartRate <= 250) fields.fetalHeartRate = fetalHeartRate;
   if (bloodPressureMatch) fields.bloodPressure = bloodPressureMatch[1].replace(/\s/g, "");
-  if (fundalHeightCm !== undefined && fundalHeightCm <= 60) fields.fundalHeightCm = fundalHeightCm;
   if (crlMm !== undefined) fields.crlMm = crlMm;
   if (ntMm !== undefined) fields.ntMm = ntMm;
   if (bpdMm !== undefined) fields.bpdMm = bpdMm;
@@ -268,6 +263,8 @@ function parsePregnancyCheckup(text: string): ExtractedFields {
   if (facility) fields.facility = facility;
   if (doctor) fields.doctor = doctor;
   if (findings) fields.findings = findings;
+  const followup = valueAfterLabel(lines, ["tái khám", "hẹn khám"]);
+  if (followup) fields.followupInstruction = followup;
   return withRawTextFallback(fields, text);
 }
 

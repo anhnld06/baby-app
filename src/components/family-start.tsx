@@ -5,13 +5,13 @@ import { BabyIcon as Baby, HandbookIcon as BookHeart, MotherIcon as HeartPulse }
 import { FeatureLink } from "@/components/feature-link";
 import { PageHeader } from "@/components/page-header";
 import { UpcomingVaccination } from "@/components/upcoming-vaccination";
-import { gestationalAge } from "@/features/mother/insights";
-import { selectRelevantPregnancy } from "@/features/mother/pregnancy";
 
-export function FamilyStart({ mother, name, nextVaccination }: { mother: (Mother & { pregnancies: Pregnancy[] }) | null; name: string; nextVaccination?: { vaccineName: string; scheduledAt: Date } | null }) {
+import { pregnancyAge, selectRelevantPregnancy } from "@/features/mother/pregnancy";
+
+export function FamilyStart({ mother, name, nextVaccination, timeZone = "Asia/Ho_Chi_Minh" }: { mother: (Mother & { pregnancies: Pregnancy[] }) | null; name: string; timeZone?: string; nextVaccination?: { vaccineName: string; scheduledAt: Date } | null }) {
   const pregnancy = selectRelevantPregnancy(mother?.pregnancies ?? []);
   const pregnant = pregnancy?.pregnancyStatus === "PREGNANT";
-  const age = pregnant ? gestationalAge(pregnancy.lastMenstrualPeriod) : undefined;
+  const age = pregnant ? pregnancyAge(pregnancy, new Date(), timeZone) : undefined;
   const pregnancyHref = mother ? "/profile/pregnancy" : "/profile/mother?next=pregnancy";
   return (
     <>

@@ -34,7 +34,7 @@ export function remindersDueForPush(
   const today = localDayIndex(now, timezone);
   return reminders.flatMap((reminder) => {
     const daysBefore = utcDayIndex(reminder.date) - today;
-    if (!offsets.includes(daysBefore)) return [];
+    if (!(reminder.pushOffsets ?? offsets).includes(daysBefore)) return [];
     const dateKey = reminder.date.toISOString().slice(0, 10);
     return [{
       ...reminder,

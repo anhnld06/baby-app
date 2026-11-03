@@ -2,6 +2,8 @@ import webpush from "web-push";
 import { Prisma } from "@prisma/client";
 import { listUserReminders } from "@/features/reminders/candidates";
 import { remindersDueForPush } from "@/features/reminders/push";
+import { medicationPushReminders } from "@/features/reminders/medication";
+import { toDateTimeLocal } from "@/lib/date";
 import { db } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -37,11 +39,16 @@ export async function GET(request: Request) {
   let removed = 0;
 
   for (const user of users) {
-    const candidates = remindersDueForPush(
+    const day = toDateTimeLocal(now, user.timezone).slice(0, 10);
+    const schedules = await db.medicationSchedule.findMany({
+      where: { baby: { userId: user.id }, active: true },
+      include: { doses: { where: { day: new Date(`${day}T00:00Z`) } } },
+    });
+    const candidates = [...remindersDueForPush(
       await listUserReminders(user.id, user.timezone, now),
       user.timezone,
       now,
-    );
+    ), ...medicationPushReminders(schedules, user.timezone, now)];
     for (const subscription of user.pushSubscriptions) {
       for (const reminder of candidates) {
         let delivery;
@@ -58,7 +65,11 @@ export async function GET(request: Request) {
           throw error;
         }
         try {
-          const body = reminder.daysBefore === 0
+          const body = reminder.uid.startsWith("medication-")
+            ? "Đến giờ kiểm tra lịch thuốc đã lưu. Xác nhận sau khi dùng."
+            : reminder.uid.startsWith("pregnancy-week-")
+            ? "Tuần thai mới: xem hành trình và lời dặn đã lưu của mẹ."
+            : reminder.daysBefore === 0
             ? "Bạn có một lịch cần kiểm tra hôm nay."
             : `Bạn có một lịch cần kiểm tra sau ${reminder.daysBefore} ngày.`;
           await webpush.sendNotification(
@@ -69,10 +80,10 @@ export async function GET(request: Request) {
             JSON.stringify({
               title: "Nhắc lịch từ Vani Family",
               body,
-              url: "/vaccination-schedule",
+              url: reminder.url ?? "/vaccination-schedule",
               tag: reminder.deliveryKey,
             }),
-            { TTL: 86_400 },
+            { TTL: reminder.uid.startsWith("medication-") ? 900 : 86_400 },
           );
           await db.reminderDelivery.update({
             where: { id: delivery.id },

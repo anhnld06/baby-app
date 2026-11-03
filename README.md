@@ -129,8 +129,12 @@ Prisma migration dùng `DATABASE_URL_UNPOOLED` (kết nối trực tiếp, hostn
 Chạy `npm run push:keys` một lần rồi lưu public/private key vào
 `NEXT_PUBLIC_VAPID_PUBLIC_KEY` và `VAPID_PRIVATE_KEY`. Đặt thêm
 `VAPID_SUBJECT` và `CRON_SECRET`. Vercel Cron gọi
-`/api/cron/reminders` mỗi ngày; endpoint chỉ chấp nhận Bearer token khớp
-`CRON_SECRET`. Nội dung notification cố ý không chứa chẩn đoán hoặc tên thuốc.
+`/api/cron/reminders` mỗi 5 phút; endpoint chỉ chấp nhận Bearer token khớp
+`CRON_SECRET`. Môi trường triển khai cần hỗ trợ cron 5 phút (hoặc scheduler bên ngoài gọi endpoint cùng Bearer token); cron mỗi ngày không đáp ứng nhắc giờ thuốc. Không tự triển khai hay đổi gói dịch vụ.
+
+Hồ sơ, tổng quan thai kỳ và Thuốc & bổ sung dùng chung subscription của thiết bị. Nhắc tuần thai vào đầu tuần 4–40 theo ngày dự sinh/kỳ kinh cuối; nhắc lịch hẹn trước 7 ngày, 1 ngày và đúng ngày. Thuốc chỉ gửi trong 15 phút sau giờ đã lưu, bỏ qua cữ đã xác nhận và lịch dừng/hết hạn; khóa delivery chống trùng mỗi cữ, TTL 15 phút. Trình duyệt/hệ điều hành có thể trì hoãn hoặc chặn thông báo. Đơn thuốc lưu trữ không tự suy diễn giờ uống: cần tạo lịch dùng cụ thể.
+
+Nội dung notification cố ý không chứa chẩn đoán hoặc tên thuốc.
 
 ### WHO Anthro
 
@@ -147,7 +151,7 @@ Chạy `npm run db:generate` và `npm run db:deploy` trước khi khởi động
 
 - `/tracking/temperature`: ghi °C, vị trí đo, thời điểm và ghi chú; sửa/xóa từng lần đo.
 - `/tracking/medication`: lịch hằng ngày theo múi giờ tài khoản, nhiều giờ dùng, ngày bắt đầu/kết thúc, tạm dừng lịch và checklist từng cữ. Tích lặp lại không tạo thêm cữ. Có thể tạo lịch từ tên và liều của đơn thuốc đã lưu; người dùng kiểm tra và nhập giờ.
-- Nhắc khi đóng app: xuất `/api/export/medication-calendar` để nhập 30 ngày sắp tới vào ứng dụng Lịch của điện thoại. File có báo thức tại giờ dùng. Việc phát thông báo tùy quyền và cài đặt ứng dụng Lịch; khi sửa lịch thuốc cần cập nhật các sự kiện đã nhập. Cron hiện có chạy hằng ngày cho lịch hẹn, không gửi push thuốc theo từng phút.
+- Nhắc khi đóng app: bật Web Push trong Hồ sơ hoặc Thuốc & bổ sung. Cron mỗi 5 phút kiểm tra giờ dùng đã lưu, bỏ qua cữ đã xác nhận và chống gửi trùng. Trang lịch thuốc không còn phần xuất sang Lịch điện thoại.
 - Các lần đo và cữ đã xác nhận xuất hiện trong nhật ký hoạt động và file CSV. Thông báo trong app chỉ nhắc các cữ đã đến giờ trong ngày, chưa xác nhận.
 - Lịch tiêm mặc định gom theo vắc-xin và từng mũi/liều, giữ lịch theo tuổi ở tab riêng. Chỉ thay giao diện, không thay mốc tuổi hay tự ghi nhận các lựa chọn phối hợp.
 

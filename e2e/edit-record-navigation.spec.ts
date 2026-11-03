@@ -24,7 +24,7 @@ async function expectEditTarget(page: Page, href: string) {
 
 const routes = [
   "/tracking/feeding", "/tracking/sleep", "/tracking/diaper", "/tracking/growth", "/tracking/prescription",
-  "/mother/pumping", "/mother/pregnancy", "/mother/cycle",
+  "/mother/pumping", "/mother/pregnancy/checkups", "/mother/cycle",
   "/baby/medical", "/mother/medical", "/baby/insurance", "/mother/insurance",
   "/vaccination-schedule?owner=baby", "/vaccination-schedule?owner=mother",
 ];

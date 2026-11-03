@@ -3,6 +3,8 @@ export type CalendarReminder = {
   title: string;
   date: Date;
   description: string;
+  url?: string;
+  pushOffsets?: number[];
 };
 
 export function escapeIcsText(value: string) {
