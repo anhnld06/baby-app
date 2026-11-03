@@ -4,6 +4,7 @@ import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { Field, TextAreaField } from "@/components/form-fields";
 import { FormActionBar } from "@/components/form-action-bar";
 import { PageHeader } from "@/components/page-header";
+import { CareSummary } from "@/components/care-summary";
 import { RecordActions } from "@/components/record-actions";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -29,8 +30,11 @@ export function InsuranceBook({ title, subtitle, backHref, basePath, ownerField,
   saveAction: FormAction; deleteAction: FormAction; locale: string;
 }) {
   return <>
-    <PageHeader title={title} subtitle={subtitle} backHref={backHref} />
-    <CollapsibleRecordForm editingId={editing?.id} key={`${editing?.id ?? "new"}-${items.length}`} defaultOpen={!!editing} addLabel="Thêm bảo hiểm" closeLabel="Hủy">
+    <PageHeader compact title={title} subtitle={subtitle} backHref={backHref} />
+    {!editing && <CareSummary kind="shield" title={items.length ? "Thông tin bảo hiểm đã lưu" : "Chưa có thông tin bảo hiểm"}>
+      {items.length ? `${items.length} thẻ và hợp đồng · Xem thời hạn, quyền lợi và nơi đăng ký bên dưới.` : "Thêm thẻ hoặc hợp đồng để tiện tra cứu khi cần."}
+    </CareSummary>}
+    <CollapsibleRecordForm prominent editingId={editing?.id} key={`${editing?.id ?? "new"}-${items.length}`} defaultOpen={!!editing} addLabel="Thêm bảo hiểm" closeLabel="Hủy">
       <Card className="border-0 shadow-sm"><CardContent className="p-5"><form id="insurance-form" action={saveAction} className="space-y-4">
         <input type="hidden" name={ownerField} value={ownerId} />{editing && <input type="hidden" name="id" value={editing.id} />}
         <ChoiceFields name="insuranceType" label="Loại bảo hiểm" initialValue={editing?.insuranceType ?? "BHYT"}

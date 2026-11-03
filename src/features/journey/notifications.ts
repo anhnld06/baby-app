@@ -1,3 +1,4 @@
+import { scheduledOn } from "@/features/health/validation";
 import { cache } from "react";
 import { db } from "@/lib/db";
 import { toDateTimeLocal } from "@/lib/date";
@@ -60,6 +61,17 @@ export const getJourneyNotifications = cache(
       }),
     );
     if (baby) {
+      const schedules = await db.medicationSchedule.findMany({
+        where: { babyId: baby.id, active: true },
+        include: { doses: { where: { day: new Date(`${today}T00:00Z`) } } },
+      });
+      const time = toDateTimeLocal(now, timeZone).slice(11,16);
+      for (const schedule of schedules.filter(schedule => scheduledOn(schedule, today))) {
+        for (const slot of schedule.times.filter(slot => slot <= time && !schedule.doses.some(dose => dose.time === slot))) {
+          items.push({ key: `medication:${schedule.id}:${today}:${slot}`, title: `Đến giờ dùng: ${schedule.name}`, detail: `${baby.name} · ${slot} · chưa xác nhận đã dùng`, href: "/tracking/medication" });
+        }
+      }
+
       const context = developmentContext(baby.dateOfBirth, now, timeZone);
       const stage = stageContent(context.ageDays);
       items.push({

@@ -44,7 +44,7 @@ export function AppShell({
   const pathname = usePathname();
   const query = useSearchParams();
   const owner = query.get("owner");
-  const recordEditor = (query.get("new") === "1" || !!query.get("edit")) && (["/tracking/feeding", "/tracking/sleep", "/tracking/diaper", "/mother/pumping", "/baby/meals"].includes(pathname));
+  const recordEditor = (query.get("new") === "1" || !!query.get("edit")) && (["/tracking/feeding", "/tracking/sleep", "/tracking/diaper", "/tracking/temperature", "/tracking/medication", "/mother/pumping", "/baby/meals"].includes(pathname));
   const motherVaccinations = owner === "mother";
   const links = [
     { href: "/", label: labels.home, icon: House, paths: ["/"] },

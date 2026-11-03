@@ -14,14 +14,14 @@ export function VaccinationViewSwitch() {
           key={value}
           type="button"
           aria-pressed={
-            (params.get("view") === "vaccine" ? "vaccine" : "age") === value
+            (params.get("view") === "age" ? "age" : "vaccine") === value
           }
           onClick={() => {
             const next = new URLSearchParams(params.toString());
             next.set("view", value);
             router.replace(`${pathname}?${next}`, { scroll: false });
           }}
-          className={`min-h-11 rounded-full px-4 text-sm ${(params.get("view") === "vaccine" ? "vaccine" : "age") === value ? "bg-primary text-primary-foreground" : "bg-secondary"}`}
+          className={`min-h-11 rounded-full px-4 text-sm ${(params.get("view") === "age" ? "age" : "vaccine") === value ? "bg-primary text-primary-foreground" : "bg-secondary"}`}
         >
           {label}
         </button>

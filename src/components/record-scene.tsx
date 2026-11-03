@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
 import { CareIllustration, type CareIllustrationKind } from "@/components/care-illustration";
 import { formatDuration, zonedDateTimeToUtc } from "@/lib/date";
-export function RecordScene({kind,initialValues={},timeZone,children,caption,enabled=true}:{enabled?:boolean;kind:CareIllustrationKind;initialValues?:Record<string,string>;timeZone?:string;children:ReactNode;caption?:string}) {
+export function RecordScene({kind,initialValues={},timeZone,children,caption,enabled=true}:{enabled?:boolean;kind:Extract<CareIllustrationKind,"breast" | "bottle" | "sleep" | "diaper" | "pumping" | "meal">;initialValues?:Record<string,string>;timeZone?:string;children:ReactNode;caption?:string}) {
   const host=useRef<HTMLDivElement>(null);
   const frame=useRef<number|null>(null);
   const [values,setValues]=useState(initialValues);
@@ -46,7 +46,15 @@ export function RecordScene({kind,initialValues={},timeZone,children,caption,ena
   const note=actualKind==="bottle" ? ({BOTTLE_BREAST_MILK:"Sữa mẹ",FORMULA:"Sữa công thức",MIXED:"Kết hợp"}[values.type]??"Lượng bé thực tế uống") : actualKind==="sleep" ? values.endTime ? "Thời lượng đã nhập" : "Chọn thời điểm bắt đầu và kết thúc" : actualKind==="pumping" ? "Tổng lượng đã nhập hai bên" : actualKind==="breast" ? "Thời gian bú đã nhập" : actualKind==="diaper" ? "Một lần chăm sóc, một điều nhỏ bên con" : "Ghi món ăn và quan sát sau bữa";
   if (!enabled) return <>{children}</>;
   return <div ref={host} className={`record-scene record-scene-${actualKind}`} data-record-scene={actualKind} onInputCapture={refresh} onChangeCapture={refresh} onClickCapture={refresh} onResetCapture={refresh}>
-    <section className="record-scene-hero" aria-label={`Tóm tắt ${titles[actualKind].toLowerCase()}`}><p className="text-center text-sm font-semibold text-foreground/80">{titles[actualKind]}</p><div className="mx-auto mt-5 flex max-w-md items-center justify-center gap-5 py-4"><span className="record-scene-art"><CareIllustration kind={actualKind} amountMl={actualKind==="bottle" ? amount : undefined} /></span><div className="min-w-0"><p className={`font-semibold tracking-tight tabular-nums ${actualKind==="diaper"||actualKind==="meal" ? "text-2xl sm:text-3xl" : "text-5xl sm:text-6xl"}`}><span data-record-hero-value>{value}</span>{(actualKind==="bottle"||actualKind==="pumping") && <span className="ml-2 text-base font-medium">ml</span>}</p><p className="mt-4 inline-block rounded-full bg-white/75 px-3 py-1.5 text-xs font-medium text-slate-700">{note}</p>{caption&&!changed&&<p className="mt-2 text-xs text-white">{caption}</p>}</div></div><p className="care-reduced-notice text-center text-xs text-slate-700">Chế độ Giảm chuyển động của thiết bị đang tắt hiệu ứng động.</p></section>
+    <section className="record-scene-hero" aria-label={`Tóm tắt ${titles[actualKind].toLowerCase()}`}>
+      <span className="record-scene-art shrink-0"><CareIllustration kind={actualKind} small amountMl={actualKind==="bottle" ? amount : undefined} /></span>
+      <div className="min-w-0">
+        <h2 className="text-xs font-medium text-muted-foreground">{titles[actualKind]}</h2>
+        <p className="mt-1 break-words text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl"><span data-record-hero-value>{value}</span>{(actualKind==="bottle"||actualKind==="pumping") && <span className="ml-2 text-sm font-normal text-muted-foreground">ml</span>}</p>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">{note}</p>
+        {caption&&!changed&&<p className="mt-1 text-xs leading-5 text-muted-foreground">{caption}</p>}
+      </div>
+    </section>
     <div className="record-scene-body">{children}</div>
   </div>;
 }

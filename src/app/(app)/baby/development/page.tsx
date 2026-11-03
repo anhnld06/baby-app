@@ -40,7 +40,7 @@ export default async function DevelopmentPage({
   if (!baby)
     return (
       <>
-        <PageHeader title="Tuần khủng hoảng" backHref="/baby" />
+        <PageHeader compact title="Tuần khủng hoảng" backHref="/baby" />
         <Link href="/profile/baby/new">Thêm hồ sơ bé</Link>
       </>
     );
@@ -86,7 +86,7 @@ export default async function DevelopmentPage({
   )[0];
   return (
     <>
-      <PageHeader
+      <PageHeader compact
         title="Tuần khủng hoảng"
         subtitle="Giai đoạn phát triển & thay đổi giấc ngủ"
         backHref="/baby"
@@ -96,7 +96,7 @@ export default async function DevelopmentPage({
         selectedBabyId={baby.id}
         addLabel="Thêm bé"
       />
-      <section className="my-5 overflow-hidden rounded-[2rem] bg-gradient-to-br from-violet-200 via-violet-100 to-card p-6 dark:from-violet-900 dark:via-violet-950">
+      <section className="my-5 overflow-hidden rounded-3xl border border-border/60 bg-secondary/40 p-5">
         <p className="text-xs text-primary">
           {baby.name} ·{" "}
           {query.corrected === "1"

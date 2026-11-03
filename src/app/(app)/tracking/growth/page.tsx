@@ -1,3 +1,4 @@
+import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import { HeightFields } from "@/components/height-fields";
 import { Ruler } from "lucide-react";
 import {
@@ -9,6 +10,7 @@ import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { Field, TextAreaField } from "@/components/form-fields";
 import { FormActionBar } from "@/components/form-action-bar";
 import { GrowthTrends } from "@/components/growth-trends";
+import { GrowthSummary } from "@/components/growth-summary";
 import { HistoryLoadMore } from "@/components/history-load-more";
 import { PageHeader } from "@/components/page-header";
 import { RecordActions } from "@/components/record-actions";
@@ -25,7 +27,7 @@ import { parseHistoryLimit } from "@/lib/pagination";
 export default async function GrowthPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string; limit?: string }>;
+  searchParams: Promise<{ edit?: string; new?: string; limit?: string }>;
 }) {
   const [user, t, locale, params] = await Promise.all([
     requireUser(),
@@ -37,7 +39,7 @@ export default async function GrowthPage({
   if (!baby)
     return (
       <>
-        <PageHeader title={t.tracking.newGrowth} backHref="/baby" />
+        <PageHeader title={t.tracking.newGrowth} backHref="/baby" compact />
         <p>{t.common.noData}</p>
       </>
     );
@@ -71,14 +73,19 @@ export default async function GrowthPage({
   return (
     <>
       <PageHeader
-        title={editing ? t.tracking.editGrowth : t.tracking.newGrowth}
-        subtitle={`${baby.name} · Xu hướng và chuẩn WHO khi khả dụng`}
+        compact
+        title={editing ? t.tracking.editGrowth : params.new === "1" ? t.tracking.newGrowth : locale === "en" ? "Growth" : "Tăng trưởng của con"}
+        subtitle={baby.name}
         backHref="/baby"
       />
+      {!editing && params.new !== "1" && (
+        <GrowthSummary measurements={measurements} dateOfBirth={baby.dateOfBirth} locale={locale} timeZone={user.timezone} />
+      )}
       <CollapsibleRecordForm editingId={editing?.id}
+        prominent
         key={`${editing?.id ?? "new"}-${items.length}`}
-        defaultOpen={!!editing}
-        addLabel={t.tracking.newGrowth}
+        defaultOpen={!!editing || params.new === "1"}
+        addLabel={locale === "vi" ? "Thêm chỉ số" : "Add measurement"}
         closeLabel={t.common.cancel}
       >
         <Card className="border-0 shadow-sm">
@@ -184,7 +191,9 @@ export default async function GrowthPage({
       <h2 className="mb-2 mt-7 text-lg font-semibold">{t.tracking.history}</h2>
       <div className="space-y-2">
         {items.map((item) => (
+          <HistoryTimelineItem key={item.id} at={item.measuredAt} timeZone={user.timezone} locale={locale} showDate>
           <div
+            data-history-card
             key={item.id}
             className="flex items-center gap-3 rounded-2xl bg-card p-3 shadow-sm"
           >
@@ -219,6 +228,7 @@ export default async function GrowthPage({
               deleteLabel={t.common.delete}
             />
           </div>
+          </HistoryTimelineItem>
         ))}
         {items.length === 0 && (
           <p className="text-sm text-muted-foreground">{t.common.noData}</p>

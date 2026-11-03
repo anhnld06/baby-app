@@ -1,84 +1,16 @@
-import { Heart, Baby, BedDouble, Pill, Ruler, Shell, Smile, Syringe } from "lucide-react";
+import Link from "next/link";
+import { Sun, Utensils, Star, Thermometer, Heart, Baby, BedDouble, Pill, Ruler, Shell, Smile, Syringe } from "lucide-react";
+import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import type { TimelineItem } from "@/features/timeline/timeline";
-
-const icons = {
-  care: Heart,
-  feeding: Baby,
-  sleep: BedDouble,
-  diaper: Shell,
-  growth: Ruler,
-  vaccination: Syringe,
-  prescription: Pill,
-  tooth: Smile,
-};
-const colors = {
-  care: "bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300",
-  feeding:
-    "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
-  sleep:
-    "bg-slate-100 text-slate-600 dark:bg-indigo-950 dark:text-indigo-300",
-  diaper:
-    "bg-sky-50 text-sky-700 dark:bg-emerald-950 dark:text-emerald-300",
-  growth: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300",
-  vaccination:
-    "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300",
-  prescription:
-    "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
-  tooth: "bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300",
-};
-
-export function TimelineList({
-  items,
-  locale = "vi",
-  timeZone,
-  showDate = false,
-  empty = "Chưa có hoạt động",
-}: {
-  items: TimelineItem[];
-  locale?: string;
-  timeZone?: string;
-  showDate?: boolean;
-  empty?: string;
-}) {
-  if (items.length === 0)
-    return (
-      <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-        {empty}
-      </div>
-    );
-  return (
-    <div className="divide-y divide-border/60">
-      {items.map((item) => {
-        const Icon = icons[item.kind];
-        return (
-          <div
-            key={`${item.kind}-${item.id}`}
-            className={`relative flex items-start gap-3 rounded-xl py-3.5 transition-colors ${item.active ? "bg-secondary/70 ring-1 ring-primary/20" : "hover:bg-card"}`}
-          >
-            <time dateTime={item.at.toISOString()} className="order-last w-16 shrink-0 pt-2 text-right text-xs tabular-nums text-muted-foreground">
-              {new Intl.DateTimeFormat(locale, {
-                timeZone,
-                ...(showDate ? { day: "2-digit", month: "2-digit" } as const : {}),
-                hour: "2-digit",
-                minute: "2-digit",
-              }).format(item.at)}
-            </time>
-            <div
-              className={`z-10 grid size-10 shrink-0 place-items-center rounded-xl ${colors[item.kind]}`}
-            >
-              <Icon className="size-4.5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold">{item.title}</p>
-              {item.active && <span className="mt-1 inline-flex rounded-full bg-primary/10 px-2 py-1 text-xs text-primary">{locale.startsWith("vi") ? "Đang diễn ra" : "In progress"}</span>}
-              <p className="break-words text-xs leading-5 text-muted-foreground">
-                {item.detail}
-              </p>
-            </div>
-
-          </div>
-        );
-      })}
-    </div>
-  );
+const icons = {temperature:Thermometer,medication:Pill,care:Heart,feeding:Baby,sleep:BedDouble,diaper:Shell,growth:Ruler,vaccination:Syringe,prescription:Pill,tooth:Smile};
+const colors = {temperature:"bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300",medication:"bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",care:"bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300",feeding:"bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",sleep:"bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",diaper:"bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300",growth:"bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300",vaccination:"bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300",prescription:"bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",tooth:"bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300"};
+export function TimelineList({items,locale="vi",timeZone,showDate=false,empty="Chưa có hoạt động"}:{items:TimelineItem[];locale?:string;timeZone?:string;showDate?:boolean;empty?:string}) {
+  if(!items.length)return <p className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">{empty}</p>;
+  return <div aria-label={locale.startsWith("vi") ? "Dòng thời gian hoạt động" : "Activity timeline"}>{items.map(item=>{
+    const Icon=item.careKind === "WAKE" ? Sun : item.careKind === "MEAL" ? Utensils : item.careKind === "MILESTONE" ? Star : icons[item.kind];
+    const href=item.href ?? (item.kind==="care" ? "/activity" : item.kind==="medication" ? "/tracking/medication" : item.kind==="vaccination" ? "/vaccination-schedule?owner=baby" : `/tracking/${item.kind==="tooth" ? "teeth" : item.kind}?edit=${item.id}`);
+    return <HistoryTimelineItem key={`${item.kind}-${item.id}`} at={item.at} locale={locale} timeZone={timeZone} active={item.active} showDate={showDate}>
+      <Link href={href} className={`flex min-w-0 items-start gap-3 rounded-3xl border p-4 transition-colors ${item.active ? "border-violet-300 bg-violet-100/80 dark:border-violet-700 dark:bg-violet-950/70" : "border-border/60 bg-card hover:bg-secondary/30"}`}><span className={`grid size-10 shrink-0 place-items-center rounded-2xl ${colors[item.kind]}`}><Icon className="size-5"/></span><div className="min-w-0 flex-1"><p className={`mb-1 text-[10px] font-medium ${item.active ? "text-violet-700 dark:text-violet-300" : "text-muted-foreground"}`}>{locale.startsWith("vi") ? item.active ? "Đang diễn ra · đã ghi" : "Đã ghi" : item.active ? "In progress · recorded" : "Recorded"}</p><p className="text-sm font-semibold">{item.title}</p><p className="mt-1 break-words text-xs leading-5 text-muted-foreground">{item.detail}</p></div></Link>
+    </HistoryTimelineItem>;
+  })}</div>;
 }

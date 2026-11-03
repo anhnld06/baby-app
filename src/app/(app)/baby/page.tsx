@@ -1,4 +1,4 @@
-import { Star, Utensils, Sun, ChartColumn, Heart, Baby, Music2, BedDouble, FileHeart, Pill, Ruler, Shell, ShieldCheck, Smile, Syringe } from "lucide-react";
+import { Thermometer, Star, Utensils, Sun, ChartColumn, Heart, Baby, Music2, BedDouble, FileHeart, Pill, Ruler, Shell, ShieldCheck, Smile, Syringe } from "lucide-react";
 import { BabySwitcher } from "@/components/baby-switcher";
 import { FeatureLink } from "@/components/feature-link";
 import { PageHeader } from "@/components/page-header";
@@ -58,7 +58,8 @@ export default async function BabyHubPage() {
         <FeatureLink href="/baby/medical" icon={FileHeart} title="Sổ khám bệnh của bé" description="Tách riêng lịch sử khám và tái khám của bé." meta={`${counts?._count.medicalVisits ?? 0} lượt khám`} tone="rose" />
         <FeatureLink href="/baby/insurance" icon={ShieldCheck} title="Bảo hiểm của bé" description="BHYT và bảo hiểm riêng của bé." meta={`${counts?._count.insurancePolicies ?? 0} thẻ / hợp đồng`} tone="emerald" />
         <FeatureLink href="/vaccination-schedule" icon={Syringe} title="Tiêm chủng" description="Ngày hẹn, đánh dấu đã tiêm và xem lịch sử." tone="rose" />
-        <FeatureLink href="/tracking/prescription" icon={Pill} title="Đơn thuốc" description="Thuốc, liều dùng và lời dặn." tone="violet" />
+        <FeatureLink href="/tracking/temperature" icon={Thermometer} title="Nhiệt độ" description="Ghi °C, vị trí đo và xem lịch sử." tone="rose" />
+        <FeatureLink href="/tracking/medication" icon={Pill} title="Thuốc & bổ sung" description="Checklist hằng ngày, bổ sung theo tuổi và toa thuốc đã lưu." tone="violet" />
         <FeatureLink href="/tracking/teeth" icon={Smile} title="Mọc răng" description="Sơ đồ và thời điểm mọc từng răng." tone="blue" />
       </div>
     </>

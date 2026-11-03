@@ -35,7 +35,7 @@ export function GrowthMetricTabs({
       <div
         role="tablist"
         aria-label="Chỉ số tăng trưởng"
-        className="mb-4 grid grid-cols-3 gap-1 rounded-2xl bg-secondary p-1"
+        className="mb-4 grid grid-cols-3 gap-1 rounded-full border border-border/60 bg-muted/70 p-1"
       >
         {panels.map((panel, index) => (
           <button
@@ -50,7 +50,7 @@ export function GrowthMetricTabs({
             tabIndex={selected === panel.id ? 0 : -1}
             onKeyDown={(event) => navigate(event, index)}
             onClick={() => setSelected(panel.id)}
-            className={`min-h-12 rounded-xl px-2 text-xs font-medium ${selected === panel.id ? "bg-card text-primary shadow-sm" : "text-muted-foreground"}`}
+            className={`min-h-12 rounded-full px-2 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${selected === panel.id ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-card/60"}`}
           >
             {panel.title}
           </button>

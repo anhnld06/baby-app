@@ -223,6 +223,8 @@ model Baby {
   vaccinationRecords       VaccinationRecord[]
   vaccinationAppointments  VaccinationAppointment[]
   prescriptions            Prescription[]
+  temperatures             TemperatureEntry[]
+  medicationSchedules      MedicationSchedule[]
   toothRecords             ToothRecord[]
   medicalVisits            BabyMedicalVisit[]
   insurancePolicies        BabyInsurancePolicy[]
@@ -732,6 +734,50 @@ model NotificationRead {
   readAt DateTime @default(now())
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([userId, key])
+}
+
+model TemperatureEntry {
+  id         String   @id @default(cuid())
+  babyId     String
+  measuredAt DateTime
+  celsius    Float
+  method     String
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  baby       Baby @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  @@index([babyId, measuredAt])
+}
+
+model MedicationSchedule {
+  id           String @id @default(cuid())
+  babyId       String
+  name         String
+  dosage       String
+  instructions String?
+  startDate    DateTime @db.Date
+  endDate      DateTime? @db.Date
+  times        String[]
+  active       Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  baby         Baby @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  doses        MedicationDose[]
+
+  @@index([babyId, active])
+}
+
+model MedicationDose {
+  id         String @id @default(cuid())
+  scheduleId String
+  day        DateTime @db.Date
+  time       String
+  takenAt    DateTime @default(now())
+  schedule   MedicationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@unique([scheduleId, day, time])
+  @@index([day])
 }
 
 model BabyMemory {

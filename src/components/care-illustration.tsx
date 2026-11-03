@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
 export type CareIllustrationKind =
-  "breast" | "bottle" | "sleep" | "diaper" | "pumping" | "meal";
+  "breast" | "bottle" | "sleep" | "diaper" | "pumping" | "meal" | "temperature" | "growth" | "medicine" | "vaccine" | "wellbeing" | "milestone" | "routine" | "tooth" | "medical" | "shield" | "pregnancy" | "cycle";
 function BabyFace() {
   return (
     <g className="care-head">
@@ -125,6 +125,7 @@ export function CareIllustration({
             <stop offset="1" stopColor="#efd6a4" />
           </linearGradient>
         </defs>
+        <ExtraCareDrawing kind={kind} />
         {kind === "breast" && (
           <>
             <ellipse
@@ -477,4 +478,23 @@ export function CareIllustration({
       </svg>
     </span>
   );
+}
+
+function ExtraCareDrawing({kind}:{kind:CareIllustrationKind}) {
+  if (["breast","bottle","sleep","diaper","pumping","meal"].includes(kind)) return null;
+  return <>
+    <ellipse cx="64" cy="114" rx="39" ry="5" fill="#719ca7" opacity=".12"/>
+    {kind === "temperature" && <><BabyFace/><g className="care-instrument" transform="rotate(-30 86 80)"><rect x="80" y="29" width="16" height="64" rx="8" fill="#fff" stroke="#a8bfea" strokeWidth="3"/><path d="M88 82V49" stroke="#f17696" strokeWidth="6" strokeLinecap="round"/><circle cx="88" cy="94" r="13" fill="#f17696" stroke="#fff" strokeWidth="3"/><circle cx="85" cy="91" r="4" fill="#ffa4b8"/><path d="M92 43h4m-4 12h4m-4 12h4" stroke="#a8bfea" strokeWidth="2"/></g></>}
+    {kind === "growth" && <><rect x="13" y="19" width="17" height="80" rx="5" fill="#b5d8fa"/>{[28,42,56,70,84].map((y,i)=><path key={y} d={`M${i%2?18:22} ${y}h8`} stroke="white" strokeWidth="2"/>)}<g transform="translate(18 -14) scale(.8)"><BabyFace/></g><rect x="39" y="93" width="70" height="24" rx="10" fill="#fff" stroke="#a8b9e6" strokeWidth="3"/><circle cx="74" cy="103" r="8" fill="#f2f5ff" stroke="#b1bee5"/><path className="care-needle" d="M74 104l5-5" stroke="#f18b9f" strokeWidth="2" strokeLinecap="round"/></>}
+    {kind === "medicine" && <><g className="care-instrument"><rect x="22" y="38" width="48" height="65" rx="13" fill="#fff" stroke="#c5b5ed" strokeWidth="3"/><rect x="27" y="26" width="38" height="17" rx="5" fill="#b4a0e3"/><rect x="25" y="59" width="42" height="26" rx="4" fill="#ede6fc"/><path d="M46 65v14m-7-7h14" stroke="#b091dd" strokeWidth="4" strokeLinecap="round"/><circle cx="40" cy="94" r="2" fill="#e4d2f7"/></g><g className="care-capsule"><rect x="78" y="61" width="24" height="49" rx="12" transform="rotate(30 90 85)" fill="#f7adc7" stroke="#fff" strokeWidth="3"/><path d="M81 72l20 12" stroke="white" strokeWidth="3"/></g><LittleHeart x={86} y={30}/></>}
+    {kind === "vaccine" && <><path d="M31 26q33 12 66 0v36c0 24-18 39-33 47C49 101 31 86 31 62Z" fill="#daf5ee" stroke="#94d5c4" strokeWidth="3"/><g className="care-instrument" transform="rotate(35 65 61)"><rect x="53" y="38" width="24" height="44" rx="5" fill="#fff" stroke="#75c8c3" strokeWidth="3"/><rect x="56" y="59" width="18" height="18" rx="3" fill="#b8ece4"/><path d="M65 82v17M65 38V25M56 25h18M49 38h32m-8 10h4m-4 8h4" stroke="#69b7bb" strokeWidth="3" strokeLinecap="round"/></g><path className="care-stars" d="m95 20 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z" fill="#f2d77f"/></>}
+    {kind === "wellbeing" && <><BabyFace/><LittleHeart x={26} y={36}/><LittleHeart x={102} y={32} delay={1}/><path className="care-stars" d="M44 98q20 20 40 0" stroke="#e8acc5" strokeWidth="5" strokeLinecap="round"/></>}
+    {kind === "milestone" && <><path d="m39 76-9 39 22-10 13 14 8-43" fill="#f2b6c9"/><path d="m70 75 16 40 7-19 22 4-26-36" fill="#bba7e7"/><g className="care-medal"><path d="m64 12 38 22v44l-38 22-38-22V34Z" fill="#ffd88c" stroke="#fff" strokeWidth="4"/><path d="m64 31 7 15 17 2-12 12 3 17-15-8-15 8 3-17-12-12 17-2Z" fill="#fff8d9" stroke="#e8b660" strokeWidth="2"/></g><circle className="care-stars" cx="106" cy="22" r="4" fill="#e1c2ef"/></>}
+    {kind === "routine" && <><circle cx="64" cy="64" r="43" fill="#fff" stroke="#c7b9ee" strokeWidth="5"/>{[0,90,180,270].map(angle=><path key={angle} d="M64 27v5" transform={`rotate(${angle} 64 64)`} stroke="#c0b1e5" strokeWidth="3" strokeLinecap="round"/>)}<path className="care-clock-hand" d="M64 64V39" stroke="#9d88d3" strokeWidth="5" strokeLinecap="round"/><path d="m64 64 20 12" stroke="#edb476" strokeWidth="5" strokeLinecap="round"/><circle cx="64" cy="64" r="5" fill="#b8a4e6"/><path className="care-stars" d="m23 15 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z" fill="#f4ce78"/></>}
+    {kind === "tooth" && <><g className="care-instrument"><path d="M64 30c-28-16-42 4-31 33 6 14 5 44 17 43 8-1 5-28 14-28s6 27 14 28c12 1 11-29 17-43 11-29-3-49-31-33Z" fill="#fff" stroke="#a5d5e9" strokeWidth="3"/><path d="M48 39q-10 2-8 14" stroke="#d9f0fa" strokeWidth="5" strokeLinecap="round"/><circle cx="52" cy="57" r="2" fill="#7f91b3"/><circle cx="76" cy="57" r="2" fill="#7f91b3"/><path d="M57 66q7 7 14 0" stroke="#b593aa" strokeWidth="2" strokeLinecap="round"/></g><path className="care-stars" d="m103 20 3 9 9 3-9 3-3 9-3-9-9-3 9-3Z" fill="#f6d788"/></>}
+    {kind === "medical" && <><g className="care-instrument"><rect x="25" y="28" width="78" height="77" rx="18" fill="#ffedf1" stroke="#e9afc3" strokeWidth="3"/><path d="M48 28V18h32v10" stroke="#d8a2b7" strokeWidth="5" strokeLinejoin="round"/><path d="M64 47v38M45 66h38" stroke="#ed9bb6" strokeWidth="13" strokeLinecap="round"/></g><LittleHeart x={108} y={24}/></>}
+    {kind === "shield" && <><g className="care-medal"><path d="M29 25q35 13 70 0v40c0 22-20 37-35 45-15-8-35-23-35-45Z" fill="#d8f3e9" stroke="#8ecfbd" strokeWidth="3"/><path d="m47 65 12 12 23-27" stroke="#69bba4" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round"/></g><path className="care-stars" d="m105 26 2 7 7 2-7 2-2 7-2-7-7-2 7-2Z" fill="#ebcf82"/></>}
+    {kind === "pregnancy" && <><path className="care-medal" d="M64 108C-5 68 23 9 64 40c41-31 69 28 0 68Z" fill="#f8c9d9" stroke="#fff" strokeWidth="4"/><g transform="translate(20 21) scale(.68)"><BabyFace/></g><LittleHeart x={103} y={20}/></>}
+    {kind === "cycle" && <><circle cx="64" cy="64" r="42" fill="#fff0f5" stroke="#edbed3" strokeWidth="3"/><g className="care-cycle">{[0,60,120,180,240,300].map(angle=><ellipse key={angle} cx="64" cy="42" rx="9" ry="17" transform={`rotate(${angle} 64 64)`} fill="#f4b5cf" stroke="#fff" strokeWidth="2"/>)}</g><circle cx="64" cy="64" r="10" fill="#fce1a3"/></>}
+  </>;
 }

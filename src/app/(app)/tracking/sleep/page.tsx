@@ -1,3 +1,4 @@
+import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import { RecordScene } from "@/components/record-scene";
 import { BedDouble } from "lucide-react";
 import { deleteSleepAction, saveSleepAction } from "@/app/actions";
@@ -37,7 +38,7 @@ export default async function SleepPage({
   if (!baby)
     return (
       <>
-        <PageHeader title={t.tracking.newSleep} backHref="/baby" />
+        <PageHeader compact title={t.tracking.newSleep} backHref="/baby" />
         <p>{t.common.noData}</p>
       </>
     );
@@ -73,7 +74,7 @@ export default async function SleepPage({
     : 0;
   return (
     <>
-      <PageHeader
+      <PageHeader compact
         title={editing ? t.tracking.editSleep : t.tracking.newSleep}
         subtitle={baby.name}
         backHref="/baby"
@@ -112,7 +113,7 @@ export default async function SleepPage({
           },
         ]}
       />}
-      <CollapsibleRecordForm editingId={editing?.id}
+      <CollapsibleRecordForm prominent editingId={editing?.id}
         key={`${editing?.id ?? "new"}-${params.new ?? ""}-${items.length}`}
         defaultOpen={!!editing || params.new === "1"}
         addLabel={t.tracking.newSleep}
@@ -178,7 +179,9 @@ export default async function SleepPage({
       <h2 className="mb-2 mt-7 text-lg font-semibold">{t.tracking.history}</h2>
       <div className="space-y-2">
         {items.map((item) => (
+          <HistoryTimelineItem key={item.id} at={item.startTime} timeZone={user.timezone} locale={locale} showDate>
           <div
+            data-history-card
             key={item.id}
             className="flex items-center gap-3 rounded-2xl bg-card p-3 shadow-sm"
           >
@@ -215,6 +218,7 @@ export default async function SleepPage({
               deleteLabel={t.common.delete}
             />
           </div>
+          </HistoryTimelineItem>
         ))}
         {items.length === 0 && (
           <p className="text-sm text-muted-foreground">{t.common.noData}</p>

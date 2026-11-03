@@ -3,7 +3,6 @@ import { GrowthMetricTabs } from "@/components/growth-metric-tabs";
 import { ExternalLink, TrendingUp } from "lucide-react";
 import {
   buildGrowthSeries,
-  growthChange,
   type GrowthMeasurement,
   type GrowthMetric,
 } from "@/features/growth/trend";
@@ -75,7 +74,6 @@ function MetricChart({
       </p>
     );
   const latest = series.at(-1)!;
-  const change = growthChange(series);
   const title = locale === "vi" ? metric.vi : metric.en;
   const number = new Intl.NumberFormat(locale, {
     maximumFractionDigits: metric.digits,
@@ -86,27 +84,19 @@ function MetricChart({
       : `${title}: ${series.length} measurements from ${ageLabel(series[0].ageDays, locale)} to ${ageLabel(latest.ageDays, locale)}`;
 
   return (
-    <article className="surface-panel p-4 sm:p-5">
+    <article className="surface-panel rounded-3xl p-4 sm:p-6">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-semibold">{title}</h3>
-          <p className="mt-3 text-3xl font-semibold tracking-tight tabular-nums">
+          <p className="mt-3 text-4xl font-semibold tracking-tight tabular-nums">
             {number.format(latest.value)}{" "}
             <span className="text-sm font-normal text-muted-foreground">
               {metric.unit}
             </span>
-            {change !== undefined && (
-              <span
-                className={
-                  change < 0
-                    ? "ml-2 inline-flex rounded-full bg-amber-50 px-2 py-1 text-xs text-amber-700 dark:bg-amber-950 dark:text-amber-300"
-                    : "ml-2 inline-flex rounded-full bg-secondary px-2 py-1 text-xs text-primary"
-                }
-              >
-                {change >= 0 ? "+" : ""}
-                {number.format(change)} {metric.unit}
-              </span>
-            )}
+          </p>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            {locale === "vi" ? "Lần đo gần nhất: " : "Latest measurement: "}
+            {new Intl.DateTimeFormat(locale, { timeZone: "UTC", day: "2-digit", month: "2-digit", year: "numeric" }).format(latest.measuredAt)}
           </p>
         </div>
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300">
@@ -170,7 +160,7 @@ export function GrowthTrends({
   return (
     <section className="mt-7" aria-labelledby="growth-trend-title">
       <div className="mb-3">
-        <h2 id="growth-trend-title" className="text-lg font-semibold">
+        <h2 id="growth-trend-title" className="text-xl font-semibold">
           {locale === "vi" ? "Xu hướng tăng trưởng" : "Growth trends"}
         </h2>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">

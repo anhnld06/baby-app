@@ -1,9 +1,12 @@
+import Link from "next/link";
+import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import { EditFormTarget } from "@/components/edit-record-navigation";
 import type { ToothPosition } from "@prisma/client";
 import { deleteToothAction, saveToothAction } from "@/app/actions";
 import { Field, TextAreaField } from "@/components/form-fields";
 import { FormActionBar } from "@/components/form-action-bar";
 import { PageHeader } from "@/components/page-header";
+import { CareSummary } from "@/components/care-summary";
 import { ToothChart } from "@/components/tooth-chart";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -36,7 +39,7 @@ export default async function TeethPage({
   if (!baby)
     return (
       <>
-        <PageHeader title={t.tracking.teethTitle} backHref="/baby" />
+        <PageHeader compact title={t.tracking.teethTitle} backHref="/baby" />
         <p>{t.common.noData}</p>
       </>
     );
@@ -51,11 +54,14 @@ export default async function TeethPage({
 
   return (
     <>
-      <PageHeader
+      <PageHeader compact
         title={t.tracking.teethTitle}
         subtitle={baby.name}
         backHref="/baby"
       />
+      {!selectedPosition && <CareSummary kind="tooth" title={`${records.length}/${ALL_POSITIONS.length} ${t.tracking.primaryTooth.toLowerCase()}`}>
+        {t.tracking.selectTooth}
+      </CareSummary>}
       <Card className="border-0 shadow-sm">
         <CardContent className="p-3 sm:p-5">
           <div className="mb-5 text-center">
@@ -148,6 +154,8 @@ export default async function TeethPage({
           deleteLabel={t.tracking.clearTooth}
         />
       )}
+      <h2 className="mb-3 mt-7 text-lg font-semibold">Lịch sử mọc răng</h2>
+      <div>{[...records].sort((a,b)=>b.eruptedAt.getTime()-a.eruptedAt.getTime()).map(record=><HistoryTimelineItem key={record.id} at={record.eruptedAt} timeZone="UTC" showDate><Link href={`/tracking/teeth?position=${record.position}`} className="block rounded-3xl border bg-card p-4"><p className="font-semibold">{t.tracking[toothTypeLabelKey(record.position)]}</p><p className="mt-1 text-xs text-muted-foreground">{toothJaw(record.position) === "upper" ? t.tracking.upperJaw : t.tracking.lowerJaw} · {toothSide(record.position) === "right" ? t.tracking.right : t.tracking.left}</p>{record.notes&&<p className="mt-2 break-words text-sm text-muted-foreground">{record.notes}</p>}</Link></HistoryTimelineItem>)}</div>
     </>
   );
 }

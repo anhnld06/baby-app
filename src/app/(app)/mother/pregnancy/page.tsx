@@ -36,7 +36,7 @@ export default async function PregnancyTrackingPage({ searchParams }: { searchPa
   const [user, locale, params] = await Promise.all([requireUser(), getLocale(), searchParams]);
   const mother = await db.mother.findUnique({ where: { userId: user.id }, include: { pregnancies: { orderBy: { createdAt: "desc" } } } });
   const pregnancy = selectRelevantPregnancy(mother?.pregnancies ?? []);
-  if (!mother || !pregnancy) return <><PageHeader title="Theo dõi thai kỳ" backHref="/mother" /><div className="rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground">Hãy thêm thông tin thai kỳ trong Hồ sơ trước.<Link href="/profile/pregnancy" className="mt-3 block font-medium text-primary">Thêm thai kỳ</Link></div></>;
+  if (!mother || !pregnancy) return <><PageHeader compact title="Theo dõi thai kỳ" backHref="/mother" /><div className="rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground">Hãy thêm thông tin thai kỳ trong Hồ sơ trước.<Link href="/profile/pregnancy" className="mt-3 block font-medium text-primary">Thêm thai kỳ</Link></div></>;
   const [items, editing] = await Promise.all([
     db.pregnancyCheckup.findMany({ where: { pregnancyId: pregnancy.id }, orderBy: { checkedAt: "desc" }, take: 30 }),
     params.edit ? db.pregnancyCheckup.findFirst({ where: { id: params.edit, pregnancyId: pregnancy.id } }) : null,
@@ -75,11 +75,11 @@ export default async function PregnancyTrackingPage({ searchParams }: { searchPa
   const LevelIcon = levelStyle?.icon;
   return (
     <>
-      <PageHeader title="Theo dõi thai kỳ" subtitle={mother.name} backHref="/mother" />
-      <section className="mb-5 overflow-hidden rounded-3xl bg-gradient-to-br from-violet-500 to-fuchsia-600 p-5 text-white shadow-lg shadow-violet-500/15">
-        <p className="text-xs uppercase tracking-[.16em] opacity-80">Thai kỳ hiện tại</p>
-        <div className="mt-2 flex items-end justify-between gap-3"><div><strong className="text-3xl">{age ? `${age.weeks} tuần` : "Chưa có tuổi thai"}</strong>{age && <span className="ml-2 text-sm opacity-85">{age.days} ngày</span>}</div><HeartPulse className="size-8 opacity-80" /></div>
-        <p className="mt-3 text-sm opacity-85">Ngày dự sinh: {pregnancy.estimatedDueDate ? new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long", year: "numeric" }).format(pregnancy.estimatedDueDate) : "chưa ghi"}</p>
+      <PageHeader compact title="Theo dõi thai kỳ" subtitle={mother.name} backHref="/mother" />
+      <section className="mb-5 overflow-hidden rounded-3xl border border-border/60 bg-secondary/40 p-5">
+        <p className="text-xs font-medium text-muted-foreground">Thai kỳ hiện tại</p>
+        <div className="mt-2 flex items-end justify-between gap-3"><div><strong className="text-3xl">{age ? `${age.weeks} tuần` : "Chưa có tuổi thai"}</strong>{age && <span className="ml-2 text-sm text-muted-foreground">{age.days} ngày</span>}</div><HeartPulse className="size-8 text-primary" /></div>
+        <p className="mt-3 text-sm text-muted-foreground">Ngày dự sinh: {pregnancy.estimatedDueDate ? new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long", year: "numeric" }).format(pregnancy.estimatedDueDate) : "chưa ghi"}</p>
         <Link href="/profile/pregnancy" className="mt-3 inline-block text-xs font-medium underline underline-offset-4">Chỉnh thông tin thai kỳ</Link>
       </section>
       {assessment && levelStyle && LevelIcon && (
@@ -118,7 +118,7 @@ export default async function PregnancyTrackingPage({ searchParams }: { searchPa
           </CardContent>
         </Card>
       )}
-      <CollapsibleRecordForm editingId={editing?.id} key={`${editing?.id ?? "new"}-${items.length}`} defaultOpen={!!editing} addLabel="Thêm lần khám mới" closeLabel="Hủy">
+      <CollapsibleRecordForm prominent editingId={editing?.id} key={`${editing?.id ?? "new"}-${items.length}`} defaultOpen={!!editing} addLabel="Thêm lần khám mới" closeLabel="Hủy">
         <Card className="border-0 shadow-sm"><CardContent className="p-5">
           <PregnancyCheckupForm pregnancyId={pregnancy.id} editing={editing} defaultGestationalWeek={age?.weeks} timeZone={user.timezone} />
         </CardContent></Card>

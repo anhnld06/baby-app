@@ -4,6 +4,8 @@ import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { wakeBabyAction } from "@/app/journey-actions";
 import {
+  Thermometer,
+  Pill,
   Baby,
   BedDouble,
   Shell,
@@ -25,6 +27,8 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 const actions = [
+  ["Nhiệt độ", "/tracking/temperature?new=1", Thermometer, "bg-rose-100 text-rose-700"],
+  ["Thuốc", "/tracking/medication", Pill, "bg-violet-100 text-violet-700"],
   [
     "Bú mẹ",
     "/tracking/feeding?new=1&type=BREASTFEEDING",

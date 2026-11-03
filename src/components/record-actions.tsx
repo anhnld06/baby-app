@@ -19,7 +19,7 @@ export function RecordActions({
   deleteLabel: string;
 }) {
   return (
-    <div className="flex items-center gap-1">
+    <div data-record-tools className="flex items-center gap-1">
       <EditRecordLink
         href={editHref}
         replace

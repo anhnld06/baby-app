@@ -1,3 +1,4 @@
+import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import { RecordScene } from "@/components/record-scene";
 import { PumpingChart } from "@/components/pumping-chart";
 import { pumpingChartData, pumpingChartPeriod } from "@/features/pumping/chart";
@@ -30,7 +31,7 @@ export default async function PumpingPage({ searchParams }: {
   const title = vi ? "Nhật ký hút sữa" : "Pumping journal";
   const mother = await db.mother.findUnique({ where: { userId: user.id } });
   if (!mother) return <>
-    <PageHeader title={title} backHref="/mother" />
+    <PageHeader compact title={title} backHref="/mother" />
     <FeatureLink href="/profile/mother" icon={UserRound} title={vi ? "Tạo hồ sơ mẹ" : "Create mother's profile"} description={vi ? "Thêm hồ sơ mẹ trước khi ghi cữ hút sữa." : "Add a mother profile before logging pumping sessions."} />
   </>;
   const now = new Date();
@@ -55,7 +56,7 @@ export default async function PumpingPage({ searchParams }: {
   const cancelLabel = vi ? "Hủy" : "Cancel";
   const dateFormat = new Intl.DateTimeFormat(locale, { timeZone: user.timezone, day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
   return <>
-    <PageHeader title={title} subtitle={mother.name} backHref="/mother" />
+    <PageHeader compact title={title} subtitle={mother.name} backHref="/mother" />
     <PumpingTimer locale={locale} active={active ? { id: active.id, startTime: active.startTime.toISOString() } : undefined} />
     {!(params.new === "1" || editing) && <MetricGrid items={[
       { label: vi ? "Cữ hút hôm nay" : "Sessions today", value: String(summary.count) },
@@ -64,7 +65,7 @@ export default async function PumpingPage({ searchParams }: {
       { label: vi ? "Từ cữ hút gần nhất" : "Since last session", value: items[0] ? formatDuration(Math.max(0, (now.getTime() - items[0].startTime.getTime()) / 60_000), locale) : "—" },
     ]} />}
     {params.edit && !editing && <p role="alert" className="mb-4 text-sm text-destructive">{vi ? "Không tìm thấy cữ hút sữa." : "Pumping session not found."}</p>}
-    <CollapsibleRecordForm editingId={editing?.id} key={`${editing?.id ?? "new"}-${params.new ?? ""}-${items.length}`} defaultOpen={!!editing || params.new === "1"} addLabel={addLabel} closeLabel={cancelLabel}>
+    <CollapsibleRecordForm prominent editingId={editing?.id} key={`${editing?.id ?? "new"}-${params.new ?? ""}-${items.length}`} defaultOpen={!!editing || params.new === "1"} addLabel={addLabel} closeLabel={cancelLabel}>
       <RecordScene kind="pumping" timeZone={user.timezone} initialValues={{leftAmountMl: String(editing?.leftAmountMl ?? ""), rightAmountMl: String(editing?.rightAmountMl ?? "")}}>
       <form id="pumping-form" action={savePumpingAction} className="space-y-4 rounded-2xl bg-card p-5 shadow-sm">
         {editing && <input type="hidden" name="id" value={editing.id} />}
@@ -84,7 +85,7 @@ export default async function PumpingPage({ searchParams }: {
     <PumpingTrends trend={pumpingTrends(now, user.timezone, trendEntries, bottles)} babyName={baby?.name} locale={locale} />
     <h2 className="mb-2 mt-7 text-lg font-semibold">{vi ? "Lịch sử hút sữa" : "Pumping history"}</h2>
     <div className="space-y-2">
-      {items.map((item) => <div key={item.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 shadow-sm">
+      {items.map((item) => <HistoryTimelineItem key={item.id} at={item.startTime} locale={locale} timeZone={user.timezone} showDate><div data-history-card key={item.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 shadow-sm">
         <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"><Droplets className="size-5" /></span>
         <div className="min-w-0 flex-1">
           <p className="font-medium">{item.leftAmountMl == null && item.rightAmountMl == null ? (vi ? "Chưa nhập lượng sữa" : "Milk volume pending") : `${number(pumpingAmount(item))} ml`}{item.durationMinutes != null ? ` · ${item.durationMinutes} ${vi ? "phút" : "min"}` : ""}</p>
@@ -93,7 +94,7 @@ export default async function PumpingPage({ searchParams }: {
           {item.notes && <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">{item.notes}</p>}
         </div>
         <RecordActions id={item.id} editHref={`/mother/pumping?edit=${item.id}`} deleteAction={deletePumpingAction} editLabel={vi ? "Sửa" : "Edit"} deleteLabel={vi ? "Xóa" : "Delete"} />
-      </div>)}
+      </div></HistoryTimelineItem>)}
       {!items.length && <p className="text-sm text-muted-foreground">{vi ? "Chưa có cữ hút sữa. Ghi cữ đầu tiên để bắt đầu theo dõi." : "No pumping sessions yet. Log your first session to start tracking."}</p>}
     </div>
     <HistoryLoadMore href="/mother/pumping" currentLimit={limit} hasMore={history.length > limit} />

@@ -1,3 +1,4 @@
+import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import { RecordScene } from "@/components/record-scene";
 import Link from "next/link";
 import { MilestoneBadge } from "@/components/milestone-badge";
@@ -7,6 +8,7 @@ import { monthDate } from "@/features/journey/dates";
 import { RoutineStatus } from "@/components/routine-status";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
+import { CareSummary } from "@/components/care-summary";
 import { BabySwitcher } from "@/components/baby-switcher";
 import { Field, SelectField, TextAreaField } from "@/components/form-fields";
 import { FormActionBar } from "@/components/form-action-bar";
@@ -55,7 +57,7 @@ export default async function CarePage({
   if (!baby)
     return (
       <>
-        <PageHeader title={config.title} backHref="/baby" />
+        <PageHeader compact title={config.title} backHref="/baby" />
         <Link href="/profile/baby/new">Thêm hồ sơ bé để bắt đầu</Link>
       </>
     );
@@ -130,41 +132,22 @@ export default async function CarePage({
   );
   return (
     <>
-      <PageHeader
+      <PageHeader compact
         title={config.title}
         subtitle={config.subtitle}
         backHref="/baby"
       />
+      {!query.edit && query.new !== "1" && !query.milestone && (
+        <CareSummary kind={section === "milestones" ? "milestone" : section === "meals" ? "meal" : section === "routine" ? "routine" : "wellbeing"} title={`${config.title} · ${count} bản ghi`}>
+          {count ? `${baby.name} · ${config.subtitle}` : "Thêm ghi chép đầu tiên để lưu lại những quan sát về con."}
+          {section === "wellbeing" && <Link href="/assistant" className="mt-1 flex min-h-11 items-center font-medium text-primary">Tra cứu cẩm nang cùng trợ lý →</Link>}
+        </CareSummary>
+      )}
       <BabySwitcher
         babies={babies}
         selectedBabyId={baby.id}
         addLabel="Thêm bé"
       />
-      {section !== "milestones" && (
-        <section className="my-5 rounded-3xl bg-gradient-to-br from-secondary to-card p-5">
-          <span className="text-3xl" aria-hidden="true">
-            {config.icon}
-          </span>
-          <h2 className="mt-3 text-xl font-semibold">
-            {baby.nickname || baby.name} · {count} bản ghi
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {section === "routine"
-              ? "Tự thêm từng hoạt động theo ngày và giờ mong muốn. Đánh dấu hoàn thành chỉ cập nhật lịch, không tự tạo cữ bú hay giấc ngủ thực tế."
-              : section === "meals"
-                ? "Ghi món và nguyên liệu, lượng ăn nếu biết và quan sát sau bữa ăn."
-                : "Ghi điều gia đình quan sát được; có thể mang nhật ký khi đi khám."}
-          </p>
-          {section === "wellbeing" && (
-            <Link
-              href="/assistant"
-              className="mt-3 inline-flex min-h-11 items-center font-medium text-primary"
-            >
-              Tra cứu cẩm nang cùng trợ lý →
-            </Link>
-          )}
-        </section>
-      )}
       {section === "routine" && (
         <form className="mb-5 flex flex-wrap items-end gap-3">
           <Field
@@ -359,16 +342,9 @@ export default async function CarePage({
         />
         </RecordScene>
       </details>
-      <div
-        className={
-          section === "milestones"
-            ? "grid gap-4 sm:grid-cols-2"
-            : section === "routine"
-              ? "ml-2 space-y-4 border-l-2 border-primary/20 pl-5"
-              : "space-y-3"
-        }
-      >
+      <div className="space-y-1">
         {entries.slice(0, limit).map((entry) => (
+          <HistoryTimelineItem key={entry.id} at={entry.occurredAt} timeZone={user.timezone} showDate planned={section === "routine" && !entry.completed}>
           <article
             key={entry.id}
             className={`rounded-3xl border bg-card p-5 ${section === "routine" && entry.completed ? "border-emerald-500/30" : "border-border/60"}`}
@@ -460,6 +436,7 @@ export default async function CarePage({
               )}
             </div>
           </article>
+          </HistoryTimelineItem>
         ))}
       </div>
       {!entries.length && (

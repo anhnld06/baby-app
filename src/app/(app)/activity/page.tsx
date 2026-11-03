@@ -30,7 +30,9 @@ export default async function ActivityPage({
     );
   const limit = parseHistoryLimit(params.limit, 100, 500);
   const queryLimit = limit + 1;
-  const [careEntries, feedings, sleeps, diapers, growthEntries, vaccinations, prescriptions, toothRecords] = await Promise.all([
+  const [temperatures, medicationDoses, careEntries, feedings, sleeps, diapers, growthEntries, vaccinations, prescriptions, toothRecords] = await Promise.all([
+    db.temperatureEntry.findMany({where:{babyId:baby.id},orderBy:{measuredAt:"desc"},take:queryLimit}),
+    db.medicationDose.findMany({where:{schedule:{babyId:baby.id}},orderBy:{takenAt:"desc"},take:queryLimit,include:{schedule:{select:{name:true,dosage:true}}}}),
     db.babyCareEntry.findMany({ where: { babyId: baby.id, kind: { not: "ROUTINE" } }, select: { id: true, kind: true, occurredAt: true, title: true, details: true }, orderBy: { occurredAt: "desc" }, take: queryLimit }),
     db.feeding.findMany({
       where: { babyId: baby.id },
@@ -70,7 +72,7 @@ export default async function ActivityPage({
     }),
   ]);
   const timeline = buildTimeline(
-    { careEntries, feedings, sleeps, diapers, growthEntries, vaccinations, prescriptions, toothRecords },
+    { temperatures, medicationDoses, careEntries, feedings, sleeps, diapers, growthEntries, vaccinations, prescriptions, toothRecords },
     {
       feeding: t.dashboard.feeding,
       sleep: t.dashboard.sleep,
@@ -88,7 +90,7 @@ export default async function ActivityPage({
     },
     locale,
   );
-  const hasMore = timeline.length > limit || [careEntries, feedings, sleeps, diapers, growthEntries, vaccinations, prescriptions, toothRecords].some((items) => items.length > limit);
+  const hasMore = timeline.length > limit || [temperatures, medicationDoses, careEntries, feedings, sleeps, diapers, growthEntries, vaccinations, prescriptions, toothRecords].some((items) => items.length > limit);
   return (
     <>
       <PageHeader backHref="/baby" title={t.nav.activity} subtitle={baby.name} />

@@ -554,7 +554,7 @@ export async function savePrescriptionAction(formData: FormData) {
     }),
   ]);
   revalidatePath("/", "layout");
-  redirect("/tracking/prescription", RedirectType.replace);
+  redirect("/tracking/prescription?view=archive", RedirectType.replace);
 }
 
 export async function deletePrescriptionAction(formData: FormData) {

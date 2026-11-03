@@ -1,3 +1,4 @@
+import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import { EditFormTarget, EditRecordLink } from "@/components/edit-record-navigation";
 import Link from "next/link";
 import {
@@ -11,6 +12,7 @@ import { getSelectedBaby } from "@/lib/data";
 import { db } from "@/lib/db";
 import { toDateTimeLocal } from "@/lib/date";
 import { PageHeader } from "@/components/page-header";
+import { CareSummary } from "@/components/care-summary";
 import { VaccinationChecklist } from "@/components/vaccination-checklist";
 import { BabySwitcher } from "@/components/baby-switcher";
 import { VaccinationActionForm } from "@/components/vaccination-action-form";
@@ -172,11 +174,16 @@ export default async function VaccinationSchedulePage({
   ].sort((a, b) => b.at.getTime() - a.at.getTime());
   return (
     <>
-      <PageHeader
+      <PageHeader compact
         title="Tiêm chủng"
         subtitle="Xem các mũi sắp tới, tích ngay khi đã tiêm"
         backHref={params.owner === "mother" ? "/mother" : "/baby"}
       />
+      {!!owners.length && !editing && !recordEditing && (
+        <CareSummary kind="vaccine" title={defaultOwner.startsWith("mother:") ? "Lịch tiêm của mẹ" : "Lịch tiêm của bé"}>
+          {pending.filter((item) => defaultOwner.startsWith("mother:") ? !!item.motherId : !!item.babyId).length} lịch hẹn chưa xác nhận · {defaultOwner.startsWith("mother:") ? motherChecklistRecords.length : babyChecklistRecords.length} lần tiêm đã lưu
+        </CareSummary>
+      )}
       <BabySwitcher
         babies={babies}
         selectedBabyId={baby?.id}
@@ -198,8 +205,8 @@ export default async function VaccinationSchedulePage({
             <Link replace scroll={false} href="/vaccination-schedule?owner=baby" aria-current={params.owner !== "mother" ? "page" : undefined} className="rounded-full border px-4 py-3 text-sm aria-[current=page]:bg-secondary aria-[current=page]:text-primary">Của bé</Link>
             <Link replace scroll={false} href="/vaccination-schedule?owner=mother" aria-current={params.owner === "mother" ? "page" : undefined} className="rounded-full border px-4 py-3 text-sm aria-[current=page]:bg-secondary aria-[current=page]:text-primary">Của mẹ</Link>
           </nav>}
-          {!editing && !recordEditing && baby && params.owner !== "mother" && <VaccinationChecklist view={params.view} kind="baby" ownerId={baby.id} name={baby.name} birth={baby.dateOfBirth} records={babyChecklistRecords} appointments={pending.filter((item) => item.babyId === baby.id)} today={today} />}
-          {!editing && !recordEditing && mother && (params.owner === "mother" || !baby) && <VaccinationChecklist view={params.view} kind="mother" ownerId={mother.id} name={mother.name} records={motherChecklistRecords} appointments={pending.filter((item) => item.motherId === mother.id)} today={today} />}
+          {!editing && !recordEditing && baby && params.owner !== "mother" && <VaccinationChecklist view={params.view === "age" ? "age" : "vaccine"} kind="baby" ownerId={baby.id} name={baby.name} birth={baby.dateOfBirth} records={babyChecklistRecords} appointments={pending.filter((item) => item.babyId === baby.id)} today={today} />}
+          {!editing && !recordEditing && mother && (params.owner === "mother" || !baby) && <VaccinationChecklist view={params.view === "age" ? "age" : "vaccine"} kind="mother" ownerId={mother.id} name={mother.name} records={motherChecklistRecords} appointments={pending.filter((item) => item.motherId === mother.id)} today={today} />}
           {editing || recordEditing ? (
             <EditFormTarget recordId={editing?.id ?? recordEditing?.id}>
             <section className="mb-6 rounded-3xl border bg-card p-5">
@@ -421,6 +428,7 @@ export default async function VaccinationSchedulePage({
             </h2>
             <div className="space-y-3">
               {history.slice(0, limit).map((item) => (
+                <HistoryTimelineItem key={`${item.appointment}-${item.id}`} at={item.at} timeZone="UTC" showDate>
                 <article
                   data-vaccination={item.id}
                   key={`${item.appointment}-${item.id}`}
@@ -485,6 +493,7 @@ export default async function VaccinationSchedulePage({
                     </div>
                   )}
                 </article>
+                </HistoryTimelineItem>
               ))}
               {!history.length && (
                 <p className="rounded-3xl border border-dashed p-6 text-center text-sm text-muted-foreground">

@@ -33,7 +33,7 @@ const confidenceLabel = {
 export default async function CyclePage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   const [user, locale, params] = await Promise.all([requireUser(), getLocale(), searchParams]);
   const mother = await db.mother.findUnique({ where: { userId: user.id } });
-  if (!mother) return <><PageHeader title="Chu kỳ kinh" backHref="/mother" /><p className="text-sm text-muted-foreground">Hãy tạo hồ sơ mẹ trước.</p></>;
+  if (!mother) return <><PageHeader compact title="Chu kỳ kinh" backHref="/mother" /><p className="text-sm text-muted-foreground">Hãy tạo hồ sơ mẹ trước.</p></>;
 
   const [cycles, dailyLogs] = await Promise.all([
     db.menstrualCycle.findMany({ where: { motherId: mother.id }, orderBy: { periodStart: "desc" }, take: 24 }),
@@ -61,7 +61,7 @@ export default async function CyclePage({ searchParams }: { searchParams: Promis
 
   return (
     <>
-      <PageHeader title="Chu kỳ của mẹ" subtitle="Lịch, dự báo và nhật ký cơ thể mỗi ngày" backHref="/mother" />
+      <PageHeader compact title="Chu kỳ của mẹ" subtitle="Lịch, dự báo và nhật ký cơ thể mỗi ngày" backHref="/mother" />
       <CycleDashboard
         motherId={mother.id}
         averageCycle={effectiveCycleLength}

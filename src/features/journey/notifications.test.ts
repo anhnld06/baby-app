@@ -4,12 +4,14 @@ const mocks = vi.hoisted(() => ({
   appointments: vi.fn(),
   episode: vi.fn(),
   reads: vi.fn(),
+  medications: vi.fn(),
 }));
 vi.mock("@/lib/db", () => ({
   db: {
     baby: { findFirst: mocks.baby },
     vaccinationAppointment: { findMany: mocks.appointments },
     babyCareEntry: { findFirst: mocks.episode },
+    medicationSchedule: { findMany: mocks.medications },
     notificationRead: { findMany: mocks.reads },
   },
 }));
@@ -20,6 +22,7 @@ beforeEach(() => {
   mocks.appointments.mockResolvedValue([]);
   mocks.episode.mockResolvedValue(null);
   mocks.reads.mockResolvedValue([]);
+  mocks.medications.mockResolvedValue([]);
 });
 describe("in-app notifications", () => {
   it("keeps read state user-scoped and changes appointment keys when the date changes", async () => {

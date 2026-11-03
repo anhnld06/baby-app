@@ -106,6 +106,8 @@ export default async function DashboardPage() {
   const now = new Date();
   const { start, end } = getLocalDayRange(now, user.timezone);
   const [
+    temperatures,
+    medicationDoses,
     careEntries,
     feedings,
     sleeps,
@@ -119,6 +121,8 @@ export default async function DashboardPage() {
     lastDiaper,
     nextAppointment,
   ] = await Promise.all([
+    db.temperatureEntry.findMany({where:{babyId:baby.id},orderBy:{measuredAt:"desc"},take:5}),
+    db.medicationDose.findMany({where:{schedule:{babyId:baby.id}},orderBy:{takenAt:"desc"},take:5,include:{schedule:{select:{name:true,dosage:true}}}}),
     db.babyCareEntry.findMany({
       where: { babyId: baby.id, kind: { not: "ROUTINE" } },
       select: {
@@ -192,6 +196,8 @@ export default async function DashboardPage() {
   const pregnancy = selectRelevantPregnancy(mother?.pregnancies ?? []);
   const timeline = buildTimeline(
     {
+      temperatures,
+      medicationDoses,
       careEntries,
       feedings,
       sleeps,

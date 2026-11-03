@@ -23,7 +23,7 @@ Phạm vi là các chức năng sản phẩm nhìn thấy trong tám ảnh, áp 
 | 6 | Chọn ngày, tổng quan, so với ngày trước | Của bé → Thống kê chăm bé |
 | 6 | Biểu đồ sữa và ngủ | Biểu đồ 7/30 ngày, số chưa ghi khác 0, có bảng truy cập được |
 | 6 | Tăng trưởng với chuyển chỉ số | Biểu đồ cùng trang thống kê; tab cân nặng, chiều dài/chiều cao, vòng đầu |
-| 7 | Nhóm theo loại vắc-xin, từng mũi và ngày | Lịch tiêm → Theo vắc-xin, thẻ cuộn ngang và nút tròn từng mũi |
+| 7 | Nhóm theo loại vắc-xin, từng mũi và ngày | Lịch tiêm → Theo vắc-xin, nhóm dọc theo loại vắc-xin, hàng nút tròn từng mũi/liều và ngày đã ghi hoặc ngày hẹn |
 | 7 | Chương trình, ghi chú, đã tiêm | Giữ bộ dữ liệu và thao tác hiện có; đổi chế độ xem không nhân bản dữ liệu |
 | 8 | Bộ sưu tập 47 huy hiệu, 3 nhóm, tiến độ | Mốc phát triển; 18 cột mốc, 14 khoảnh khắc, 15 thai kỳ |
 | 8 | Đã đạt / chưa ghi, ngày và tham khảo tuổi | Tròn tháng tính từ ngày sinh; kỹ năng được xác nhận thủ công, có nguồn CDC |
@@ -40,4 +40,11 @@ Phạm vi là các chức năng sản phẩm nhìn thấy trong tám ảnh, áp 
 
 Unit test bao phủ chọn mẫu, dịch lịch sớm/muộn, chống ghép trùng bản ghi, bản ghi lệch lịch, giấc đang chạy, lịch tháng cuối tháng, 47 khóa huy hiệu, tuổi theo múi giờ, quyền sửa/xóa/lưu và trạng thái đọc thông báo. Build bằng Webpack dùng khi môi trường chặn Turbopack mở cổng xử lý CSS.
 
-Cần áp dụng cả hai migration mới trước khi chạy với database. Workspace không có `.env` nên các luồng với database thật chưa được kiểm thử trong phiên làm việc này.
+Cần áp dụng các migration trước khi chạy với database, gồm `20261102170000_temperature_medication` cho nhật ký nhiệt độ, lịch thuốc và cữ đã xác nhận. Các luồng nhiệt độ, checklist thuốc và lịch điện thoại đã được kiểm tra với database local; animation được kiểm tra bằng WebKit ở kích thước iPhone.
+
+
+## Bổ sung theo ảnh giao diện mới
+
+- Các mục chăm sóc có minh họa SVG chuyển động bên trong màn hình tương ứng; ô Ghi nhanh bên ngoài giữ icon tĩnh. Chuyển động dừng khi ra khỏi màn hình và tôn trọng cài đặt Giảm chuyển động.
+- Lịch sử bú, ngủ, tã, tăng trưởng, đơn thuốc, nhiệt độ, hút sữa và nhật ký hoạt động dùng cột giờ, đường nối và nút trạng thái. EASY tách bản ghi thực tế với khung dự kiến; không tự đánh dấu lịch dự kiến đã hoàn thành.
+- Thuốc có checklist theo từng giờ, trạng thái lưu theo ngày và lịch hẹn 30 ngày có báo thức để nhập vào Lịch điện thoại. Nội dung liều được gia đình nhập theo hướng dẫn đã có.

@@ -140,6 +140,17 @@ mặc định khi chạy development. Production cần deploy thư mục
 `WHO_ANTHRO_TOKEN`. Package `anthro` dùng GPL-3.0; giữ thông tin giấy phép khi
 phân phối image/service.
 
+
+### Nhiệt độ và lịch thuốc
+
+Chạy `npm run db:generate` và `npm run db:deploy` trước khi khởi động phiên bản này. Migration `20261102170000_temperature_medication` thêm các bảng nhiệt độ, lịch thuốc và cữ đã xác nhận; không sửa dữ liệu đơn thuốc cũ.
+
+- `/tracking/temperature`: ghi °C, vị trí đo, thời điểm và ghi chú; sửa/xóa từng lần đo.
+- `/tracking/medication`: lịch hằng ngày theo múi giờ tài khoản, nhiều giờ dùng, ngày bắt đầu/kết thúc, tạm dừng lịch và checklist từng cữ. Tích lặp lại không tạo thêm cữ. Có thể tạo lịch từ tên và liều của đơn thuốc đã lưu; người dùng kiểm tra và nhập giờ.
+- Nhắc khi đóng app: xuất `/api/export/medication-calendar` để nhập 30 ngày sắp tới vào ứng dụng Lịch của điện thoại. File có báo thức tại giờ dùng. Việc phát thông báo tùy quyền và cài đặt ứng dụng Lịch; khi sửa lịch thuốc cần cập nhật các sự kiện đã nhập. Cron hiện có chạy hằng ngày cho lịch hẹn, không gửi push thuốc theo từng phút.
+- Các lần đo và cữ đã xác nhận xuất hiện trong nhật ký hoạt động và file CSV. Thông báo trong app chỉ nhắc các cữ đã đến giờ trong ngày, chưa xác nhận.
+- Lịch tiêm mặc định gom theo vắc-xin và từng mũi/liều, giữ lịch theo tuổi ở tab riêng. Chỉ thay giao diện, không thay mốc tuổi hay tự ghi nhận các lựa chọn phối hợp.
+
 ### Hộp thư cho bé
 
 Vào **Của bé → Hộp thư cho bé** để lưu ảnh/video, chọn một trong bốn khung tem và viết thư cho con. Có thể chỉ lưu thư, chụp ảnh bằng camera hoặc quay boomerang (phát xuôi/ngược). Phong bì gom các tem theo tháng tuổi tính từ ngày sinh, dựa trên ngày kỷ niệm trong múi giờ tài khoản; mỗi bé có hộp thư riêng. Mở phong bì để xem hành trình tem và đọc thư. Màn tạo thư cho xem trước khung và lời đề trên tem.

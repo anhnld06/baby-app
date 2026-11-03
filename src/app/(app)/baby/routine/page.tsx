@@ -1,3 +1,5 @@
+import { HistoryTimelineItem } from "@/components/history-timeline-item";
+import { Baby, BedDouble, Sun, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { DashboardRefresh } from "@/components/dashboard-refresh";
 import { PageHeader } from "@/components/page-header";
@@ -59,7 +61,7 @@ export default async function RoutinePage({
   if (!baby)
     return (
       <>
-        <PageHeader title="Nếp ngày EASY" backHref="/baby" />
+        <PageHeader compact title="Nếp ngày EASY" backHref="/baby" />
         <Link href="/profile/baby/new">Thêm hồ sơ bé</Link>
       </>
     );
@@ -187,12 +189,12 @@ export default async function RoutinePage({
     play: "Chơi / tương tác",
     sleep: "Ngủ",
   };
-  const icons = { wake: "☀️", feed: "🍼", play: "🧸", sleep: "🌙" };
+  const icons = { wake: Sun, feed: Baby, play: Sparkles, sleep: BedDouble };
   const next = rows.find((r) => !r.actual && r.expectedEnd > now);
   return (
     <>
       <DashboardRefresh pauseSelector="[data-routine-settings][open]" />
-      <PageHeader
+      <PageHeader compact
         title="Nếp ngày EASY"
         subtitle="Ăn · hoạt động · ngủ · thời gian của bạn"
         backHref="/baby"
@@ -202,7 +204,7 @@ export default async function RoutinePage({
         selectedBabyId={baby.id}
         addLabel="Thêm bé"
       />
-      <section className="my-5 rounded-3xl bg-gradient-to-br from-violet-100 to-card p-5 dark:from-violet-950">
+      <section className="my-5 rounded-3xl border border-border/60 bg-secondary/40 p-5">
         <p className="text-xs font-medium text-primary">
           Phương pháp ·{" "}
           {method === "CUSTOM"
@@ -347,53 +349,20 @@ export default async function RoutinePage({
           saveLabel="Lưu phương pháp"
         />
       </details>
-      <div className="space-y-4">
-        {rows.map((row) => (
-          <article
-            key={row.id}
-            className={`relative ml-16 rounded-3xl border p-4 ${row.actual?.active ? "border-primary/30 bg-secondary" : row.actual ? "border-emerald-500/20 bg-card" : "border-dashed bg-card/50"}`}
-          >
-            <time className="absolute -left-16 top-5 text-xs font-semibold tabular-nums">
-              {clock(row.actual?.start ?? row.planned)}
-            </time>
-            <p className="text-xs text-muted-foreground">
-              {row.actual
-                ? row.actual.active
-                  ? "Đang diễn ra · đã ghi"
-                  : "Đã ghi thực tế"
-                : "Dự kiến"}
-            </p>
-            <h3 className="mt-1 font-semibold">
-              {icons[row.kind]} {titles[row.kind]}
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {row.actual?.detail ??
-                `${Math.max(0, Math.round((row.expectedEnd.getTime() - row.planned.getTime()) / 60000))} phút dự kiến`}
-            </p>
-            {row.actual ? (
-              <Link
-                href={row.actual.href}
-                className="mt-2 inline-flex min-h-11 items-center text-xs text-primary"
-              >
-                Xem / sửa bản ghi
-              </Link>
-            ) : (
-              <RoutineStatus
-                at={row.planned.toISOString()}
-                minutes={Math.max(
-                  1,
-                  (row.expectedEnd.getTime() - row.planned.getTime()) / 60000,
-                )}
-                completed={false}
-              />
-            )}
-            {row.kind === "sleep" && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                ♡ Thời gian nghỉ của bạn
-              </p>
-            )}
-          </article>
-        ))}
+      <h2 className="mb-4 text-lg font-semibold">{day === today ? "Nếp ngày hôm nay" : `Nếp ngày ${day.split("-").reverse().join("/")}`}</h2>
+      <div aria-label="Dòng thời gian nếp ngày">
+        {rows.map(row => {
+          const inWindow = day === today && !row.actual && now >= row.planned && now < row.expectedEnd;
+          const active = Boolean(row.actual?.active) || inWindow;
+          const Icon = icons[row.kind];
+          const minutes = Math.max(0,Math.round((row.expectedEnd.getTime()-row.planned.getTime())/60000));
+          return <HistoryTimelineItem key={row.id} at={row.actual?.start ?? row.planned} timeZone={user.timezone} active={active} planned={!row.actual}>
+            <article data-routine-state={row.actual ? row.actual.active ? "active" : "recorded" : inWindow ? "planned-current" : "planned"} className={`rounded-3xl border p-4 ${active ? "border-violet-300 bg-violet-100/80 dark:border-violet-700 dark:bg-violet-950/70" : row.actual ? "border-border/60 bg-card" : "border-dashed border-border/80 bg-card/60"}`}>
+              <div className="flex items-start gap-3"><span className={`grid size-11 shrink-0 place-items-center rounded-2xl ${row.kind === "wake" || row.kind === "play" ? "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-300" : "bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-200"}`}><Icon className="size-5"/></span><div className="min-w-0 flex-1"><p className={`text-[11px] font-medium ${active ? "text-violet-700 dark:text-violet-300" : "text-muted-foreground"}`}>{row.actual ? row.actual.active ? "Đang diễn ra · đã ghi" : "Đã ghi thực tế" : inWindow ? "Trong khung dự kiến · chưa ghi" : "Dự kiến · chưa ghi"}</p><h3 className="mt-1 font-semibold">{titles[row.kind]}</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">{row.actual?.detail ?? (minutes ? `${formatDuration(minutes)} dự kiến` : "Giờ thức dự kiến")}</p>{row.kind === "sleep" && <p className="mt-2 text-xs text-muted-foreground">♡ Thời gian nghỉ của bạn</p>}</div></div>
+              {row.actual ? <Link href={row.actual.href} className="mt-2 inline-flex min-h-11 items-center text-xs text-primary">Xem / sửa bản ghi</Link> : <div className="mt-1">{inWindow && <RoutineStatus at={row.planned.toISOString()} minutes={minutes} completed={false}/>}{row.kind === "feed" || row.kind === "sleep" ? <Link href={row.kind === "feed" ? "/tracking/feeding?new=1" : "/tracking/sleep?new=1"} className="ml-2 inline-flex min-h-11 items-center text-xs text-primary">Ghi thực tế</Link> : null}</div>}
+            </article>
+          </HistoryTimelineItem>;
+        })}
       </div>
       {day === today && (
         <div className="my-5 flex flex-wrap gap-2">

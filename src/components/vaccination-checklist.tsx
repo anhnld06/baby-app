@@ -1,3 +1,4 @@
+import { VaccineDoseGroups } from "@/components/vaccine-dose-groups";
 import { VaccinationViewSwitch } from "@/components/vaccination-view-switch";
 import { EditRecordLink } from "@/components/edit-record-navigation";
 import { BABY_SCHEDULE, MOTHER_PRENATAL_SCHEDULE } from "@/features/vaccination/schedule";
@@ -6,7 +7,7 @@ import { VaccinationCheck } from "@/components/vaccination-check";
 
 type Record = ChecklistRecord & { administeredAt: Date; appointment?: { id: string } | null };
 type Appointment = { id: string; vaccineName: string; doseNumber: number | null; scheduledAt: Date };
-export function VaccinationChecklist({ kind, ownerId, name, birth, records, appointments, today, view = "age" }: {
+export function VaccinationChecklist({ kind, ownerId, name, birth, records, appointments, today, view = "vaccine" }: {
   kind: "baby" | "mother";
   ownerId: string;
   name: string;
@@ -32,16 +33,17 @@ export function VaccinationChecklist({ kind, ownerId, name, birth, records, appo
   return (
     <section aria-label={`Danh sách mũi tiêm của ${name}`} className="mb-7 space-y-4">
       <div className="rounded-3xl border border-primary/20 bg-secondary/40 p-5">
-        <h2 className="text-lg font-semibold">{kind === "baby" ? `Lịch tiêm theo tuổi · ${name}` : `Các mũi tiêm của mẹ · ${name}`}</h2>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">{done}/{rows.length} mũi đã ghi nhận. Tích trực tiếp để lưu đã tiêm hôm nay; có thể sửa ngày và thêm thông tin sau.</p>
+        <h2 className="text-lg font-semibold">{kind === "baby" ? `Lịch tiêm chủng · ${name}` : `Các mũi tiêm của mẹ · ${name}`}</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">{done}/{rows.length} mũi đã ghi nhận</p>
+        <details className="mt-2 text-xs leading-5 text-muted-foreground"><summary className="min-h-9 cursor-pointer content-center text-primary">Cách ghi nhận mũi tiêm</summary><p>Tích trực tiếp để lưu đã tiêm hôm nay; có thể sửa ngày và thêm thông tin sau.</p></details>
         {next && <div className="mt-3 rounded-2xl bg-background/70 p-3">
           <p className="text-sm font-semibold text-primary">Mốc tiếp theo: {next.milestone} · {dateLabel(next.date!)}</p>
-          <ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-5 text-muted-foreground">{nextRows.map((row) => <li key={row.entry.key}>{row.entry.label}</li>)}</ul>
+          <details><summary className="min-h-9 cursor-pointer content-center text-xs text-primary">Xem các mũi tại mốc này</summary><ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-5 text-muted-foreground">{nextRows.map((row) => <li key={row.entry.key}>{row.entry.label}</li>)}</ul></details>
         </div>}
         <p className="mt-3 text-xs leading-5 text-muted-foreground">{kind === "baby" ? "Mốc tuổi là lịch tham khảo. Ngày hẹn thực tế và lịch vắc-xin phối hợp theo cơ sở tiêm; không cần tích tất cả lựa chọn thay thế." : "Số mũi và thời điểm tiêm uốn ván tùy tiền sử tiêm, theo lịch cơ sở tiêm."}</p>
       </div>
       <VaccinationViewSwitch />
-      {groups.map((group) => (
+      {view === "vaccine" ? <VaccineDoseGroups rows={rows} kind={kind} ownerId={ownerId}/> : groups.map((group) => (
         <div key={group} className="space-y-2">
           <h3 className="px-1 text-sm font-semibold">{group}</h3>
           <div className={view === "vaccine" ? "flex gap-3 overflow-x-auto pb-3" : "space-y-2"}>

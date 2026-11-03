@@ -1,0 +1,9 @@
+import type { ReactNode } from "react";
+import { Check } from "lucide-react";
+export function HistoryTimelineItem({at,timeZone,locale="vi",active=false,planned=false,showDate=false,children}:{at:Date;timeZone?:string;locale?:string;active?:boolean;planned?:boolean;showDate?:boolean;children:ReactNode}) {
+  return <div data-history-timeline-item data-timeline-status={active ? "active" : planned ? "planned" : "recorded"} className="record-history-item relative grid min-w-0 grid-cols-[3rem_1rem_minmax(0,1fr)] gap-x-2 pb-4 sm:grid-cols-[3.5rem_1.25rem_minmax(0,1fr)] sm:gap-x-3">
+    <div className="pt-4 text-center"><time dateTime={at.toISOString()} className={`inline-block text-[11px] font-semibold tabular-nums sm:text-xs ${active ? "rounded-full bg-violet-600 px-1.5 py-1 text-white" : "py-1 text-muted-foreground"}`}>{new Intl.DateTimeFormat(locale,{timeZone,hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(at)}</time>{showDate&&<p className="mt-0.5 text-[10px] text-muted-foreground">{new Intl.DateTimeFormat(locale,{timeZone,day:"2-digit",month:"2-digit"}).format(at)}</p>}</div>
+    <div aria-hidden="true" className="relative flex justify-center pt-5"><span className={`timeline-rail absolute left-1/2 top-6 bottom-[-1.25rem] -translate-x-1/2 border-l-2 ${planned ? "border-dashed border-border" : "border-violet-200 dark:border-violet-900"}`}/><span className={`relative z-10 grid size-4 shrink-0 place-items-center rounded-full border-2 ${active ? "border-violet-500 bg-card ring-4 ring-violet-100 dark:ring-violet-950" : planned ? "border-border bg-card" : "border-violet-300 bg-violet-300 text-white dark:border-violet-700 dark:bg-violet-700"}`}>{!active&&!planned&&<Check className="size-2.5" strokeWidth={3}/>}</span></div>
+    <div className="min-w-0">{children}</div>
+  </div>;
+}

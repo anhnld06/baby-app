@@ -10,12 +10,14 @@ export function CollapsibleRecordForm({
   addLabel,
   closeLabel,
   children,
+  prominent = false,
 }: {
   defaultOpen: boolean;
   editingId?: string;
   addLabel: string;
   closeLabel: string;
   children: React.ReactNode;
+  prominent?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -24,7 +26,7 @@ export function CollapsibleRecordForm({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mb-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 text-sm font-medium text-primary transition-colors active:scale-[.99]"
+        className={`mb-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl py-4 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[.99] ${prominent ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border border-dashed border-border text-primary"}`}
       >
         <Plus className="size-4" />
         {addLabel}
