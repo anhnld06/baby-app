@@ -120,6 +120,9 @@ export default async function DashboardPage() {
     lastFeed,
     lastDiaper,
     nextAppointment,
+    todayMedicationDoses,
+    todayTemperature,
+    todayMeals,
   ] = await Promise.all([
     db.temperatureEntry.findMany({where:{babyId:baby.id},orderBy:{measuredAt:"desc"},take:5}),
     db.medicationDose.findMany({where:{schedule:{babyId:baby.id}},orderBy:{takenAt:"desc"},take:5,include:{schedule:{select:{name:true,dosage:true}}}}),
@@ -191,6 +194,21 @@ export default async function DashboardPage() {
         OR: [{ babyId: baby.id }, ...(mother ? [{ motherId: mother.id }] : [])],
       },
       orderBy: { scheduledAt: "asc" },
+    }),
+    db.medicationDose.findMany({
+      where: { schedule: { babyId: baby.id }, takenAt: { gte: start, lt: end } },
+      select: { schedule: { select: { name: true } } },
+      orderBy: { takenAt: "asc" },
+    }),
+    db.temperatureEntry.findFirst({
+      where: { babyId: baby.id, measuredAt: { gte: start, lt: end } },
+      select: { celsius: true },
+      orderBy: { measuredAt: "desc" },
+    }),
+    db.babyCareEntry.findMany({
+      where: { babyId: baby.id, kind: "MEAL", occurredAt: { gte: start, lt: end } },
+      select: { id: true, title: true },
+      orderBy: { occurredAt: "asc" },
     }),
   ]);
   const pregnancy = selectRelevantPregnancy(mother?.pregnancies ?? []);
@@ -293,6 +311,9 @@ export default async function DashboardPage() {
             sleepMinutes={sleepMinutes}
             hasSleep={sleeps.length > 0}
             diaperCount={diapers.length}
+            takenMedications={[...new Set(todayMedicationDoses.map(dose => dose.schedule.name))]}
+            temperatureCelsius={todayTemperature?.celsius}
+            meals={todayMeals}
             lastFeedAt={lastFeed?.startTime}
             timeZone={user.timezone}
             activeSleep={Boolean(activeSleep)}

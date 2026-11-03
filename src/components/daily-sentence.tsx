@@ -14,6 +14,9 @@ export function DailySentence({
   timeZone,
   activeSleep,
   activeFeeding,
+  takenMedications = [],
+  temperatureCelsius,
+  meals = [],
 }: {
   baby: {
     id: string;
@@ -32,6 +35,9 @@ export function DailySentence({
   timeZone: string;
   activeSleep: boolean;
   activeFeeding: boolean;
+  takenMedications?: string[];
+  temperatureCelsius?: number;
+  meals?: { id: string; title: string }[];
 }) {
   const vi = locale === "vi";
   const name = baby.nickname || baby.name;
@@ -68,10 +74,10 @@ export function DailySentence({
           {vi ? "Theo nhật ký hôm nay" : "From today's journal"}
         </p>
         <p className="text-xl font-medium leading-[1.9] tracking-tight sm:text-2xl">
-          {hasData ? (
+          {hasData || takenMedications.length > 0 || meals.length > 0 || temperatureCelsius != null ? (
             <>
               {name}
-              {vi ? " đã có " : " has logged "}
+              {hasData ? (vi ? " đã có " : " has logged ") : ""}
               {feedCount > 0 && (
                 <>
                   <span className="summary-chip summary-chip-feed">
@@ -113,6 +119,50 @@ export function DailySentence({
                       : "had "}
                   <span className="summary-chip summary-chip-diaper">
                     {diaperCount} {vi ? "lần tã" : "diaper changes"}
+                  </span>
+                </>
+              )}
+              {takenMedications.length > 0 && (
+                <>
+                  {hasData
+                    ? vi ? ". Bé đã uống " : ". Baby has taken "
+                    : vi ? " đã uống " : " has taken "}
+                  {takenMedications.map((medication, index) => (
+                    <span key={medication}>
+                      {index > 0 ? (index === takenMedications.length - 1 ? (vi ? " và " : " and ") : ", ") : ""}
+                      <span className="summary-chip summary-chip-sleep whitespace-normal break-words">
+                        {medication}
+                      </span>
+                    </span>
+                  ))}
+                </>
+              )}
+              {meals.length > 0 && (
+                <>
+                  {hasData || takenMedications.length > 0
+                    ? vi ? ". Bé đã ăn dặm " : ". Baby has had "
+                    : vi ? " đã ăn dặm " : " has had "}
+                  <span className="summary-chip summary-chip-feed">
+                    {meals.length} {vi ? "bữa" : "solid meals"}
+                  </span>
+                  {vi ? " với " : " with "}
+                  {meals.map((meal, index) => (
+                    <span key={meal.id}>
+                      {index > 0 ? (index === meals.length - 1 ? (vi ? " và " : " and ") : ", ") : ""}
+                      <span className="summary-chip summary-chip-feed whitespace-normal break-words">
+                        {meal.title}
+                      </span>
+                    </span>
+                  ))}
+                </>
+              )}
+              {temperatureCelsius != null && (
+                <>
+                  {hasData || takenMedications.length > 0 || meals.length > 0
+                    ? vi ? ". Nhiệt độ đo gần nhất là " : ". The latest temperature was "
+                    : vi ? " có nhiệt độ đo gần nhất là " : " had a latest temperature of "}
+                  <span className="summary-chip summary-chip-bottle">
+                    {temperatureCelsius} °C
                   </span>
                 </>
               )}
