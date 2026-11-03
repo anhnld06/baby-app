@@ -139,3 +139,11 @@ mặc định khi chạy development. Production cần deploy thư mục
 `services/who-anthro` như một container nội bộ và đặt `WHO_ANTHRO_URL`,
 `WHO_ANTHRO_TOKEN`. Package `anthro` dùng GPL-3.0; giữ thông tin giấy phép khi
 phân phối image/service.
+
+### Hộp thư cho bé
+
+Vào **Của bé → Hộp thư cho bé** để lưu ảnh/video, chọn một trong bốn khung tem và viết thư cho con. Có thể chỉ lưu thư, chụp ảnh bằng camera hoặc quay boomerang (phát xuôi/ngược). Phong bì gom các tem theo tháng tuổi tính từ ngày sinh, dựa trên ngày kỷ niệm trong múi giờ tài khoản; mỗi bé có hộp thư riêng. Mở phong bì để xem hành trình tem và đọc thư. Màn tạo thư cho xem trước khung và lời đề trên tem.
+
+Ảnh JPG/PNG/WebP và video MP4/MOV/WebM tối đa 10 MB được lưu trong PostgreSQL, chỉ tài khoản sở hữu hồ sơ được đọc hoặc xóa. Camera cần HTTPS hoặc localhost và trình duyệt hỗ trợ MediaRecorder cho boomerang. Tệp MOV có thể cần trình duyệt hỗ trợ codec tương ứng.
+
+Khi triển khai cập nhật: chạy `npm run db:generate` và `npm run db:deploy`, sau đó build và khởi động lại ứng dụng để áp dụng migration và quyền camera. Sao lưu cơ sở dữ liệu để giữ cả nội dung kỷ niệm và tệp đính kèm.

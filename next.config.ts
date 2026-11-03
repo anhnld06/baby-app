@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   experimental: {
     useOffline: true,
+    serverActions: { bodySizeLimit: "12mb" },
   },
   async headers() {
     return [
@@ -19,7 +20,7 @@ const nextConfig: NextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=(self)" },
+          { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=(self)" },
         ],
       },
     ];

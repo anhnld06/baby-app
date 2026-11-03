@@ -68,6 +68,7 @@ export async function JourneyOverview({
           </span>
         </span>
       </Link>
+      <Link href="/baby/mailbox" className="block rounded-3xl border bg-secondary/40 p-5"><span aria-hidden="true" className="text-3xl">💌</span><strong className="mt-2 block">Hộp thư cho bé</strong><span className="mt-1 block text-sm text-muted-foreground">Những chiếc tem nhỏ, giữ cả hành trình con lớn khôn.</span></Link>
       <div className="grid gap-3 sm:grid-cols-2">
         <Link
           href="/baby/milestones"

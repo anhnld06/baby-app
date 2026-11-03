@@ -48,6 +48,7 @@ export default async function BabyHubPage() {
         <FeatureLink href="/baby/development" icon={Sun} title="Tuần khủng hoảng" description="Theo dõi thực tế, giấc ngủ và tham khảo theo tuần." tone="violet" />
         <FeatureLink href="/baby/routine" icon={Sun} title="Nếp ngày EASY" description="Lịch theo tuổi, tùy chỉnh và điều chỉnh theo nhật ký." tone="amber" />
         <FeatureLink href="/baby/meals" icon={Utensils} title="Ăn dặm" description="Món ăn, nguyên liệu và quan sát sau bữa." tone="rose" />
+        <FeatureLink href="/baby/mailbox" icon={Heart} title="Hộp thư cho bé" description="Gói ảnh, thước phim và thư tay thành tem kỷ niệm." tone="rose" />
         <FeatureLink href="/baby/milestones" icon={Star} title="Mốc phát triển" description="Lưu những lần đầu, ảnh và kỷ niệm." tone="violet" />
         <FeatureLink href="/baby/wellbeing" icon={Heart} title="Dấu hiệu & tâm trạng" description="Nhật ký quan sát của gia đình." tone="blue" />
       </div>
