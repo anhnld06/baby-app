@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Baby, MoonStar, Droplets, TrendingUp, ArrowUpRight, Clock3, Info, NotebookPen } from "lucide-react";
+import { MoonStar, TrendingUp, ArrowUpRight, Clock3, Info, NotebookPen } from "lucide-react";
+import { BabyIcon as Baby, PumpingIcon as Droplets } from "@/components/app-icons";
 import { db } from "@/lib/db";
 import { formatAge, formatDuration } from "@/lib/date";
 import { loggedSleepMinutes, sleepReference } from "@/features/daily-summary/summary";

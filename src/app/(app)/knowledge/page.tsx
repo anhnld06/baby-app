@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Bot, ChevronRight, ShieldCheck } from "lucide-react";
+import { ChevronRight } from "lucide-react";
+import { AssistantIcon as Bot, ShieldIcon as ShieldCheck } from "@/components/app-icons";
 import { KnowledgeLibrary } from "@/components/knowledge-library";
 import { PageHeader } from "@/components/page-header";
 import { stageForAge } from "@/features/knowledge/stage";

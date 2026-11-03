@@ -1,7 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Bot, ExternalLink, LoaderCircle, Send, ShieldCheck } from "lucide-react";
+import { ExternalLink, LoaderCircle, Send } from "lucide-react";
+import { AssistantIcon as Bot, ShieldIcon as ShieldCheck } from "@/components/app-icons";
 import { evidenceLabels } from "@/features/knowledge/labels";
 import { useState } from "react";
 import { useForm } from "react-hook-form";

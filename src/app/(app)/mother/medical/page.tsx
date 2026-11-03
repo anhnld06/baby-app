@@ -1,7 +1,7 @@
 import { deleteMotherMedicalVisitAction, saveMotherMedicalVisitAction } from "@/app/actions";
 import { FeatureLink } from "@/components/feature-link";
 import { MedicalBook } from "@/components/medical-book";
-import { UserRound } from "lucide-react";
+import { ProfileIcon as UserRound } from "@/components/app-icons";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getLocale } from "@/lib/i18n";

@@ -3,7 +3,8 @@
 import { MetricBarChart } from "@/components/metric-bar-chart";
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { BarChart3, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { StatisticsIcon as BarChart3 } from "@/components/app-icons";
 import type { ChartBucket, PumpingChartMode } from "@/features/pumping/chart";
 
 export function PumpingChart({

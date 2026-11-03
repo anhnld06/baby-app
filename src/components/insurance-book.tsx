@@ -1,5 +1,6 @@
 import { ChoiceFields } from "@/components/choice-fields";
-import { CalendarClock, ShieldCheck } from "lucide-react";
+import { CalendarClock } from "lucide-react";
+import { ShieldIcon as ShieldCheck } from "@/components/app-icons";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { Field, TextAreaField } from "@/components/form-fields";
 import { FormActionBar } from "@/components/form-action-bar";
@@ -31,7 +32,7 @@ export function InsuranceBook({ title, subtitle, backHref, basePath, ownerField,
 }) {
   return <>
     <PageHeader compact title={title} subtitle={subtitle} backHref={backHref} />
-    {!editing && <CareSummary kind="shield" title={items.length ? "Thông tin bảo hiểm đã lưu" : "Chưa có thông tin bảo hiểm"}>
+    {!editing && <CareSummary kind={ownerField === "motherId" ? "motherInsurance" : "babyInsurance"} title={items.length ? "Thông tin bảo hiểm đã lưu" : "Chưa có thông tin bảo hiểm"}>
       {items.length ? `${items.length} thẻ và hợp đồng · Xem thời hạn, quyền lợi và nơi đăng ký bên dưới.` : "Thêm thẻ hoặc hợp đồng để tiện tra cứu khi cần."}
     </CareSummary>}
     <CollapsibleRecordForm prominent editingId={editing?.id} key={`${editing?.id ?? "new"}-${items.length}`} defaultOpen={!!editing} addLabel="Thêm bảo hiểm" closeLabel="Hủy">

@@ -1,6 +1,6 @@
 import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import { CareIllustration } from "@/components/care-illustration";
-import { Thermometer } from "lucide-react";
+import { TemperatureIcon as Thermometer } from "@/components/app-icons";
 import { deleteTemperatureAction, saveTemperatureAction } from "@/app/health-actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { Field, SelectField, TextAreaField } from "@/components/form-fields";

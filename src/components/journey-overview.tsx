@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, BookHeart, Mail, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Sparkles } from "lucide-react";
+import { HandbookIcon as BookHeart, MailboxIcon as Mail } from "@/components/app-icons";
 import styles from "./journey-overview.module.css";
 import { MilestoneBadge } from "@/components/milestone-badge";
 import { db } from "@/lib/db";

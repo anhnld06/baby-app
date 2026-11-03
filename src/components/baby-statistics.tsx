@@ -1,6 +1,7 @@
 import { ReportOverview } from "@/components/report-overview";
 import Link from "next/link";
-import { Baby, Milk, Moon, Droplets } from "lucide-react";
+import { Moon } from "lucide-react";
+import { BabyIcon as Baby, BottleIcon as Milk, PumpingIcon as Droplets } from "@/components/app-icons";
 import { MetricBarChart } from "@/components/metric-bar-chart";
 import { Field } from "@/components/form-fields";
 import { GrowthTrends } from "@/components/growth-trends";

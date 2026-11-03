@@ -7,7 +7,7 @@ import { QuickLogSheet } from "@/components/quick-log-sheet";
 import Link from "next/link";
 import { useLinkStatus } from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Baby, ChartColumn, BookHeart, Bot, HeartPulse, House, UserRound } from "lucide-react";
+import { BabyIcon as Baby, StatisticsIcon as ChartColumn, HandbookIcon as BookHeart, AssistantIcon as Bot, MotherIcon as HeartPulse, HomeIcon as House, ProfileIcon as UserRound } from "@/components/app-icons";
 import { VoiceLogContext } from "@/components/voice-log-context";
 import { NavigationHistory } from "@/components/back-link";
 import { isRouteActive } from "@/lib/navigation";
@@ -78,7 +78,7 @@ export function AppShell({
         <nav className="space-y-1.5" aria-label="Điều hướng chính">
           {desktopLinks.map(({ href, label, icon: Icon, paths }) => {
             const active = paths.some((path) => isRouteActive(pathname, path));
-            return <Link key={href} href={href} replace={pathname === href} aria-current={active ? "page" : undefined} className={cn("relative flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted", active && "bg-secondary text-primary shadow-[inset_3px_0_0_var(--primary)]")}><Icon className="size-5" strokeWidth={active ? 2.5 : 1.8} />{label}<NavigationHint /></Link>;
+            return <Link key={href} href={href} replace={pathname === href} aria-current={active ? "page" : undefined} className={cn("relative flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted", active && "bg-secondary text-primary shadow-[inset_3px_0_0_var(--primary)]")}><Icon className="size-8" strokeWidth={active ? 2.5 : 1.8} />{label}<NavigationHint /></Link>;
           })}
         </nav>
         <div className="mt-auto">
@@ -104,7 +104,7 @@ export function AppShell({
                 active && "bg-secondary text-primary",
               )}
             >
-              <Icon className="size-5" strokeWidth={active ? 2.5 : 1.8} />
+              <Icon className="size-8" strokeWidth={active ? 2.5 : 1.8} />
               <span className="max-w-full truncate">{label}</span>
               <NavigationHint />
             </Link>

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { AlertTriangle, CalendarCheck, CheckCircle2, HeartPulse, Scale, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CalendarCheck, CheckCircle2, Scale, ShieldAlert } from "lucide-react";
+import { WellbeingIcon as HeartPulse } from "@/components/app-icons";
 import { deletePregnancyCheckupAction, savePregnancyCheckupAction } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { FormActionBar } from "@/components/form-action-bar";

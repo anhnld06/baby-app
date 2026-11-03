@@ -1,12 +1,8 @@
 import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import { EditFormTarget, EditRecordLink } from "@/components/edit-record-navigation";
 import Link from "next/link";
-import {
-  CheckCircle2,
-  CalendarDays,
-  ChevronRight,
-  Syringe,
-} from "lucide-react";
+import { CheckCircle2, CalendarDays, ChevronRight } from "lucide-react";
+import { VaccineIcon as Syringe } from "@/components/app-icons";
 import { requireUser } from "@/lib/auth";
 import { getSelectedBaby } from "@/lib/data";
 import { db } from "@/lib/db";
@@ -180,7 +176,7 @@ export default async function VaccinationSchedulePage({
         backHref={params.owner === "mother" ? "/mother" : "/baby"}
       />
       {!!owners.length && !editing && !recordEditing && (
-        <CareSummary kind="vaccine" title={defaultOwner.startsWith("mother:") ? "Lịch tiêm của mẹ" : "Lịch tiêm của bé"}>
+        <CareSummary kind={defaultOwner.startsWith("mother:") ? "motherVaccine" : "vaccine"} title={defaultOwner.startsWith("mother:") ? "Lịch tiêm của mẹ" : "Lịch tiêm của bé"}>
           {pending.filter((item) => defaultOwner.startsWith("mother:") ? !!item.motherId : !!item.babyId).length} lịch hẹn chưa xác nhận · {defaultOwner.startsWith("mother:") ? motherChecklistRecords.length : babyChecklistRecords.length} lần tiêm đã lưu
         </CareSummary>
       )}

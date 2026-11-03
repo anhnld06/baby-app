@@ -1,6 +1,6 @@
 import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import { RecordScene } from "@/components/record-scene";
-import { BedDouble } from "lucide-react";
+import { SleepIcon as BedDouble } from "@/components/app-icons";
 import { deleteSleepAction, saveSleepAction } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { Field, SelectField, TextAreaField } from "@/components/form-fields";

@@ -1,6 +1,6 @@
 import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import { HeightFields } from "@/components/height-fields";
-import { Ruler } from "lucide-react";
+import { GrowthIcon as Ruler } from "@/components/app-icons";
 import {
   deleteGrowthAction,
   recalculateLatestGrowthAction,

@@ -1,23 +1,11 @@
 "use client";
+import { PumpingIcon, RoutineIcon, MoodIcon, MilestoneIcon } from "@/components/app-icons";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { wakeBabyAction } from "@/app/journey-actions";
-import {
-  Thermometer,
-  Pill,
-  Baby,
-  BedDouble,
-  Shell,
-  Milk,
-  Utensils,
-  Ruler,
-  Smile,
-  Star,
-  Sun,
-  Pencil,
-  Bot,
-} from "lucide-react";
+import { Sun, Pencil } from "lucide-react";
+import { TemperatureIcon as Thermometer, MedicineIcon as Pill, BreastfeedingIcon as Baby, SleepIcon as BedDouble, DiaperIcon as Shell, BottleIcon as Milk, MealIcon as Utensils, GrowthIcon as Ruler, AssistantIcon as Bot } from "@/components/app-icons";
 import {
   Dialog,
   DialogContent,
@@ -48,12 +36,12 @@ const actions = [
     "bg-teal-100 text-teal-700",
   ],
   ["Thay tã", "/tracking/diaper?new=1", Shell, "bg-teal-100 text-teal-700"],
-  ["Hút sữa", "/mother/pumping", Milk, "bg-pink-100 text-pink-700"],
+  ["Hút sữa", "/mother/pumping", PumpingIcon, "bg-pink-100 text-pink-700"],
   ["Ăn dặm", "/baby/meals?new=1", Utensils, "bg-amber-100 text-amber-700"],
   ["Số đo", "/tracking/growth?new=1", Ruler, "bg-blue-100 text-blue-700"],
-  ["Dấu hiệu", "/baby/wellbeing?new=1", Smile, "bg-rose-100 text-rose-700"],
-  ["Kỷ niệm", "/baby/milestones?new=1", Star, "bg-yellow-100 text-yellow-700"],
-  ["Nếp ngày", "/baby/routine?new=1", Sun, "bg-indigo-100 text-indigo-700"],
+  ["Dấu hiệu", "/baby/wellbeing?new=1", MoodIcon, "bg-rose-100 text-rose-700"],
+  ["Kỷ niệm", "/baby/milestones?new=1", MilestoneIcon, "bg-yellow-100 text-yellow-700"],
+  ["Nếp ngày", "/baby/routine?new=1", RoutineIcon, "bg-indigo-100 text-indigo-700"],
 ] as const;
 export function QuickLogSheet({ babyId }: { babyId?: string }) {
   const [pending, startTransition] = useTransition();
@@ -108,9 +96,9 @@ export function QuickLogSheet({ babyId }: { babyId?: string }) {
                 className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border bg-card p-2 text-center text-xs font-medium"
               >
                 <span
-                  className={`grid size-11 place-items-center rounded-2xl ${tone}`}
+                  className={`grid size-11 place-items-center rounded-2xl bg-secondary/70 ${tone.split(" ").filter(value => !value.startsWith("bg-")).join(" ")}`}
                 >
-                  <Icon aria-hidden="true" className="size-5" />
+                  <Icon aria-hidden="true" className="size-8" />
                 </span>
                 {title}
               </Link>

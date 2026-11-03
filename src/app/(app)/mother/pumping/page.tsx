@@ -6,7 +6,7 @@ import { PumpingTrends } from "@/components/pumping-trends";
 import { pumpingTrends, pumpingTrendWindow } from "@/features/pumping/trends";
 import { getSelectedBaby } from "@/lib/data";
 import { PumpingTimer } from "@/components/pumping-timer";
-import { Droplets, UserRound } from "lucide-react";
+import { PumpingIcon as Droplets, ProfileIcon as UserRound } from "@/components/app-icons";
 import { savePumpingAction, deletePumpingAction } from "@/app/pumping-actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { FeatureLink } from "@/components/feature-link";

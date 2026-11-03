@@ -1,14 +1,6 @@
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  Baby,
-  Milk,
-  Shell,
-  BedDouble,
-  Droplets,
-  Utensils,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowUpRight, type LucideIcon } from "lucide-react";
+import { BreastfeedingIcon as Baby, BottleIcon as Milk, DiaperIcon as Shell, SleepIcon as BedDouble, PumpingIcon as Droplets, MealIcon as Utensils } from "@/components/app-icons";
 const actions: {
   kind: string;
   icon: LucideIcon;
@@ -105,7 +97,7 @@ export function HomeQuickActions() {
             >
               <Icon
                 aria-hidden="true"
-                className="size-6 sm:size-7"
+                className="size-9 sm:size-10"
                 strokeWidth={1.8}
               />
             </span>

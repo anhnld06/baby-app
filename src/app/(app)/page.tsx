@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { JourneyOverview } from "@/components/journey-overview";
-import { ChevronRight, HeartPulse, Activity, ChartNoAxesCombined, ArrowUpRight } from "lucide-react";
+import { ChevronRight, Activity, ChartNoAxesCombined, ArrowUpRight } from "lucide-react";
+import { WellbeingIcon as HeartPulse } from "@/components/app-icons";
 import { DailySentence } from "@/components/daily-sentence";
 import { HomeQuickActions } from "@/components/home-quick-actions";
 import { BabyDailySummary } from "@/components/baby-daily-summary";

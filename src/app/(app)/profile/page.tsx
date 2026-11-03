@@ -1,10 +1,6 @@
 import Link from "next/link";
-import {
-  Baby as BabyIcon,
-  ChevronRight,
-  Plus,
-  UserRound,
-} from "lucide-react";
+import { Baby as BabyIcon, ChevronRight, Plus } from "lucide-react";
+import { ProfileIcon as UserRound } from "@/components/app-icons";
 import { logoutAction } from "@/app/auth-actions";
 import { PageHeader } from "@/components/page-header";
 import { LogoutButton } from "@/components/logout-button";

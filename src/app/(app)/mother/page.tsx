@@ -1,4 +1,5 @@
-import { CalendarDays, Droplets, FileHeart, HeartPulse, ShieldCheck, Syringe, UserRound } from "lucide-react";
+import { CalendarDays } from "lucide-react";
+import { PumpingIcon as Droplets, MedicalIcon as FileHeart, WellbeingIcon as HeartPulse, ShieldIcon as ShieldCheck, VaccineIcon as Syringe, ProfileIcon as UserRound } from "@/components/app-icons";
 import { FeatureLink } from "@/components/feature-link";
 import { PageHeader } from "@/components/page-header";
 import { gestationalAge } from "@/features/mother/insights";

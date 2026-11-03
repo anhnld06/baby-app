@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth";
-import { ExternalLink, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ExternalLink, ShieldAlert } from "lucide-react";
+import { ShieldIcon as ShieldCheck } from "@/components/app-icons";
 import { notFound } from "next/navigation";
 import { ArticleContent } from "@/components/article-content";
 import { PageHeader } from "@/components/page-header";

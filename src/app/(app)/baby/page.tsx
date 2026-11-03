@@ -1,4 +1,5 @@
-import { Thermometer, Star, Utensils, Sun, ChartColumn, Heart, Baby, Music2, BedDouble, FileHeart, Pill, Ruler, Shell, ShieldCheck, Smile, Syringe } from "lucide-react";
+import { Star, Sun, Heart, Music2, Smile } from "lucide-react";
+import { TemperatureIcon as Thermometer, MealIcon as Utensils, StatisticsIcon as ChartColumn, BabyIcon as Baby, SleepIcon as BedDouble, MedicalIcon as FileHeart, MedicineIcon as Pill, GrowthIcon as Ruler, DiaperIcon as Shell, ShieldIcon as ShieldCheck, VaccineIcon as Syringe } from "@/components/app-icons";
 import { BabySwitcher } from "@/components/baby-switcher";
 import { FeatureLink } from "@/components/feature-link";
 import { PageHeader } from "@/components/page-header";

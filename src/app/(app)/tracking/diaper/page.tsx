@@ -1,7 +1,7 @@
 import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import { RecordScene } from "@/components/record-scene";
 import { ChoiceFields } from "@/components/choice-fields";
-import { Shell } from "lucide-react";
+import { DiaperIcon as Shell } from "@/components/app-icons";
 import { deleteDiaperAction, saveDiaperAction } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { Field, TextAreaField } from "@/components/form-fields";

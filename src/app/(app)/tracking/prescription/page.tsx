@@ -1,7 +1,7 @@
 import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Pill } from "lucide-react";
+import { MedicineIcon as Pill } from "@/components/app-icons";
 import { deletePrescriptionAction, savePrescriptionAction } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { FormActionBar } from "@/components/form-action-bar";
@@ -64,7 +64,7 @@ export default async function PrescriptionPage({
         subtitle={baby.name}
         backHref="/baby"
       />
-      {!editing && <CareSummary kind="medicine" title={items[0] ? (locale === "vi" ? "Đơn thuốc gần nhất" : "Latest prescription") : (locale === "vi" ? "Chưa có đơn thuốc" : "No prescriptions yet")}>
+      {!editing && <CareSummary kind="prescription" title={items[0] ? (locale === "vi" ? "Đơn thuốc gần nhất" : "Latest prescription") : (locale === "vi" ? "Chưa có đơn thuốc" : "No prescriptions yet")}>
         {items[0] ? `${new Intl.DateTimeFormat(locale, { timeZone: user.timezone, dateStyle: "short" }).format(items[0].issuedAt)} · ${items[0].items.length} ${locale === "vi" ? "thuốc đã lưu" : "saved medications"}` : (locale === "vi" ? "Thêm đơn thuốc để lưu thông tin và hướng dẫn đã được kê." : "Save a prescription and its existing instructions.")}
       </CareSummary>}
       <Link href="/tracking/medication" className="mb-5 flex min-h-16 items-center gap-3 rounded-3xl bg-violet-50 p-5 font-medium text-violet-700 dark:bg-violet-950 dark:text-violet-200"><Pill className="size-5"/>Lịch thuốc hằng ngày & checklist →</Link>

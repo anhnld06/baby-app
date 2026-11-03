@@ -1,6 +1,6 @@
 "use client";
 
-import { Droplets } from "lucide-react";
+import { PumpingIcon as Droplets } from "@/components/app-icons";
 import { useState } from "react";
 import { unstable_rethrow } from "next/navigation";
 import { startPumpingTimerAction, finishPumpingTimerAction } from "@/app/pumping-actions";

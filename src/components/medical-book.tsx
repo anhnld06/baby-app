@@ -36,7 +36,7 @@ export function MedicalBook({
   return (
     <>
       <PageHeader compact title={title} subtitle={subtitle} backHref={backHref} />
-      {!editing && <CareSummary kind="medical" title={items.length ? "Lượt khám gần nhất" : "Chưa có lượt khám"}>
+      {!editing && <CareSummary kind={ownerField === "motherId" ? "motherMedical" : "babyMedical"} title={items.length ? "Lượt khám gần nhất" : "Chưa có lượt khám"}>
         {items[0]
           ? `${new Intl.DateTimeFormat(locale, { timeZone, dateStyle: "short" }).format(items[0].visitedAt)} · ${items[0].facility || items[0].reason || "Đã lưu thông tin khám"}`
           : "Thêm lần khám để lưu kết quả và lời dặn trong cùng một nơi."}

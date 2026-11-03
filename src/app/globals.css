@@ -406,3 +406,7 @@ body:has(.memory-composer[open]) { overflow: hidden; }
   .memory-journey-item:nth-child(even)::after { transform: rotate(-30deg); }
 }
 @media(prefers-reduced-motion:reduce) { .memory-create-button,.memory-envelope,.memory-envelope-stamp { transition: none; } }
+
+/* Give the pastel artwork a light surface to keep its teal outlines legible. */
+.dark .app-icon { background-color: #e7f5f8; border-radius: .5rem; }
+.dark .care-illustration > .app-icon { border-radius: 1rem; }

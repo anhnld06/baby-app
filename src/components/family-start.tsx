@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Mother, Pregnancy } from "@prisma/client";
-import { ArrowUpRight, Baby, BookHeart, CalendarDays, Heart, HeartPulse, Sparkles } from "lucide-react";
+import { ArrowUpRight, CalendarDays, Heart, Sparkles } from "lucide-react";
+import { BabyIcon as Baby, HandbookIcon as BookHeart, MotherIcon as HeartPulse } from "@/components/app-icons";
 import { FeatureLink } from "@/components/feature-link";
 import { PageHeader } from "@/components/page-header";
 import { UpcomingVaccination } from "@/components/upcoming-vaccination";

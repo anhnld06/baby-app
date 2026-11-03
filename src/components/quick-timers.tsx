@@ -1,6 +1,7 @@
 "use client";
 
-import { Baby, BedDouble, LoaderCircle, Play, Square } from "lucide-react";
+import { LoaderCircle, Play, Square } from "lucide-react";
+import { BreastfeedingIcon as Baby, SleepIcon as BedDouble } from "@/components/app-icons";
 import { useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import {
@@ -93,7 +94,7 @@ export function QuickTimers({
       {timers.map(({ key, icon: Icon, title, active, startedAt, action, startLabel, stopLabel, color }) => (
         <div key={key} className="flex items-center gap-3 rounded-2xl bg-card p-3 shadow-sm">
           <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${color}`}>
-            <Icon className="size-5" />
+            <Icon className="size-8" />
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{title}</p>

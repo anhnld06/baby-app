@@ -9,21 +9,8 @@ import {
   type LibraryPage,
 } from "@/features/knowledge/library";
 import { useSearchParams } from "next/navigation";
-import {
-  Baby,
-  BookHeart,
-  ChevronLeft,
-  ChevronRight,
-  Footprints,
-  Heart,
-  HeartPulse,
-  MessagesSquare,
-  Puzzle,
-  Search,
-  Smile,
-  Sparkles,
-  Utensils,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Footprints, Heart, MessagesSquare, Puzzle, Search, Smile, Sparkles } from "lucide-react";
+import { BabyIcon as Baby, HandbookIcon as BookHeart, WellbeingIcon as HeartPulse, MealIcon as Utensils } from "@/components/app-icons";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {

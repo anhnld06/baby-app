@@ -1,5 +1,6 @@
 import { HistoryTimelineItem } from "@/components/history-timeline-item";
-import { Baby, BedDouble, Sun, Sparkles } from "lucide-react";
+import { Sun, Sparkles } from "lucide-react";
+import { BabyIcon as Baby, SleepIcon as BedDouble } from "@/components/app-icons";
 import Link from "next/link";
 import { DashboardRefresh } from "@/components/dashboard-refresh";
 import { PageHeader } from "@/components/page-header";
