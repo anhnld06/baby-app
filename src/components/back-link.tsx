@@ -25,9 +25,21 @@ export function NavigationHistory() {
     let ledger = new NavigationLedger(currentHref());
     const originalPush = history.pushState;
     const originalReplace = history.replaceState;
+    let disposed = false;
+    let notificationQueued = false;
     const publish = () => {
-      target = ledger.previous();
-      listeners.forEach((listener) => listener());
+      if (notificationQueued) return;
+      notificationQueued = true;
+      // Next.js can write history inside an insertion effect. Notify React
+      // subscribers after that commit, coalescing multiple writes in one turn.
+      queueMicrotask(() => {
+        notificationQueued = false;
+        if (disposed) return;
+        const next = ledger.previous();
+        if (target?.href === next?.href && target?.delta === next?.delta) return;
+        target = next;
+        listeners.forEach((listener) => listener());
+      });
     };
     const stamp = (data: unknown, index: number) => ({
       ...(typeof data === "object" && data !== null ? data : {}),
@@ -59,6 +71,7 @@ export function NavigationHistory() {
     window.addEventListener("popstate", traverse);
     publish();
     return () => {
+      disposed = true;
       if (history.pushState === push) history.pushState = originalPush;
       if (history.replaceState === replace) history.replaceState = originalReplace;
       window.removeEventListener("popstate", traverse);

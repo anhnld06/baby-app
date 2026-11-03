@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ user: vi.fn(), baby: vi.fn(), create: vi.fn(), remove: vi.fn() }));
+const mocks = vi.hoisted(() => ({ user: vi.fn(), baby: vi.fn(), create: vi.fn(), remove: vi.fn(), update: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ requireUser: mocks.user }));
-vi.mock("@/lib/db", () => ({ db: { baby: { findFirst: mocks.baby }, babyMemory: { create: mocks.create, deleteMany: mocks.remove } } }));
+vi.mock("@/lib/db", () => ({ db: { baby: { findFirst: mocks.baby }, babyMemory: { create: mocks.create, deleteMany: mocks.remove, updateMany: mocks.update } } }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
-import { saveMemoryAction, deleteMemoryAction } from "./memory-actions";
+import { saveMemoryAction, deleteMemoryAction, updateMemoryMilestoneAction } from "./memory-actions";
 function form(extra: Record<string, string> = {}) {
   const data = new FormData();
   Object.entries({ babyId: "baby-1", title: "Nụ cười đầu tiên", letter: "Con yêu!", frame: "blossom", occurredAt: "2026-01-01T08:00", ...extra }).forEach(([k,v]) => data.set(k,v));
@@ -30,5 +30,23 @@ describe("private baby mailbox", () => {
   it("scopes deletion to the authenticated family", async () => {
     await deleteMemoryAction(form({ id: "other-memory" }));
     expect(mocks.remove).toHaveBeenCalledWith({ where: { id: "other-memory", baby: { userId: "user-1" } } });
+  });
+});
+
+describe("milestone tags", () => {
+  it("stores a tag with the letter without recording an achieved milestone", async () => {
+    expect(await saveMemoryAction({}, form({ milestoneKey: "roll" }))).toEqual({ saved: true });
+    expect(mocks.create).toHaveBeenCalledWith({ data: expect.objectContaining({ milestoneKey: "roll" }) });
+  });
+  it("rejects unknown milestone keys before writing", async () => {
+    expect(await saveMemoryAction({}, form({ milestoneKey: "fake" }))).toHaveProperty("error");
+    await expect(updateMemoryMilestoneAction(form({ id: "memory", milestoneKey: "fake" }))).rejects.toThrow();
+    expect(mocks.create).not.toHaveBeenCalled(); expect(mocks.update).not.toHaveBeenCalled();
+  });
+  it("scopes updates and tag removal to the family", async () => {
+    await updateMemoryMilestoneAction(form({ id: "memory", milestoneKey: "smile" }));
+    expect(mocks.update).toHaveBeenLastCalledWith({ where: { id: "memory", baby: { userId: "user-1" } }, data: { milestoneKey: "smile" } });
+    await updateMemoryMilestoneAction(form({ id: "memory", milestoneKey: "" }));
+    expect(mocks.update).toHaveBeenLastCalledWith({ where: { id: "memory", baby: { userId: "user-1" } }, data: { milestoneKey: null } });
   });
 });

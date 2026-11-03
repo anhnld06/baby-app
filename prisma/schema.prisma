@@ -785,6 +785,7 @@ model BabyMemory {
   babyId String
   title String
   letter String
+  milestoneKey String?
   frame String
   occurredAt DateTime
   mediaData Bytes?
@@ -792,4 +793,5 @@ model BabyMemory {
   createdAt DateTime @default(now())
   baby Baby @relation(fields: [babyId], references: [id], onDelete: Cascade)
   @@index([babyId, occurredAt])
+  @@index([babyId, milestoneKey])
 }

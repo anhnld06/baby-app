@@ -155,6 +155,8 @@ Chạy `npm run db:generate` và `npm run db:deploy` trước khi khởi động
 
 Vào **Của bé → Hộp thư cho bé** để lưu ảnh/video, chọn một trong bốn khung tem và viết thư cho con. Có thể chỉ lưu thư, chụp ảnh bằng camera hoặc quay boomerang (phát xuôi/ngược). Phong bì gom các tem theo tháng tuổi tính từ ngày sinh, dựa trên ngày kỷ niệm trong múi giờ tài khoản; mỗi bé có hộp thư riêng. Mở phong bì để xem hành trình tem và đọc thư. Màn tạo thư cho xem trước khung và lời đề trên tem.
 
+Mỗi thư có thể gắn một tag mốc phát triển (tùy chọn); nhiều thư có thể gắn cùng một mốc. Lọc thư theo mốc trong hộp thư, hoặc mở/tạo thư ngay từ bộ sưu tập mốc phát triển. Với thư cũ, mở **Quản lý kỷ niệm** để đổi/gỡ tag. Tag chỉ liên kết kỷ niệm, không tự ghi nhận bé đã đạt mốc.
+
 Ảnh JPG/PNG/WebP và video MP4/MOV/WebM tối đa 10 MB được lưu trong PostgreSQL, chỉ tài khoản sở hữu hồ sơ được đọc hoặc xóa. Camera cần HTTPS hoặc localhost và trình duyệt hỗ trợ MediaRecorder cho boomerang. Tệp MOV có thể cần trình duyệt hỗ trợ codec tương ứng.
 
 Khi triển khai cập nhật: chạy `npm run db:generate` và `npm run db:deploy`, sau đó build và khởi động lại ứng dụng để áp dụng migration và quyền camera. Sao lưu cơ sở dữ liệu để giữ cả nội dung kỷ niệm và tệp đính kèm.

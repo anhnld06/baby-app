@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { toDateTimeLocal, zonedDateTimeToUtc } from "@/lib/date";
+import { MILESTONES } from "@/features/journey/milestones";
 import { MAX_MEMORY_MEDIA, MEMORY_FRAMES, validMemoryMedia } from "@/features/mailbox/memories";
 
 export async function saveMemoryAction(_state: { error?: string; saved?: boolean }, form: FormData): Promise<{ error?: string; saved?: boolean }> {
@@ -12,6 +13,8 @@ export async function saveMemoryAction(_state: { error?: string; saved?: boolean
   const title = String(form.get("title") ?? "").trim();
   const letter = String(form.get("letter") ?? "").trim();
   const frame = String(form.get("frame") ?? "");
+  const milestoneKey = String(form.get("milestoneKey") ?? "") || null;
+  if (milestoneKey && !MILESTONES.some(m => m.key === milestoneKey)) return { error: "Mốc phát triển không hợp lệ." };
   const local = String(form.get("occurredAt") ?? "");
   if (!title || title.length > 120 || letter.length > 6000 || !MEMORY_FRAMES.some(f => f.key === frame)) return { error: "Hãy nhập tên kỷ niệm (tối đa 120 ký tự), thư tối đa 6.000 ký tự và chọn khung tem." };
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(local)) return { error: "Ngày kỷ niệm không hợp lệ." };
@@ -27,12 +30,26 @@ export async function saveMemoryAction(_state: { error?: string; saved?: boolean
     if (!validMemoryMedia(mediaData, mediaMime)) return { error: "Chọn ảnh JPG, PNG, WebP hoặc video MP4, MOV, WebM hợp lệ." };
   }
   if (!mediaData && !letter) return { error: "Thêm ảnh/video hoặc viết một lời nhắn cho con nhé." };
-  await db.babyMemory.create({ data: { babyId, title, letter, frame, occurredAt, mediaData, mediaMime } });
+  await db.babyMemory.create({ data: { babyId, title, letter, frame, milestoneKey, occurredAt, mediaData, mediaMime } });
   revalidatePath("/baby/mailbox");
+  revalidatePath("/baby/milestones");
   return { saved: true };
 }
 export async function deleteMemoryAction(form: FormData) {
   const user = await requireUser();
   await db.babyMemory.deleteMany({ where: { id: String(form.get("id") ?? ""), baby: { userId: user.id } } });
   revalidatePath("/baby/mailbox");
+  revalidatePath("/baby/milestones");
+}
+
+export async function updateMemoryMilestoneAction(form: FormData) {
+  const user = await requireUser();
+  const milestoneKey = String(form.get("milestoneKey") ?? "") || null;
+  if (milestoneKey && !MILESTONES.some(m => m.key === milestoneKey)) throw new Error("Mốc phát triển không hợp lệ.");
+  await db.babyMemory.updateMany({
+    where: { id: String(form.get("id") ?? ""), baby: { userId: user.id } },
+    data: { milestoneKey },
+  });
+  revalidatePath("/baby/mailbox");
+  revalidatePath("/baby/milestones");
 }

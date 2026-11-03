@@ -9,11 +9,11 @@ export function CareHandover({ summary }: { summary: string }) {
   const copied = copiedSummary === summary;
   const [error, setError] = useState(false);
   return (
-    <details data-handover className="group mt-6 rounded-3xl border border-border/60 bg-card p-4 shadow-sm sm:p-5">
+    <details data-handover className="group p-4 sm:p-5">
       <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
-        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-primary"><NotebookPen className="size-5" /></span>
-        <span className="flex-1"><strong className="block text-sm font-semibold">Bàn giao chăm bé</strong><span className="mt-0.5 block text-xs text-muted-foreground">Tóm tắt hôm nay để người chăm tiếp theo nắm rõ</span></span>
-        <span className="text-xl text-muted-foreground group-open:rotate-45" aria-hidden="true">+</span>
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-secondary/60 text-primary"><NotebookPen className="size-5" /></span>
+        <span className="flex-1"><strong className="block text-sm font-semibold">Bàn giao chăm bé</strong><span className="mt-0.5 block text-xs text-muted-foreground">Chia sẻ nhịp ngày với người chăm tiếp theo</span></span>
+        <span className="text-xl text-muted-foreground transition-transform group-open:rotate-45" aria-hidden="true">+</span>
       </summary>
       <div className="mt-4 border-t border-border/60 pt-4">
         <p className="whitespace-pre-line text-sm leading-7 text-muted-foreground">{summary}</p>

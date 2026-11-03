@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { JourneyOverview } from "@/components/journey-overview";
-import { ChevronRight, BookHeart, HeartPulse } from "lucide-react";
+import { ChevronRight, HeartPulse, Activity, ChartNoAxesCombined, ArrowUpRight } from "lucide-react";
 import { DailySentence } from "@/components/daily-sentence";
 import { HomeQuickActions } from "@/components/home-quick-actions";
 import { BabyDailySummary } from "@/components/baby-daily-summary";
@@ -345,17 +345,18 @@ export default async function DashboardPage() {
               empty="Một ngày mới bắt đầu. Ghi cữ bú, giấc ngủ hoặc lần thay tã đầu tiên ở phía trên nhé."
             />
           </section>
-          <details className="surface-panel p-4 sm:p-5">
-            <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3">
+          <details className="group rounded-3xl border border-border/60 bg-card p-4 sm:p-5">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-secondary text-primary"><Activity className="size-5" /></span>
               <span>
                 <strong className="block text-sm font-semibold">
-                  Nhịp sinh hoạt trong 24 giờ
+                  Nhịp sinh hoạt 24 giờ
                 </strong>
                 <span className="mt-1 block text-xs text-muted-foreground">
                   Bú, ngủ, tã và số đo gần nhất
                 </span>
               </span>
-              <ChevronRight className="size-4 text-primary" />
+              <ChevronRight className="ml-auto size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" />
             </summary>
             <BabyDailySummary
               baby={baby}
@@ -365,24 +366,21 @@ export default async function DashboardPage() {
             />
           </details>
         </div>
-        <div className="min-w-0 space-y-4 xl:sticky xl:top-8">
-          <Link
-            href="/statistics?owner=baby"
-            className="surface-panel flex items-center justify-between gap-3 p-4"
-          >
-            <span>
-              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[.12em] text-primary">
-                Cùng nhìn lại
-              </span>
-              <strong className="block text-sm">Thống kê của mẹ & bé</strong>
-              <span className="mt-1 block text-xs text-muted-foreground">
-                Những thay đổi qua từng ngày
-              </span>
-            </span>
-            <ChevronRight className="size-4 shrink-0 text-primary" />
-          </Link>
+        <div className="min-w-0 space-y-6 xl:sticky xl:top-8">
+          <section aria-labelledby="family-recap-heading" className="overflow-hidden rounded-[1.75rem] border border-border/40 bg-card shadow-[0_8px_30px_-22px_rgba(25,66,80,0.25)]">
+            <div className="flex items-center justify-between px-4 pb-1 pt-4 sm:px-5">
+              <h2 id="family-recap-heading" className="text-[10px] font-semibold uppercase tracking-[.16em] text-muted-foreground">Nhìn lại hôm nay</h2>
+              <span aria-hidden="true" className="size-1.5 rounded-full bg-primary/50" />
+            </div>
+            <Link href="/statistics?owner=baby" className="flex items-center gap-3 p-4 transition-colors hover:bg-secondary/30 sm:p-5">
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-secondary text-primary"><ChartNoAxesCombined className="size-5" /></span>
+              <span className="min-w-0 flex-1"><strong className="block text-sm">Thống kê của mẹ & bé</strong><span className="mt-1 block text-xs text-muted-foreground">Những thay đổi qua từng ngày</span></span>
+              <ArrowUpRight className="size-4 shrink-0 text-muted-foreground" />
+            </Link>
+            <div className="mx-4 border-t border-border/60 sm:mx-5" />
+            <CareHandover key={baby.id} summary={summary} />
+          </section>
           <UpcomingVaccination appointment={nextAppointment} />
-          <CareHandover key={baby.id} summary={summary} />
           <JourneyOverview baby={baby} timeZone={user.timezone} />
           {pregnancy?.pregnancyStatus === "PREGNANT" && (
             <Link
@@ -396,21 +394,7 @@ export default async function DashboardPage() {
               <ChevronRight className="size-4" />
             </Link>
           )}
-          <Link
-            href="/knowledge"
-            className="flex items-center gap-3 rounded-3xl bg-secondary/60 p-5"
-          >
-            <BookHeart className="size-6 shrink-0 text-primary" />
-            <span className="flex-1">
-              <strong className="block text-sm">
-                Cùng hiểu con hơn mỗi ngày
-              </strong>
-              <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                Cẩm nang chăm mẹ và bé, kèm nguồn tham khảo.
-              </span>
-            </span>
-            <ChevronRight className="size-4 shrink-0 text-primary" />
-          </Link>
+
         </div>
       </div>
     </>

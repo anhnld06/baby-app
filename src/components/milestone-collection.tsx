@@ -18,6 +18,8 @@ export async function MilestoneCollection({
     where: { babyId, kind: "MILESTONE", milestoneKey: { not: null } },
     select: { id: true, milestoneKey: true, occurredAt: true },
   });
+  const tagged = await db.babyMemory.groupBy({ by: ["milestoneKey"], where: { babyId, milestoneKey: { not: null } }, _count: { _all: true } });
+  const letterCounts = new Map(tagged.map(row => [row.milestoneKey, row._count._all]));
   const rows = milestoneCollection(birth, today, records);
   const groups = ["Cột mốc", "Khoảnh khắc", "Thai kỳ"];
   const visible = rows.filter(
@@ -78,8 +80,8 @@ export async function MilestoneCollection({
       </nav>
       <div className="grid grid-cols-3 gap-x-2 gap-y-3 rounded-3xl border bg-card p-2 sm:gap-4 sm:p-4">
         {visible.map((item) => (
+          <div key={item.key} id={`milestone-${item.key}`} className="min-w-0 scroll-mt-8">
           <Link
-            key={item.key}
             href={
               item.record
                 ? `/baby/milestones?edit=${item.record.id}#care-form`
@@ -116,6 +118,11 @@ export async function MilestoneCollection({
               </span>
             )}
           </Link>
+          <div className="flex flex-col items-center pb-3 text-center text-[10px]">
+            <Link href={`/baby/mailbox?milestone=${item.key}`} className="flex min-h-11 items-center text-primary">💌 {letterCounts.get(item.key) ?? 0} thư kỷ niệm</Link>
+            <Link href={`/baby/mailbox?milestone=${item.key}&new=1`} className="flex min-h-11 items-center text-muted-foreground underline">Viết thư cho mốc này</Link>
+          </div>
+          </div>
         ))}
       </div>
       <details className="mt-3">

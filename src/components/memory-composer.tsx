@@ -1,12 +1,14 @@
 "use client";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { Camera, Images, Repeat2, X, MailPlus, Heart } from "lucide-react";
+import { MILESTONES } from "@/features/journey/milestones";
 import { MemoryStamp } from "@/components/memory-stamp";
 import { memoryAge } from "@/features/mailbox/memories";
 import { saveMemoryAction } from "@/app/memory-actions";
 import { MEMORY_FRAMES, MAX_MEMORY_MEDIA } from "@/features/mailbox/memories";
 
-export function MemoryComposer({ babyId, now, birth, babyName }: { babyId: string; now: string; birth: string; babyName: string }) {
+export function MemoryComposer({ babyId, now, birth, babyName, initialMilestone = "", openOnMount = false }: { initialMilestone?: string; openOnMount?: boolean; babyId: string; now: string; birth: string; babyName: string }) {
+  const [milestone, setMilestone] = useState(initialMilestone);
   const dialog = useRef<HTMLDialogElement>(null);
   const [title, setTitle] = useState("");
   const [day, setDay] = useState(now);
@@ -24,6 +26,7 @@ export function MemoryComposer({ babyId, now, birth, babyName }: { babyId: strin
     if (result.saved) { setFile(null); setPreview(""); setTitle(""); setDay(now); if (fileInput.current) fileInput.current.value = ""; dialog.current?.close(); }
     return result;
   }, {});
+  useEffect(() => { if (openOnMount && !dialog.current?.open) dialog.current?.showModal(); }, [openOnMount]);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; streamRef.current?.getTracks().forEach(t => t.stop()); }; }, []);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
   function selectFile(next: File | null) {
@@ -92,6 +95,8 @@ export function MemoryComposer({ babyId, now, birth, babyName }: { babyId: strin
         <div className="memory-composer-letter">
           <div className="mb-6 flex items-center gap-3"><span className="flex size-10 items-center justify-center rounded-full bg-secondary text-primary"><Heart className="size-4" /></span><div><h3 className="font-semibold">Đôi dòng gửi con</h3><p className="mt-1 text-xs text-muted-foreground">Để mai này, con biết mình được yêu thế nào.</p></div></div>
           <label className="block text-sm font-medium">Tên khoảnh khắc<input className={field} name="title" required maxLength={120} value={title} onChange={e => setTitle(e.target.value)} placeholder="Lần đầu con cười với mẹ…" /></label>
+          <label className="mt-5 block text-sm font-medium">Gắn mốc phát triển <span className="font-normal text-muted-foreground">(tùy chọn)</span><select name="milestoneKey" value={milestone} onChange={e => setMilestone(e.target.value)} className={field}><option value="">Không gắn mốc</option>{["Cột mốc", "Khoảnh khắc", "Thai kỳ"].map(group => <optgroup key={group} label={group}>{MILESTONES.filter(m => m.group === group).map(m => <option key={m.key} value={m.key}>{m.icon} {m.title}</option>)}</optgroup>)}</select></label>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">Tag giúp tìm lại kỷ niệm; không tự đánh dấu con đã đạt mốc.</p>
           <label className="mt-5 block text-sm font-medium">Ngày lưu dấu<input className={field} type="datetime-local" name="occurredAt" required value={day} onChange={e => setDay(e.target.value)} max={now} /></label>
           <label className="mt-5 block text-sm font-medium">Thư tay gửi con<textarea name="letter" maxLength={6000} rows={7} className={`${field} memory-letter-paper font-serif leading-8`} placeholder="Con yêu, hôm nay…" /></label>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">Chỉ một lá thư cũng đủ làm nên kỷ niệm. Ảnh và video là tùy chọn.</p>
