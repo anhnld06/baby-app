@@ -312,6 +312,13 @@ test("tăng trưởng liên kết thai kỳ, dùng mốc cuối trước sinh v�
   await expect(baseline).not.toContainText("9,999");
   expect(await prisma.growthEntry.count({ where: { babyId: baby.id } })).toBe(0);
   expect((await prisma.baby.findUnique({ where: { id: baby.id } }))?.birthLengthCm).toBeNull();
+  await prisma.baby.update({ where: { id: baby.id }, data: { birthWeightKg: null } });
+  await page.reload();
+  const initial = baseline.getByRole("group", { name: "Chỉ số ban đầu đã đối chiếu" });
+  await expect(initial).toContainText("3,1 kg");
+  await expect(initial).toContainText("34 cm");
+  await expect(initial).toContainText("Ước tính trước sinh");
+  expect((await prisma.baby.findUnique({ where: { id: baby.id } }))?.birthWeightKg).toBeNull();
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 960 });
     await baseline.scrollIntoViewIfNeeded();
@@ -321,6 +328,12 @@ test("tăng trưởng liên kết thai kỳ, dùng mốc cuối trước sinh v�
   await prisma.pregnancyCheckup.update({ where: { id: last.id }, data: { estimatedFetalWeightG: 3200 } });
   await page.reload();
   await expect(baseline).toContainText("3,2 kg");
+  await expect(initial).toContainText("3,2 kg");
+  await prisma.baby.update({ where: { id: baby.id }, data: { birthWeightKg: 3.4 } });
+  await page.reload();
+  await expect(initial).toContainText("3,4 kg");
+  await expect(initial).not.toContainText("Ước tính trước sinh");
+
   await baseline.getByRole("link", { name: "Xem phiếu gốc" }).click();
   await expect(page.locator("#record-edit-form")).toHaveAttribute("data-edit-record", last.id);
 });

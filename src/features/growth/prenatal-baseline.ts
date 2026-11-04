@@ -21,3 +21,14 @@ export function prenatalBaseline(visits: PrenatalBaselineVisit[], birthDay: stri
   const last = eligible[0];
   return { status: "FOUND" as const, id: last.id, day, weightKg: last.estimatedFetalWeightG == null ? null : last.estimatedFetalWeightG / 1000, headCm: last.hcMm == null ? null : last.hcMm / 10 };
 }
+
+export function initialGrowthBaseline(birth: { birthWeightKg: number | null; birthHeadCircumferenceCm: number | null; birthLengthCm: number | null }, prenatal: { weightKg: number | null; headCm: number | null } | null) {
+  const resolve = (actual: number | null, estimate: number | null) => actual != null
+    ? { value: actual, source: "BIRTH" as const }
+    : estimate != null ? { value: estimate, source: "PRENATAL" as const } : { value: null, source: "MISSING" as const };
+  return {
+    weight: resolve(birth.birthWeightKg, prenatal?.weightKg ?? null),
+    head: resolve(birth.birthHeadCircumferenceCm, prenatal?.headCm ?? null),
+    length: resolve(birth.birthLengthCm, null),
+  };
+}

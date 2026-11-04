@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { prenatalBaseline, type PrenatalBaselineVisit } from "./prenatal-baseline";
+import { prenatalBaseline, initialGrowthBaseline, type PrenatalBaselineVisit } from "./prenatal-baseline";
 const visit = (id: string, day: string, values: Partial<PrenatalBaselineVisit> = {}): PrenatalBaselineVisit => ({ id, checkedAt: new Date(day), checkedAtTimeKnown: false, visitType: "ULTRASOUND", fetusCount: 1, estimatedFetalWeightG: 3100, hcMm: 330, ...values });
 describe("prenatal baseline", () => {
   it("uses only the last prenatal ultrasound and converts units without writing birth values", () => {
@@ -20,4 +20,11 @@ describe("prenatal baseline", () => {
     expect(prenatalBaseline([visit("a", "2026-11-02"), visit("b", "2026-11-02")], "2026-11-04", "UTC")).toEqual({ status: "AMBIGUOUS" });
     expect(prenatalBaseline([], "2026-11-04", "UTC")).toEqual({ status: "EMPTY" });
   });
+});
+
+it("fills missing birth fields independently and prioritizes actual birth values", () => {
+  const prenatal = { weightKg: 3.1, headCm: 33 };
+  expect(initialGrowthBaseline({ birthWeightKg: null, birthHeadCircumferenceCm: 34, birthLengthCm: null }, prenatal)).toEqual({ weight: { value: 3.1, source: "PRENATAL" }, head: { value: 34, source: "BIRTH" }, length: { value: null, source: "MISSING" } });
+  expect(initialGrowthBaseline({ birthWeightKg: 3.4, birthHeadCircumferenceCm: null, birthLengthCm: 50 }, prenatal)).toEqual({ weight: { value: 3.4, source: "BIRTH" }, head: { value: 33, source: "PRENATAL" }, length: { value: 50, source: "BIRTH" } });
+  expect(initialGrowthBaseline({ birthWeightKg: null, birthHeadCircumferenceCm: null, birthLengthCm: null }, null).weight).toEqual({ value: null, source: "MISSING" });
 });

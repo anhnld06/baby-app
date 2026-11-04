@@ -196,3 +196,10 @@ No growth entry, birth measurement or WHO assessment is fabricated. Ultrasound
 estimates remain labelled prenatal estimates, separate from actual postnatal
 charts and growth-rate calculations. Source rationale: ISUOG fetal biometry and
 growth guidance (https://doi.org/10.1002/uog.20272).
+
+The initial baseline resolves each field independently: actual birth measurement
+first, otherwise the corresponding value from the last prenatal report. Each
+fallback retains its estimated source and report date. Entering an actual birth
+value immediately replaces the estimate in this reference; nothing is copied
+into Baby birth columns or GrowthEntry. Birth length has no ultrasound fallback.
+The postnatal charts and WHO inputs continue to use actual measurements only.
