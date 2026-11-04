@@ -14,7 +14,7 @@ import { CareHandover } from "@/components/care-handover";
 import { FamilyStart } from "@/components/family-start";
 import { UpcomingVaccination } from "@/components/upcoming-vaccination";
 import { DashboardRefresh } from "@/components/dashboard-refresh";
-import { buildTimeline } from "@/features/timeline/timeline";
+import { buildTimeline, todayTimeline } from "@/features/timeline/timeline";
 import { activeFeedingWhere } from "@/features/timeline/active-feeding";
 import { selectRelevantPregnancy } from "@/features/mother/pregnancy";
 import { requireUser } from "@/lib/auth";
@@ -107,6 +107,8 @@ export default async function DashboardPage() {
   }
   const now = new Date();
   const { start, end } = getLocalDayRange(now, user.timezone);
+  const calendarDay = new Date(new Intl.DateTimeFormat("en-CA", { timeZone: user.timezone }).format(now) + "T00:00:00Z");
+  const nextCalendarDay = new Date(calendarDay.getTime() + 86400000);
   const [
     temperatures,
     medicationDoses,
@@ -126,10 +128,10 @@ export default async function DashboardPage() {
     todayTemperature,
     todayMeals,
   ] = await Promise.all([
-    db.temperatureEntry.findMany({where:{babyId:baby.id},orderBy:{measuredAt:"desc"},take:5}),
-    db.medicationDose.findMany({where:{schedule:{babyId:baby.id}},orderBy:{takenAt:"desc"},take:5,include:{schedule:{select:{name:true,dosage:true}}}}),
+    db.temperatureEntry.findMany({where:{babyId:baby.id,measuredAt:{gte:start,lte:now}},orderBy:{measuredAt:"desc"},take:5}),
+    db.medicationDose.findMany({where:{schedule:{babyId:baby.id},takenAt:{gte:start,lte:now}},orderBy:{takenAt:"desc"},take:5,include:{schedule:{select:{name:true,dosage:true}}}}),
     db.babyCareEntry.findMany({
-      where: { babyId: baby.id, kind: { not: "ROUTINE" } },
+      where: { babyId: baby.id, kind: { not: "ROUTINE" }, occurredAt: { gte: start, lte: now } },
       select: {
         id: true,
         kind: true,
@@ -157,25 +159,25 @@ export default async function DashboardPage() {
       orderBy: { changedAt: "desc" },
     }),
     db.growthEntry.findMany({
-      where: { babyId: baby.id },
+      where: { babyId: baby.id, measuredAt: { gte: start, lte: now } },
       orderBy: { measuredAt: "desc" },
-      take: 3,
+      take: 5,
     }),
     db.vaccinationRecord.findMany({
-      where: { babyId: baby.id },
+      where: { babyId: baby.id, administeredAt: { gte: start, lte: now } },
       orderBy: { administeredAt: "desc" },
-      take: 3,
+      take: 5,
     }),
     db.prescription.findMany({
-      where: { babyId: baby.id },
+      where: { babyId: baby.id, issuedAt: { gte: start, lte: now } },
       orderBy: { issuedAt: "desc" },
       include: { items: true },
-      take: 3,
+      take: 5,
     }),
     db.toothRecord.findMany({
-      where: { babyId: baby.id },
+      where: { babyId: baby.id, eruptedAt: { gte: calendarDay, lt: nextCalendarDay } },
       orderBy: { eruptedAt: "desc" },
-      take: 3,
+      take: 5,
     }),
     db.feeding.findFirst({
       where: { babyId: baby.id, ...activeFeedingWhere },
@@ -214,12 +216,12 @@ export default async function DashboardPage() {
     }),
   ]);
   const pregnancy = selectRelevantPregnancy(mother?.pregnancies ?? []);
-  const timeline = buildTimeline(
+  const timeline = todayTimeline(buildTimeline(
     {
       temperatures,
       medicationDoses,
       careEntries,
-      feedings,
+      feedings: openFeeding && !feedings.some((item) => item.id === openFeeding.id) ? [...feedings, openFeeding] : feedings,
       sleeps,
       diapers,
       growthEntries: growth,
@@ -243,7 +245,7 @@ export default async function DashboardPage() {
       secondMolar: t.tracking.secondMolar,
     },
     locale,
-  ).slice(0, 5);
+  ), start, now, user.timezone);
   const activeSleep = sleeps.find((sleep) => sleep.endTime === null);
   const activeFeeding = openFeeding;
   const wet = diapers.filter(
@@ -363,6 +365,7 @@ export default async function DashboardPage() {
             </div>
             <TimelineList
               items={timeline}
+              showDate
               locale={locale}
               timeZone={user.timezone}
               empty="Một ngày mới bắt đầu. Ghi cữ bú, giấc ngủ hoặc lần thay tã đầu tiên ở phía trên nhé."

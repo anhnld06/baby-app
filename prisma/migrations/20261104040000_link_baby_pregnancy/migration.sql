@@ -1,0 +1,2 @@
+ALTER TABLE "Baby" ADD COLUMN "pregnancyId" TEXT;
+ALTER TABLE "Baby" ADD CONSTRAINT "Baby_pregnancyId_fkey" FOREIGN KEY ("pregnancyId") REFERENCES "Pregnancy"("id") ON DELETE SET NULL ON UPDATE CASCADE;

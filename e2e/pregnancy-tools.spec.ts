@@ -291,3 +291,68 @@ test("hành trình chặn ghi vào thai kỳ không thuộc tài khoản", async
   await expect(task.getByRole("alert")).toHaveText("Không tìm thấy thai kỳ của bạn.");
   expect(await prisma.pregnancyJourneyTask.count({ where: { pregnancyId } })).toBe(0);
 });
+
+test("tăng trưởng liên kết thai kỳ, dùng mốc cuối trước sinh và giữ số đo sơ sinh riêng", async ({ page, context, baseURL }) => {
+  const birth = new Date(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date()) + "T00:00Z");
+  await prisma.pregnancy.update({ where: { id: pregnancyId }, data: { pregnancyStatus: "DELIVERED", actualDeliveryDate: birth } });
+  await prisma.pregnancyCheckup.deleteMany({ where: { pregnancyId } });
+  const last = await prisma.pregnancyCheckup.create({ data: { pregnancyId, checkedAt: new Date(birth.getTime() - 86400000), checkedAtTimeKnown: false, visitType: "ULTRASOUND", estimatedFetalWeightG: 3100, hcMm: 330, flMm: 72 } });
+  await prisma.pregnancyCheckup.create({ data: { pregnancyId, checkedAt: new Date(birth.getTime() + 86400000), checkedAtTimeKnown: false, visitType: "ULTRASOUND", estimatedFetalWeightG: 9999 } });
+  const baby = await prisma.baby.create({ data: { userId, name: "Bé thử nghiệm", dateOfBirth: birth, birthWeightKg: 3.3, birthHeadCircumferenceCm: 34 } });
+  await context.addCookies([{ name: "selectedBabyId", value: baby.id, url: baseURL! }]);
+  await page.goto(`/profile/baby/${baby.id}`);
+  await page.locator('select[name="pregnancyId"]').selectOption(pregnancyId);
+  await page.getByRole("button", { name: "Cập nhật", exact: true }).click();
+  await expect.poll(async () => (await prisma.baby.findUnique({ where: { id: baby.id } }))?.pregnancyId).toBe(pregnancyId);
+  await page.goto("/tracking/growth");
+  const baseline = page.getByRole("region", { name: "Mốc tăng trưởng trước sinh", exact: true });
+  await expect(baseline).toContainText("3,1 kg");
+  await expect(baseline).toContainText("33 cm");
+  await expect(baseline).toContainText("3,3 kg");
+  await expect(baseline).not.toContainText("9,999");
+  expect(await prisma.growthEntry.count({ where: { babyId: baby.id } })).toBe(0);
+  expect((await prisma.baby.findUnique({ where: { id: baby.id } }))?.birthLengthCm).toBeNull();
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 960 });
+    await baseline.scrollIntoViewIfNeeded();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: test.info().outputPath(`prenatal-baseline-${width}.png`), fullPage: false });
+  }
+  await prisma.pregnancyCheckup.update({ where: { id: last.id }, data: { estimatedFetalWeightG: 3200 } });
+  await page.reload();
+  await expect(baseline).toContainText("3,2 kg");
+  await baseline.getByRole("link", { name: "Xem phiếu gốc" }).click();
+  await expect(page.locator("#record-edit-form")).toHaveAttribute("data-edit-record", last.id);
+});
+
+test("Hôm nay sắp xếp timeline theo giờ thực tế, không trộn lịch sử và bản ghi tương lai", async ({ page, context, baseURL }) => {
+  const now = new Date();
+  const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(now);
+  const start = new Date(new Date(day + "T00:00Z").getTime() - 7 * 3600000);
+  const instant = (part: number) => new Date(start.getTime() + (now.getTime() - start.getTime()) * part);
+  const baby = await prisma.baby.create({ data: { userId, name: "Bé timeline", dateOfBirth: new Date("2026-01-01") } });
+  await context.addCookies([{ name: "selectedBabyId", value: baby.id, url: baseURL! }]);
+  await prisma.feeding.create({ data: { babyId: baby.id, type: "FORMULA", startTime: instant(.7), amountMl: 100 } });
+  await prisma.diaperEntry.create({ data: { babyId: baby.id, type: "WET", changedAt: instant(.5) } });
+  await prisma.temperatureEntry.create({ data: { babyId: baby.id, celsius: 36.7, method: "AXILLARY", measuredAt: instant(.9) } });
+  await prisma.sleepEntry.create({ data: { babyId: baby.id, type: "NIGHT", startTime: new Date(start.getTime() - 3600000) } });
+  await prisma.growthEntry.create({ data: { babyId: baby.id, weightKg: 6.6, measuredAt: new Date(start.getTime() - 86400000) } });
+  await prisma.temperatureEntry.create({ data: { babyId: baby.id, celsius: 39.9, method: "AXILLARY", measuredAt: new Date(now.getTime() + 3600000) } });
+  await page.goto("/");
+  const timeline = page.locator('[aria-label="Dòng thời gian hoạt động"]');
+  await expect(timeline.locator("[data-history-timeline-item]")).toHaveCount(4);
+  await expect(timeline.locator("time")).toHaveText([
+    new Intl.DateTimeFormat("vi", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(instant(.9)),
+    new Intl.DateTimeFormat("vi", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(instant(.7)),
+    new Intl.DateTimeFormat("vi", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(instant(.5)),
+    "23:00",
+  ]);
+  await expect(timeline).not.toContainText("39.9");
+  await expect(timeline).not.toContainText("6.6 kg");
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 960 });
+    await timeline.scrollIntoViewIfNeeded();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: test.info().outputPath(`today-timeline-${width}.png`), fullPage: false });
+  }
+});

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { AlertTriangle, CheckCircle2, ShieldAlert } from "lucide-react";
 import styles from "@/components/pregnancy.module.css";
 import { deletePregnancyCheckupAction, savePregnancyCheckupAction } from "@/app/actions";
@@ -23,10 +24,13 @@ const LEVEL_STYLE = {
   URGENT: { icon: ShieldAlert, label: "Cần khám sớm", className: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300" },
 } as const;
 
-export default async function PregnancyTrackingPage({ searchParams }: { searchParams: Promise<{ edit?: string; page?: string }> }) {
+export default async function PregnancyTrackingPage({ searchParams }: { searchParams: Promise<{ edit?: string; page?: string; pregnancy?: string }> }) {
   const [user, locale, params] = await Promise.all([requireUser(), getLocale(), searchParams]);
   const mother = await db.mother.findUnique({ where: { userId: user.id }, include: { pregnancies: { orderBy: { createdAt: "desc" } } } });
-  const pregnancy = selectRelevantPregnancy(mother?.pregnancies ?? []);
+  const sourceRecord = params.edit ? await db.pregnancyCheckup.findFirst({ where: { id: params.edit, pregnancy: { mother: { userId: user.id } } }, select: { pregnancyId: true } }) : null;
+  const requestedPregnancy = sourceRecord?.pregnancyId ?? params.pregnancy;
+  const pregnancy = requestedPregnancy ? mother?.pregnancies.find((row) => row.id === requestedPregnancy) : selectRelevantPregnancy(mother?.pregnancies ?? []);
+  if (requestedPregnancy && !pregnancy) notFound();
   if (!mother || !pregnancy) return <><div className="rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground">Hãy thêm thông tin thai kỳ trong Hồ sơ trước.<Link href="/profile/pregnancy" className="mt-3 block font-medium text-primary">Thêm thai kỳ</Link></div></>;
   const requestedPage = Number(params.page ?? 1);
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 10000) : 1;
@@ -71,7 +75,7 @@ export default async function PregnancyTrackingPage({ searchParams }: { searchPa
   return (
     <>
       <div className={styles.intro}><span className={styles.eyebrow}>Hồ sơ của mẹ & bé</span><h2 className={styles.heading}>Khám & lịch</h2><p className={styles.muted}>Phiếu khám, siêu âm và lời dặn. Giữ nguyên những gì bác sĩ đã ghi.</p></div>
-      <section className={`${styles.panel} flex items-center justify-between gap-3`}><div><p className={styles.eyebrow}>{pregnancy.pregnancyStatus === "PREGNANT" ? "Thai kỳ đang theo dõi" : "Hồ sơ thai kỳ"}</p><p className="mt-1 text-sm">{age ? `${age.weeks} tuần ${age.days} ngày · ` : ""}Dự sinh {pregnancy.estimatedDueDate ? new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(pregnancy.estimatedDueDate) : "chưa ghi"}</p></div><Link className={styles.textLink} href="/profile/pregnancy">Chỉnh sửa</Link></section>
+      <section className={`${styles.panel} flex items-center justify-between gap-3`}><div><p className={styles.eyebrow}>{pregnancy.pregnancyStatus === "PREGNANT" ? "Thai kỳ đang theo dõi" : "Hồ sơ thai kỳ"}</p><p className="mt-1 text-sm">{age ? `${age.weeks} tuần ${age.days} ngày · ` : ""}Dự sinh {pregnancy.estimatedDueDate ? new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(pregnancy.estimatedDueDate) : "chưa ghi"}</p></div>{pregnancy.id === selectRelevantPregnancy(mother.pregnancies)?.id && <Link className={styles.textLink} href="/profile/pregnancy">Chỉnh sửa</Link>}</section>
       {assessment && levelStyle && LevelIcon && (
         <Card className="mb-5 border-0 shadow-sm">
           <CardContent className="p-5">

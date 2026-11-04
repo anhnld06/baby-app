@@ -7,11 +7,12 @@ const dateValue = z.preprocess((value) => value instanceof Date ? value : new Da
 const optionalDate = z.preprocess((value) => value === "" || value === null || value === undefined ? undefined : new Date(String(value)), z.date().optional());
 
 export const babySchema = z.object({
+  pregnancyId: z.preprocess((value) => value === "" ? null : value, z.string().min(1).nullable().optional()),
   id: optionalText,
   name: z.string().trim().min(1).max(80),
   nickname: optionalText,
   gender: z.enum(["FEMALE", "MALE", "OTHER", "UNDISCLOSED"]),
-  dateOfBirth: dateValue.refine((value) => value <= new Date(), "Ngày sinh không thể ở tương lai"),
+  dateOfBirth: dateValue,
   birthTime: optionalText,
   gestationalAgeAtBirth: optionalInteger.refine((value) => value === undefined || (value >= 20 && value <= 45), "Tuổi thai khi sinh phải từ 20 đến 45 tuần"),
   birthWeightKg: optionalNumber.refine((value) => value === undefined || value <= 15, "Cân nặng sơ sinh không hợp lệ"),

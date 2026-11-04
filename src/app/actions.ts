@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect, RedirectType } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { zonedDateTimeToUtc } from "@/lib/date";
+import { toDateTimeLocal, zonedDateTimeToUtc } from "@/lib/date";
 import { db } from "@/lib/db";
 import { refreshWhoGrowthAssessment } from "@/features/growth/who-anthro";
 import { parseProfileCoverUpdate } from "@/lib/profile-cover";
@@ -356,6 +356,11 @@ export async function deleteBabyInsuranceAction(formData: FormData) {
 export async function saveBabyAction(formData: FormData) {
   const user = await requireUser();
   const data = babySchema.parse(values(formData));
+  if (data.dateOfBirth.toISOString().slice(0, 10) > toDateTimeLocal(new Date(), user.timezone).slice(0, 10)) throw new Error("Ngày sinh không thể ở tương lai");
+  if (data.pregnancyId) {
+    const pregnancy = await db.pregnancy.findFirst({ where: { id: data.pregnancyId, mother: { userId: user.id }, pregnancyStatus: "DELIVERED" } });
+    if (!pregnancy) throw new Error("Không tìm thấy thai kỳ đã sinh của bạn.");
+  }
   const coverImage = parseProfileCoverUpdate(formData);
   let babyId: string;
   if (data.id) {

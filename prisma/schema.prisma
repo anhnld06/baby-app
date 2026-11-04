@@ -202,6 +202,7 @@ model Pregnancy {
   trackingSessions    PregnancyTrackingSession[]
   measurements        PregnancyMeasurement[]
   journeyTasks        PregnancyJourneyTask[]
+  babies              Baby[]
 }
 
 model PregnancyJourneyTask {
@@ -218,6 +219,8 @@ model PregnancyJourneyTask {
 }
 
 model Baby {
+  pregnancyId              String?
+  pregnancy                Pregnancy? @relation(fields: [pregnancyId], references: [id], onDelete: SetNull)
   id                       String                @id @default(cuid())
   userId                   String
   name                     String

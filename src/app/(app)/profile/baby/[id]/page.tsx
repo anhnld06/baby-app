@@ -32,6 +32,7 @@ export default async function BabyProfilePage({
           include: { coverImage: { select: { updatedAt: true } } },
         });
   if (id !== "new" && !baby) notFound();
+  const pregnancies = await db.pregnancy.findMany({ where: { mother: { userId: user.id }, pregnancyStatus: "DELIVERED" }, orderBy: { actualDeliveryDate: "desc" } });
   return (
     <>
       <PageHeader
@@ -85,6 +86,13 @@ export default async function BabyProfilePage({
                 label={t.profile.birthTime}
                 defaultValue={baby?.birthTime ?? ""}
               />
+            </div>
+            <div className="space-y-2">
+              <SelectField name="pregnancyId" label="Thai kỳ của con · Mốc tăng trưởng trước sinh" defaultValue={baby?.pregnancyId ?? ""}>
+                <option value="">Chưa liên kết thai kỳ</option>
+                {pregnancies.map((pregnancy) => <option key={pregnancy.id} value={pregnancy.id}>Đã sinh {dateInput(pregnancy.actualDeliveryDate) || "chưa ghi ngày"} · {dateInput(pregnancy.estimatedDueDate) || "chưa ghi dự sinh"}</option>)}
+              </SelectField>
+              <p className="text-xs leading-5 text-muted-foreground">Chọn đúng thai kỳ để tự lấy phiếu siêu âm cuối trước sinh. Đây là mốc tham chiếu; các số đo chào đời bên dưới là số đo thực tế.</p>
             </div>
             <Field
               name="gestationalAgeAtBirth"

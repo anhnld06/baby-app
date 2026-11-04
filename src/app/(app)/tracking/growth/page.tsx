@@ -1,3 +1,4 @@
+import { PrenatalGrowthBaseline } from "@/components/prenatal-growth-baseline";
 import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import { HeightFields } from "@/components/height-fields";
 import { GrowthIcon as Ruler } from "@/components/app-icons";
@@ -78,6 +79,7 @@ export default async function GrowthPage({
         subtitle={baby.name}
         backHref="/baby"
       />
+      {!editing && params.new !== "1" && <PrenatalGrowthBaseline baby={baby} userId={user.id} timeZone={user.timezone} locale={locale} />}
       {!editing && params.new !== "1" && (
         <GrowthSummary measurements={measurements} dateOfBirth={baby.dateOfBirth} locale={locale} timeZone={user.timezone} />
       )}

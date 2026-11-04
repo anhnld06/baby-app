@@ -176,3 +176,23 @@ Content references NHS antenatal appointments, supplements and fetal movements
 (reviewed 2026-11-04), linked on each card. Timing is educational and the local
 clinician's plan takes priority. No personalized dose, diagnosis or completed
 screening is inferred. Memories remain optional and link to the existing journal.
+
+## Prenatal starting reference for baby growth
+
+Baby profiles can explicitly link to an owned delivered pregnancy (`Baby.pregnancyId`).
+There is no automatic matching by date or latest pregnancy, which could assign
+another child's report. Growth displays the last unambiguously pre-birth
+ULTRASOUND/COMBINED report next to actual birth measurements. Same-day reports
+require both examination and birth times. Date-only ties are not guessed.
+
+The reference reads the source each request: EFW grams become kilograms and HC
+millimetres become centimetres. Missing fields stay missing, without fallback to
+an older report; FL/CRL never become birth length. Multiple-fetus records or a
+pregnancy linked to multiple babies cannot provide an individual fetal baseline.
+Editing the original report updates this reference. Links can open the owned
+historical pregnancy even when another pregnancy is currently active.
+
+No growth entry, birth measurement or WHO assessment is fabricated. Ultrasound
+estimates remain labelled prenatal estimates, separate from actual postnatal
+charts and growth-rate calculations. Source rationale: ISUOG fetal biometry and
+growth guidance (https://doi.org/10.1002/uog.20272).
