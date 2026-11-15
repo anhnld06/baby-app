@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+/** Wait until React has revealed every streamed segment (hidden div#S:n copies briefly duplicate content). */
+const streamed = (p: Page) => p.waitForFunction(() => !document.querySelector('div[hidden][id^="S:"]'));
 
 test.use({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
 test.beforeEach(async ({ page }) => {
@@ -31,6 +33,7 @@ const routes = [
 for (const route of routes) {
   test(`Sửa mở đúng bản ghi và cuộn đến form: ${route}`, async ({ page }) => {
     await page.goto(route);
+    await streamed(page);
     const selector = route.startsWith("/vaccination-schedule")
       ? 'article[data-vaccination] a[href*="record="],article[data-vaccination] a[href*="edit="],article[data-appointment] a[href*="edit="]'
       : 'a[href*="?edit="]';
@@ -57,6 +60,7 @@ for (const route of routes) {
 
 test("chọn răng đưa đến đúng form và đặt lại bản nháp", async ({ page }) => {
   await page.goto("/tracking/teeth");
+  await streamed(page);
   const links = page.locator('a[href*="?position="]');
   test.skip(await links.count() < 2, "Cần hồ sơ bé để hiện sơ đồ răng.");
   const first = (await links.nth(0).getAttribute("href"))!;

@@ -93,6 +93,12 @@
   body {
     max-width: 100%;
     overflow-x: hidden;
+    /* clip (not hidden) so body is not a scroll container: keeps position: sticky working. */
+    overflow-x: clip;
+  }
+  html {
+    /* Anchors and scrollIntoView land below the sticky page bar. */
+    scroll-padding-top: 4.5rem;
   }
   button,
   a,

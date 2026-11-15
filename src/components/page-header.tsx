@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { BackLink } from "@/components/back-link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { VoiceLogShortcut } from "@/components/voice-log-context";
+import { StickyPageBar } from "@/components/sticky-page-bar";
 
 export function PageHeader({
   title,
@@ -21,16 +22,15 @@ export function PageHeader({
   compact?: boolean;
   illustration?: CareIllustrationKind;
 }) {
+  const actions = <><NotificationShortcut /><VoiceLogShortcut /><ThemeToggle /><ProfileShortcut /></>;
+  const bar = <StickyPageBar title={title} start={backHref ? <BackLink fallback={backHref} /> : undefined} end={actions} />;
+  // `contents`: the header box must not wrap the sticky bar, otherwise the bar only sticks
+  // while the (short) header is on screen. Its containing block becomes the whole page.
   if (compact) {
     return (
-      <header className="mb-6">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          {backHref && <BackLink fallback={backHref} />}
-          <div className="ml-auto flex shrink-0 items-center gap-1">
-            <NotificationShortcut /><VoiceLogShortcut /><ThemeToggle /><ProfileShortcut />
-          </div>
-        </div>
-        <div className="flex items-center justify-between gap-4">
+      <header className="contents">
+        {bar}
+        <div className="mb-6 flex items-center justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
             {subtitle && <p className="mt-1.5 text-sm leading-6 text-muted-foreground">{subtitle}</p>}
@@ -46,22 +46,15 @@ export function PageHeader({
     );
   }
   return (
-    <>
-    <header className="mb-6 grid grid-cols-[auto_1fr] items-start gap-3 sm:flex sm:justify-between">
-      <div className="contents sm:flex sm:min-w-32 sm:flex-1 sm:items-start sm:gap-2">
-        {backHref && (
-          <BackLink fallback={backHref} />
+    <header className="contents">
+      {bar}
+      <div className="mb-6 min-w-0">
+        <h1 className="text-[1.65rem] font-semibold tracking-tight sm:text-3xl">{title}</h1>
+        {subtitle && (
+          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
         )}
-        <div className="col-span-2 row-start-2 min-w-0">
-          <h1 className="text-[1.65rem] font-semibold tracking-tight sm:text-3xl">{title}</h1>
-          {subtitle && (
-            <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
-          )}
-          {meta}
-        </div>
+        {meta}
       </div>
-      <div className="col-start-2 row-start-1 ml-auto flex shrink-0 items-center gap-1"><NotificationShortcut /><VoiceLogShortcut /><ThemeToggle /><ProfileShortcut /></div>
     </header>
-    </>
   );
 }

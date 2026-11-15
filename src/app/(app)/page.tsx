@@ -425,7 +425,7 @@ export default async function DashboardPage() {
             />
           </details>
         </div>
-        <div className="min-w-0 space-y-6 xl:sticky xl:top-8">
+        <div className="min-w-0 space-y-6 xl:sticky xl:top-20">
           <section aria-labelledby="family-recap-heading" className="overflow-hidden rounded-[1.75rem] border border-border/40 bg-card shadow-[0_8px_30px_-22px_rgba(25,66,80,0.25)]">
             <div className="flex items-center justify-between px-4 pb-1 pt-4 sm:px-5">
               <h2 id="family-recap-heading" className="text-xs font-semibold uppercase tracking-[.12em] text-muted-foreground">Nhìn lại hôm nay</h2>

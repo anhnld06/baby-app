@@ -103,7 +103,7 @@ export function AppShell({
           <Link href="/assistant" className={cn("flex items-center gap-3 rounded-2xl bg-primary px-3 py-3 text-sm font-medium text-primary-foreground shadow-sm shadow-primary/15", pathname.startsWith("/assistant") && "ring-2 ring-ring ring-offset-2 ring-offset-background")}><Bot className="size-5" />{labels.assistant}</Link>
         </div>
       </aside>
-      <main id="main-content" tabIndex={-1} className="mx-auto min-w-0 w-full max-w-5xl flex-1 px-4 pb-36 pt-[max(1.5rem,env(safe-area-inset-top))] outline-none sm:px-6 lg:pb-20 lg:pt-9">{children}</main>
+      <main id="main-content" tabIndex={-1} className="mx-auto min-w-0 w-full max-w-5xl flex-1 px-4 pb-36 pt-[max(1rem,env(safe-area-inset-top))] outline-none sm:px-6 lg:pb-20 lg:pt-9">{children}</main>
       <nav
         aria-label="Điều hướng chính"
         hidden={recordEditor}
