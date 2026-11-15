@@ -9,7 +9,7 @@ import { HistoryLoadMore } from "@/components/history-load-more";
 import { PageHeader } from "@/components/page-header";
 import { CareSummary } from "@/components/care-summary";
 import { PrescriptionForm } from "@/components/prescription-form";
-import { RecordActions } from "@/components/record-actions";
+import { PrescriptionCard } from "@/components/prescription-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth";
 import { getSelectedBaby } from "@/lib/data";
@@ -112,37 +112,7 @@ export default async function PrescriptionPage({
       <div className="space-y-2">
         {items.map((item) => (
           <HistoryTimelineItem key={item.id} at={item.issuedAt} timeZone={user.timezone} showDate>
-          <div
-            data-history-card
-            key={item.id}
-            className="flex items-center gap-3 rounded-2xl bg-card p-3 shadow-sm"
-          >
-            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
-              <Pill className="size-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">
-                {item.items.map((line) => line.medicineName).join(", ") || item.diagnosis || t.common.unknown}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {new Intl.DateTimeFormat("vi-VN", {
-                  timeZone: user.timezone,
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                }).format(item.issuedAt)}
-                {item.prescribedBy ? ` · ${item.prescribedBy}` : ""}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">{item.items.map(line=><Link key={line.id} href={`/tracking/medication?new=1&name=${encodeURIComponent(line.medicineName)}&dosage=${encodeURIComponent(line.dosage ?? "")}`} className="inline-flex min-h-11 items-center rounded-full bg-secondary px-3 text-xs text-primary">Tạo lịch: {line.medicineName}</Link>)}</div>
-            </div>
-            <RecordActions
-              id={item.id}
-              editHref={`/tracking/prescription?view=archive&edit=${item.id}`}
-              deleteAction={deletePrescriptionAction}
-              editLabel={t.common.edit}
-              deleteLabel={t.common.delete}
-            />
-          </div>
+            <PrescriptionCard item={item} timeZone={user.timezone} deleteAction={deletePrescriptionAction} editLabel={t.common.edit} deleteLabel={t.common.delete} />
           </HistoryTimelineItem>
         ))}
         {items.length === 0 && (

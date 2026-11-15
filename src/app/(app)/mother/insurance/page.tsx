@@ -8,7 +8,7 @@ export default async function MotherInsurancePage({ searchParams }: { searchPara
   const [user, params] = await Promise.all([requireUser(), searchParams]);
   const mother = await db.mother.findUnique({ where: { userId: user.id } });
   if (!mother) return <><PageHeader compact title="Bảo hiểm của mẹ" backHref="/mother" /><p>Hãy tạo hồ sơ mẹ trước.</p></>;
-  const [items, editing] = await Promise.all([db.motherInsurancePolicy.findMany({ where: { motherId: mother.id }, orderBy: { validUntil: "desc" }, take: 20 }), params.edit ? db.motherInsurancePolicy.findFirst({ where: { id: params.edit, motherId: mother.id } }) : null]);
-  return <InsuranceBook title="Bảo hiểm của mẹ" subtitle={mother.name} backHref="/mother" basePath="/mother/insurance" ownerField="motherId" ownerId={mother.id} items={items} editing={editing} saveAction={saveMotherInsuranceAction} deleteAction={deleteMotherInsuranceAction} />;
+  const [items, editing] = await Promise.all([db.motherInsurancePolicy.findMany({ where: { motherId: mother.id }, orderBy: [{ validUntil: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }], take: 20 }), params.edit ? db.motherInsurancePolicy.findFirst({ where: { id: params.edit, motherId: mother.id } }) : null]);
+  return <InsuranceBook title="Bảo hiểm của mẹ" subtitle={mother.name} backHref="/mother" basePath="/mother/insurance" ownerField="motherId" ownerId={mother.id} timeZone={user.timezone} items={items} editing={editing} saveAction={saveMotherInsuranceAction} deleteAction={deleteMotherInsuranceAction} />;
 }
 

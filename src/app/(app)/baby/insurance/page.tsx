@@ -9,6 +9,6 @@ export default async function BabyInsurancePage({ searchParams }: { searchParams
   const [user, params] = await Promise.all([requireUser(), searchParams]);
   const baby = await getSelectedBaby(user.id);
   if (!baby) return <><PageHeader compact title="Bảo hiểm của bé" backHref="/baby" /><p>Chưa có hồ sơ bé.</p></>;
-  const [items, editing] = await Promise.all([db.babyInsurancePolicy.findMany({ where: { babyId: baby.id }, orderBy: { validUntil: "desc" }, take: 20 }), params.edit ? db.babyInsurancePolicy.findFirst({ where: { id: params.edit, babyId: baby.id } }) : null]);
-  return <InsuranceBook title="Bảo hiểm của bé" subtitle={baby.name} backHref="/baby" basePath="/baby/insurance" ownerField="babyId" ownerId={baby.id} items={items} editing={editing} saveAction={saveBabyInsuranceAction} deleteAction={deleteBabyInsuranceAction} />;
+  const [items, editing] = await Promise.all([db.babyInsurancePolicy.findMany({ where: { babyId: baby.id }, orderBy: [{ validUntil: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }], take: 20 }), params.edit ? db.babyInsurancePolicy.findFirst({ where: { id: params.edit, babyId: baby.id } }) : null]);
+  return <InsuranceBook title="Bảo hiểm của bé" subtitle={baby.name} backHref="/baby" basePath="/baby/insurance" ownerField="babyId" ownerId={baby.id} timeZone={user.timezone} items={items} editing={editing} saveAction={saveBabyInsuranceAction} deleteAction={deleteBabyInsuranceAction} />;
 }

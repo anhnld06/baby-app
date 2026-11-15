@@ -119,11 +119,10 @@ export function AppShell({
               aria-current={active ? "page" : undefined}
               className={cn(
                 "relative flex min-h-14 min-w-0 touch-manipulation flex-col items-center justify-center gap-1 rounded-2xl px-0.5 text-xs font-medium text-muted-foreground transition-[color,background-color,transform] duration-150 active:scale-95",
+                // The filled pill is the shape cue for the current page, so state is not conveyed by colour alone.
                 active && "bg-secondary font-semibold text-primary",
               )}
             >
-              {/* Shape cue for the current page so the state is not conveyed by colour alone. */}
-              {active && <span aria-hidden="true" className="absolute inset-x-1/4 top-0 h-1 rounded-b-full bg-primary" />}
               <Icon className="size-8" />
               <span className="max-w-full truncate">{label}</span>
               <NavigationHint />
