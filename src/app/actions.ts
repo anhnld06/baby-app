@@ -572,9 +572,14 @@ export async function saveGrowthAction(formData: FormData): Promise<ActionResult
     }
   });
   if (failure) return failure;
-  await refreshWhoGrowthAssessment(growthEntryId).catch(() => undefined);
+  let assessmentFailed = false;
+  try { await refreshWhoGrowthAssessment(growthEntryId); }
+  catch (error) {
+    assessmentFailed = true;
+    console.error("WHO growth assessment failed", error instanceof Error ? error.message : "Unknown error");
+  }
   revalidatePath("/", "layout");
-  redirect("/tracking/growth", RedirectType.replace);
+  redirect(assessmentFailed ? "/tracking/growth?who=error" : "/tracking/growth", RedirectType.replace);
 }
 
 export async function deleteGrowthAction(formData: FormData) {
@@ -584,17 +589,31 @@ export async function deleteGrowthAction(formData: FormData) {
   revalidatePath("/", "layout");
 }
 
-export async function recalculateLatestGrowthAction(formData: FormData) {
+export async function recalculateLatestGrowthAction(_previous: { status: string; message: string }, formData: FormData) {
   const user = await requireUser();
+  const vi = true;
   const babyId = String(formData.get("babyId") ?? "");
   await requireOwnedBaby(babyId, user.id);
   const entry = await db.growthEntry.findFirst({
-    where: { babyId },
-    orderBy: { measuredAt: "desc" },
+    where: { babyId, measuredAt: { lte: new Date() } },
+    orderBy: [{ measuredAt: "desc" }, { id: "desc" }],
     select: { id: true },
   });
-  if (entry) await refreshWhoGrowthAssessment(entry.id).catch(() => undefined);
-  revalidatePath("/tracking/growth");
+  if (!entry) return { status: "error", message: vi ? "Chưa có lần đo để tính." : "No measurement to calculate." };
+  try {
+    const result = await refreshWhoGrowthAssessment(entry.id);
+    if (result.status !== "calculated") return { status: "error", message: vi
+      ? result.status === "unsupported" && result.reason === "sex" ? "Cần cập nhật giới tính của bé để chọn bảng WHO."
+        : result.status === "unsupported" && result.reason === "preterm" ? "Bé sinh non cần biểu đồ và tuổi hiệu chỉnh riêng; chưa áp chuẩn trẻ đủ tháng."
+        : result.status === "unsupported" ? "WHO 2006 trong ứng dụng áp dụng từ sau sinh đến dưới 60 tháng tuổi tại ngày đo."
+        : "Chưa có số đo hợp lệ trong phạm vi bảng chuẩn WHO."
+      : "Cannot assess: check sex, age, preterm status and measurement ranges." };
+    revalidatePath("/", "layout");
+    return { status: "success", message: vi ? "Đã tính lại và lưu kết quả WHO cho lần đo gần nhất." : "Latest WHO assessment recalculated and saved." };
+  } catch (error) {
+    console.error("WHO growth assessment failed", error instanceof Error ? error.message : "Unknown error");
+    return { status: "error", message: vi ? "Chưa lưu được kết quả WHO. Vui lòng thử lại." : "Could not save WHO assessment. Please try again." };
+  }
 }
 
 function recordSource(formData: FormData) {

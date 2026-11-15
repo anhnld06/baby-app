@@ -1,10 +1,10 @@
+import { WhoGrowthReference } from "@/components/who-growth-reference";
 import { PrenatalGrowthBaseline } from "@/components/prenatal-growth-baseline";
 import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import { HeightFields } from "@/components/height-fields";
 import { GrowthIcon as Ruler } from "@/components/app-icons";
 import {
   deleteGrowthAction,
-  recalculateLatestGrowthAction,
   saveGrowthAction,
 } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
@@ -16,8 +16,6 @@ import { HistoryLoadMore } from "@/components/history-load-more";
 import { PageHeader } from "@/components/page-header";
 import { RecordActions } from "@/components/record-actions";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { whoAnthroConfig } from "@/features/growth/who-anthro";
 import { requireUser } from "@/lib/auth";
 import { getSelectedBaby } from "@/lib/data";
 import { toDateTimeLocal } from "@/lib/date";
@@ -29,7 +27,7 @@ import { asFormAction } from "@/lib/form-action";
 export default async function GrowthPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string; new?: string; limit?: string }>;
+  searchParams: Promise<{ edit?: string; new?: string; limit?: string; who?: string }>;
 }) {
   const [user, t, params] = await Promise.all([
     requireUser(),
@@ -70,7 +68,6 @@ export default async function GrowthPage({
     },
     ...items,
   ];
-  const whoConfigured = whoAnthroConfig().configured;
   return (
     <>
       <PageHeader
@@ -83,6 +80,8 @@ export default async function GrowthPage({
       {!editing && params.new !== "1" && (
         <GrowthSummary measurements={measurements} dateOfBirth={baby.dateOfBirth} timeZone={user.timezone} />
       )}
+      {!editing && params.new !== "1" && <WhoGrowthReference babyId={baby.id} locale="vi" timeZone={user.timezone} recalculate />}
+      {params.who === "error" && <p role="alert" className="my-3 text-sm">Đã lưu số đo nhưng chưa lưu được kết quả WHO. Hãy thử tính lại.</p>}
       <CollapsibleRecordForm editingId={editing?.id}
         prominent
         key={`${editing?.id ?? "new"}-${items.length}`}
@@ -152,44 +151,6 @@ export default async function GrowthPage({
         gestationalAgeAtBirth={baby.gestationalAgeAtBirth}
         timeZone={user.timezone}
       />
-      {items[0]?.assessment && (
-        <section className="mt-5 rounded-2xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900 dark:bg-sky-950/50">
-          <h2 className="font-semibold">Z-score WHO của lần đo gần nhất</h2>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
-            <ZScore label="Cân nặng / tuổi" value={items[0].assessment.weightAgeZ} />
-            <ZScore label="Chiều cao / tuổi" value={items[0].assessment.heightAgeZ} />
-            <ZScore label="Cân nặng / chiều cao" value={items[0].assessment.weightHeightZ} />
-            <ZScore label="BMI / tuổi" value={items[0].assessment.bmiAgeZ} />
-            <ZScore label="Vòng đầu / tuổi" value={items[0].assessment.headAgeZ} />
-          </div>
-          {items[0].assessment.flags.length > 0 && (
-            <p className="mt-3 text-xs text-amber-800 dark:text-amber-200">
-              WHO đánh dấu số đo cần kiểm tra lại trước khi diễn giải.
-            </p>
-          )}
-          <p className="mt-3 text-xs leading-5 text-muted-foreground">
-            Kết quả tham khảo từ WHO Child Growth Standards, không thay thế đánh giá của bác sĩ.
-          </p>
-        </section>
-      )}
-      {items.length > 0 && !items[0].assessment && (
-        <section className="mt-5 rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <h2 className="font-semibold">Chưa có kết quả chuẩn WHO</h2>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            {whoConfigured
-              ? "Dịch vụ WHO Anthro đã được cấu hình. Bạn có thể tính lại lần đo gần nhất."
-              : "Khởi động service WHO Anthro và cấu hình WHO_ANTHRO_URL, WHO_ANTHRO_TOKEN để tính Z-score."}
-          </p>
-          {whoConfigured && (
-            <form action={recalculateLatestGrowthAction} className="mt-3">
-              <input type="hidden" name="babyId" value={baby.id} />
-              <Button type="submit" variant="secondary" className="h-11 rounded-xl">
-                Tính lại lần đo gần nhất
-              </Button>
-            </form>
-          )}
-        </section>
-      )}
       <h2 className="mb-2 mt-7 text-lg font-semibold">{t.tracking.history}</h2>
       <div className="space-y-2">
         {items.map((item) => (
@@ -238,14 +199,5 @@ export default async function GrowthPage({
       </div>
       <HistoryLoadMore href="/tracking/growth" currentLimit={limit} hasMore={hasMore} />
     </>
-  );
-}
-
-function ZScore({ label, value }: { label: string; value: number | null }) {
-  return (
-    <div className="rounded-xl bg-background/80 p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 font-semibold">{value === null ? "—" : value.toFixed(2)}</p>
-    </div>
   );
 }

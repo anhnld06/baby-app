@@ -1,0 +1,45 @@
+import { expect, test } from "@playwright/test";
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
+test.afterAll(async () => { await prisma.$disconnect(); });
+for (const width of [390, 1280]) {
+  test(`WHO comparison and recalculation persist at ${width}px`, async ({ page }) => {
+    test.skip(!process.env.APP_USERNAME || !process.env.APP_PASSWORD, "Requires local account.");
+    await page.setViewportSize({ width, height: 900 });
+    const errors: string[] = [];
+    page.on("pageerror", error => errors.push(error.message));
+    page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
+    await page.goto("/login");
+    await page.getByLabel("Tên đăng nhập").fill(process.env.APP_USERNAME!);
+    await page.getByLabel("Mật khẩu", { exact: true }).fill(process.env.APP_PASSWORD!);
+    await page.getByRole("button", { name: "Mở ứng dụng" }).click();
+    await expect(page).toHaveURL(/\/$/);
+    const homeCard = page.locator("[data-who-reference]:visible");
+    await expect(homeCard).toBeVisible();
+    await expect(homeCard.getByRole("heading", { name: "Tăng trưởng theo WHO" })).toBeVisible();
+    await page.goto("/tracking/growth");
+    const card = page.locator("[data-who-reference]:visible");
+    await expect(card).toBeVisible();
+    await expect(card).toContainText("Z-score:");
+    await expect(page.getByRole("link", { name: "Mở bảng tham chiếu WHO" })).toHaveCount(0);
+    const babyId = await card.locator('input[name="babyId"]').inputValue();
+    const before = await prisma.growthEntry.findFirstOrThrow({ where: { babyId, measuredAt: { lte: new Date() } }, orderBy: [{ measuredAt: "desc" }, { id: "desc" }], include: { assessment: true } });
+    await card.getByRole("button", { name: "Tính lại lần đo gần nhất" }).click();
+    await expect(card.getByRole("status")).toContainText("Đã tính lại và lưu kết quả WHO");
+    const after = await prisma.growthEntry.findUniqueOrThrow({ where: { id: before.id }, include: { assessment: true } });
+    expect(after.weightKg).toBe(before.weightKg);
+    expect(after.measuredAt).toEqual(before.measuredAt);
+    expect(after.assessment?.engineVersion).toContain("local-lms");
+    expect(after.assessment?.weightAgeZ).not.toBeNull();
+    if (before.assessment) expect(after.assessment!.computedAt.getTime()).toBeGreaterThan(before.assessment.computedAt.getTime());
+    await page.reload();
+    await expect(card).toContainText(after.assessment!.weightAgeZ!.toFixed(2));
+    await card.getByText("Dữ liệu chuẩn & cách tính", { exact: true }).click();
+    await expect(card).toContainText("Không cần mở trang ngoài");
+    await page.screenshot({ path: `test-results/who-growth-${width}.png`, fullPage: true, caret: "initial" });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.goto("/statistics?owner=baby");
+    await expect(page.locator("[data-who-reference]:visible")).toContainText("Cân nặng / tuổi");
+    expect(errors).toEqual([]);
+  });
+}

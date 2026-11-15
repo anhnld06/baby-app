@@ -158,11 +158,15 @@ Nội dung notification cố ý không chứa chẩn đoán hoặc tên thuốc.
 
 ### WHO Anthro
 
-Local: `npm run who:up`. Ứng dụng dùng `http://localhost:8082` và token local
-mặc định khi chạy development. Production cần deploy thư mục
-`services/who-anthro` như một container nội bộ và đặt `WHO_ANTHRO_URL`,
-`WHO_ANTHRO_TOKEN`. Package `anthro` dùng GPL-3.0; giữ thông tin giấy phép khi
-phân phối image/service.
+Ứng dụng lưu sẵn bảng LMS theo giới tính và ngày tuổi, tính và diễn giải trực tiếp
+trên server bằng bộ tính TypeScript theo thuật toán WHO `anthro`. Không cần chạy
+service ở cổng 8082 để dùng nút tính lại. Kết quả hiển thị ngay ở Hôm nay,
+Tăng trưởng và Thống kê; nút tính lại lưu vào `GrowthAssessment` và báo trạng thái.
+
+Nguồn, phiên bản, giấy phép GPL-3.0 và cách kiểm tra lại dữ liệu:
+[src/features/growth/data/README.md](src/features/growth/data/README.md).
+Service R cũ trong `services/who-anthro` được giữ làm công cụ tham khảo độc lập,
+không còn là phụ thuộc runtime của ứng dụng.
 
 
 ### Nhiệt độ và lịch thuốc

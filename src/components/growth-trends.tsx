@@ -1,21 +1,12 @@
 import { GrowthLineChart } from "@/components/growth-line-chart";
 import { GrowthMetricTabs } from "@/components/growth-metric-tabs";
-import { ExternalLink, TrendingUp } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import {
   buildGrowthSeries,
   type GrowthMeasurement,
   type GrowthMetric,
 } from "@/features/growth/trend";
 import { numberFormatter } from "@/lib/format";
-
-const WHO_URLS: Record<GrowthMetric, string> = {
-  weightKg:
-    "https://www.who.int/tools/child-growth-standards/standards/weight-for-age",
-  heightCm:
-    "https://www.who.int/tools/child-growth-standards/standards/length-height-for-age",
-  headCircumferenceCm:
-    "https://www.who.int/tools/child-growth-standards/standards/head-circumference-for-age",
-};
 
 const metrics: Array<{
   key: GrowthMetric;
@@ -112,15 +103,7 @@ function MetricChart({
           ageLabel: ageLabel(point.ageDays),
         }))}
       />
-      <a
-        href={WHO_URLS[metric.key]}
-        target="_blank"
-        rel="noreferrer"
-        className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-xs font-medium text-primary underline-offset-4 hover:underline"
-      >
-        Mở bảng tham chiếu WHO
-        <ExternalLink className="size-3.5" />
-      </a>
+
     </article>
   );
 }
@@ -154,7 +137,9 @@ export function GrowthTrends({
           Xu hướng tăng trưởng
         </h2>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          Biểu đồ nối các số đo đã ghi. Bảng WHO mở ở liên kết riêng và không thay thế đánh giá của bác sĩ.
+          {true
+            ? "Biểu đồ nối các số đo đã ghi. Kết quả đối chiếu WHO của lần đo gần nhất hiển thị ngay trên trang; cần xem cùng xu hướng qua nhiều lần đo."
+            : "The chart connects recorded measurements. The latest WHO comparison is shown on this page; review trends across measurements."}
         </p>
       </div>
       {premature && (

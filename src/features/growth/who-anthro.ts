@@ -1,31 +1,13 @@
 import "server-only";
 
-import { z } from "zod";
 import { ageInDays } from "@/lib/date";
 import { db } from "@/lib/db";
+import { calculateWho, whoAgeSupported, type WhoInput } from "./who-local";
 
-const responseSchema = z.object({
-  standard: z.literal("WHO_2006"),
-  engineVersion: z.string().min(1).max(100),
-  weightAgeZ: z.number().nullable().optional(),
-  heightAgeZ: z.number().nullable().optional(),
-  weightHeightZ: z.number().nullable().optional(),
-  bmiAgeZ: z.number().nullable().optional(),
-  headAgeZ: z.number().nullable().optional(),
-  flags: z.array(z.string().max(100)).max(20).default([]),
-});
-
-/**
- * Completed days of age at the measurement. With the account timezone the
- * measurement's calendar day (not the UTC instant) is compared with the birth
- * date, so a measurement at 06:00 in Vietnam is not counted as the day before.
- */
 export function growthAgeInDays(dateOfBirth: Date, measuredAt: Date, timeZone?: string) {
-  if (timeZone) return ageInDays(dateOfBirth, measuredAt, timeZone);
-  return Math.max(
-    0,
-    Math.floor((measuredAt.getTime() - dateOfBirth.getTime()) / 86_400_000),
-  );
+  // Do not turn a pre-birth measurement into a valid newborn measurement.
+  if (timeZone && measuredAt >= dateOfBirth) return ageInDays(dateOfBirth, measuredAt, timeZone);
+  return Math.floor((measuredAt.getTime() - dateOfBirth.getTime()) / 86_400_000);
 }
 
 export function whoSex(gender: string) {
@@ -34,89 +16,41 @@ export function whoSex(gender: string) {
   return null;
 }
 
-export function whoAnthroConfig() {
-  const development = process.env.NODE_ENV !== "production";
-  const baseUrl = (
-    process.env.WHO_ANTHRO_URL || (development ? "http://localhost:8082" : "")
-  ).replace(/\/$/, "");
-  const token =
-    process.env.WHO_ANTHRO_TOKEN || (development ? "change-this-token" : "");
-  return { baseUrl, token, configured: Boolean(baseUrl && token) };
+export function whoEntryInput(entry: {
+  measuredAt: Date; weightKg: number | null; heightCm: number | null; headCircumferenceCm: number | null; measurementPosition: string | null;
+  baby: { gender: string; dateOfBirth: Date; gestationalAgeAtBirth: number | null; user?: { timezone: string } };
+}, timeZone?: string): { input: WhoInput | null; reason: "sex" | "age" | "preterm" | null } {
+  const sex = whoSex(entry.baby.gender);
+  if (!sex) return { input: null, reason: "sex" };
+  const ageInDays = growthAgeInDays(entry.baby.dateOfBirth, entry.measuredAt, timeZone ?? entry.baby.user?.timezone);
+  if (!whoAgeSupported(ageInDays)) return { input: null, reason: "age" };
+  // Preterm charts/corrected ages need a separate clinical policy. Do not label
+  // preterm babies with chronological-age term-infant standards.
+  if (entry.baby.gestationalAgeAtBirth != null && entry.baby.gestationalAgeAtBirth < 37) return { input: null, reason: "preterm" };
+  return { reason: null, input: {
+    sex, ageInDays, weightKg: entry.weightKg, lengthHeightCm: entry.heightCm,
+    headCircumferenceCm: entry.headCircumferenceCm,
+    measure: entry.measurementPosition === "RECUMBENT" ? "L" : entry.measurementPosition === "STANDING" ? "H" : null,
+  } };
 }
 
 export async function refreshWhoGrowthAssessment(growthEntryId: string) {
-  const { baseUrl, token, configured } = whoAnthroConfig();
-  if (!configured) return { status: "unconfigured" as const };
-
-  const entry = await db.growthEntry.findUnique({
-    where: { id: growthEntryId },
-    include: {
-      baby: {
-        select: {
-          gender: true,
-          dateOfBirth: true,
-          user: { select: { timezone: true } },
-        },
-      },
-    },
-  });
+  const entry = await db.growthEntry.findUnique({ where: { id: growthEntryId }, include: { baby: { select: { gender: true, dateOfBirth: true, gestationalAgeAtBirth: true, user: { select: { timezone: true } } } } } });
   if (!entry) return { status: "missing" as const };
-  const sex = whoSex(entry.baby.gender);
-  const ageDays = growthAgeInDays(
-    entry.baby.dateOfBirth,
-    entry.measuredAt,
-    entry.baby.user.timezone,
-  );
-  if (!sex || ageDays >= 1_857) return { status: "unsupported" as const };
-
-  const response = await fetch(`${baseUrl}/assess`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      sex,
-      ageInDays: ageDays,
-      weightKg: entry.weightKg,
-      lengthHeightCm: entry.heightCm,
-      measure:
-        entry.measurementPosition === "RECUMBENT"
-          ? "L"
-          : entry.measurementPosition === "STANDING"
-            ? "H"
-            : null,
-      headCircumferenceCm: entry.headCircumferenceCm,
-    }),
-    cache: "no-store",
-    signal: AbortSignal.timeout(5_000),
-  });
-  if (!response.ok) throw new Error(`WHO Anthro returned ${response.status}`);
-  const result = responseSchema.parse(await response.json());
+  const { input, reason } = whoEntryInput(entry);
+  if (!input) {
+    await db.growthAssessment.deleteMany({ where: { growthEntryId } });
+    return { status: "unsupported" as const, reason };
+  }
+  const result = calculateWho(input);
+  if ([result.weightAgeZ, result.heightAgeZ, result.headAgeZ, result.weightHeightZ, result.bmiAgeZ].every(z => z == null)) {
+    await db.growthAssessment.deleteMany({ where: { growthEntryId } });
+    return { status: "empty" as const };
+  }
   await db.growthAssessment.upsert({
     where: { growthEntryId: entry.id },
-    create: {
-      growthEntryId: entry.id,
-      standard: result.standard,
-      engineVersion: result.engineVersion,
-      weightAgeZ: result.weightAgeZ,
-      heightAgeZ: result.heightAgeZ,
-      weightHeightZ: result.weightHeightZ,
-      bmiAgeZ: result.bmiAgeZ,
-      headAgeZ: result.headAgeZ,
-      flags: result.flags,
-    },
-    update: {
-      standard: result.standard,
-      engineVersion: result.engineVersion,
-      weightAgeZ: result.weightAgeZ,
-      heightAgeZ: result.heightAgeZ,
-      weightHeightZ: result.weightHeightZ,
-      bmiAgeZ: result.bmiAgeZ,
-      headAgeZ: result.headAgeZ,
-      flags: result.flags,
-      computedAt: new Date(),
-    },
+    create: { growthEntryId: entry.id, ...result },
+    update: { ...result, computedAt: new Date() },
   });
   return { status: "calculated" as const };
 }

@@ -1,3 +1,4 @@
+import { FeedingReferenceCard } from "@/components/feeding-reference-card";
 import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import { RecordScene } from "@/components/record-scene";
 import { Baby as BabyIcon } from "lucide-react";
@@ -91,6 +92,7 @@ export default async function FeedingPage({
           },
         ]}
       />}
+      {!(params.new === "1" || editing) && <FeedingReferenceCard baby={baby} now={now} timeZone={user.timezone} locale="vi" compact />}
       <CollapsibleRecordForm prominent editingId={editing?.id}
         key={`${editing?.id ?? "new"}-${params.new ?? ""}-${params.type ?? ""}-${items.length}`}
         defaultOpen={!!editing || params.new === "1"}

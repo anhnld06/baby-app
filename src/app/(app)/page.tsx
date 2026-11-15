@@ -1,3 +1,5 @@
+import { FeedingReferenceCard } from "@/components/feeding-reference-card";
+import { WhoGrowthReference } from "@/components/who-growth-reference";
 import Link from "next/link";
 import { JourneyOverview } from "@/components/journey-overview";
 import { ChevronRight, Activity, ChartNoAxesCombined, ArrowUpRight } from "lucide-react";
@@ -405,6 +407,8 @@ export default async function DashboardPage() {
               empty="Một ngày mới bắt đầu. Ghi cữ bú, giấc ngủ hoặc lần thay tã đầu tiên ở phía trên nhé."
             />
           </section>
+          <FeedingReferenceCard baby={baby} now={now} timeZone={user.timezone} locale="vi" compact />
+          <WhoGrowthReference babyId={baby.id} locale="vi" timeZone={user.timezone} at={now} compact />
           <details className="group rounded-3xl border border-border/60 bg-card p-4 sm:p-5">
             <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
               <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-secondary text-primary"><Activity className="size-5" /></span>

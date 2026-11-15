@@ -1,4 +1,6 @@
-# WHO Anthro adapter
+# WHO Anthro adapter (standalone reference)
+
+Ứng dụng hiện dùng bảng LMS nội bộ và bộ tính TypeScript; service này không còn là phụ thuộc runtime. Có thể chạy riêng để đối chiếu độc lập.
 
 Service nội bộ này gọi package `anthro` chính thức của WHO và chỉ trả về
 Z-score/quality flags. Không mở service trực tiếp ra Internet; đặt
