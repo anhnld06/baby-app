@@ -1,7 +1,7 @@
-import { FeedingReferenceCard } from "@/components/feeding-reference-card";
+import Link from "next/link";
 import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import { RecordScene } from "@/components/record-scene";
-import { Baby as BabyIcon } from "lucide-react";
+import { Baby as BabyIcon, ChevronRight } from "lucide-react";
 import { deleteFeedingAction, saveFeedingAction } from "@/app/actions";
 import { CollapsibleRecordForm } from "@/components/collapsible-record-form";
 import { Field, TextAreaField } from "@/components/form-fields";
@@ -92,7 +92,11 @@ export default async function FeedingPage({
           },
         ]}
       />}
-      {!(params.new === "1" || editing) && <FeedingReferenceCard baby={baby} now={now} timeZone={user.timezone} locale="vi" compact />}
+      {!(params.new === "1" || editing) && (
+        <Link href="/statistics?owner=baby#feeding-reference" className="-mt-2 mb-3 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-primary">
+          Đối chiếu bú theo tuổi<ChevronRight className="size-4" />
+        </Link>
+      )}
       <CollapsibleRecordForm prominent editingId={editing?.id}
         key={`${editing?.id ?? "new"}-${params.new ?? ""}-${params.type ?? ""}-${items.length}`}
         defaultOpen={!!editing || params.new === "1"}

@@ -80,7 +80,7 @@ export default async function GrowthPage({
       {!editing && params.new !== "1" && (
         <GrowthSummary measurements={measurements} dateOfBirth={baby.dateOfBirth} timeZone={user.timezone} />
       )}
-      {!editing && params.new !== "1" && <WhoGrowthReference babyId={baby.id} locale="vi" timeZone={user.timezone} recalculate />}
+      {!editing && params.new !== "1" && <WhoGrowthReference babyId={baby.id} timeZone={user.timezone} recalculate open={params.who === "error"} />}
       {params.who === "error" && <p role="alert" className="my-3 text-sm">Đã lưu số đo nhưng chưa lưu được kết quả WHO. Hãy thử tính lại.</p>}
       <CollapsibleRecordForm editingId={editing?.id}
         prominent

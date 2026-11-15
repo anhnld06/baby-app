@@ -134,7 +134,7 @@ export async function BabyStatistics({
           Xem
         </button>
       </form>
-      <FeedingReferenceCard baby={baby} now={now} timeZone={user.timezone} locale="vi" day={selectedDay} />
+      <FeedingReferenceCard baby={baby} now={now} timeZone={user.timezone} day={selectedDay} />
       <section className="mb-5 rounded-3xl bg-secondary/50 p-5">
         <h2 className="font-semibold">
           Tổng quan ngày {selectedDay.split("-").reverse().join("/")}
@@ -277,7 +277,7 @@ export async function BabyStatistics({
           );
         })}
       </div>
-      <WhoGrowthReference babyId={baby.id} locale="vi" timeZone={user.timezone} at={end < now ? new Date(end.getTime() - 1) : now} />
+      <WhoGrowthReference babyId={baby.id} timeZone={user.timezone} at={end < now ? new Date(end.getTime() - 1) : now} />
       <GrowthTrends
         measurements={growth}
         dateOfBirth={baby.dateOfBirth}

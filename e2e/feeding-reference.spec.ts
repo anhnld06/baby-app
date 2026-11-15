@@ -13,13 +13,10 @@ for (const width of [390, 1280]) {
     await page.getByRole("button", { name: "Mở ứng dụng" }).click();
     await expect(page).toHaveURL(/\/$/);
     await page.goto("/tracking/feeding");
-    const card = page.locator("[data-feeding-reference]:visible");
-    await expect(card.getByRole("heading", { name: "Bú hôm nay" })).toBeVisible();
-    await expect(card).toContainText("ml");
-    await expect(card).toContainText("Ngày đang diễn ra");
-    await page.screenshot({ path: `test-results/feeding-summary-${width}.png`, fullPage: true, caret: "initial" });
-    await card.getByRole("link", { name: "Chi tiết →" }).click();
-    await expect(page).toHaveURL(/\/statistics\?owner=baby&date=.*#feeding-reference/);
+    // The feeding page links to the detailed reference instead of repeating today's counts.
+    await expect(page.locator("[data-feeding-reference]")).toHaveCount(0);
+    await page.getByRole("link", { name: "Đối chiếu bú theo tuổi" }).click();
+    await expect(page).toHaveURL(/\/statistics\?owner=baby#feeding-reference/);
     const detail = page.locator("#feeding-reference:visible");
     await expect(detail).toContainText("Hôm nay đang ghi nhận");
     await detail.getByText("Cách tính & nguồn tham khảo", { exact: true }).click();
@@ -41,7 +38,10 @@ for (const width of [390, 1280]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.goto("/");
     await page.getByText("Nhịp sinh hoạt 24 giờ", { exact: true }).filter({ visible: true }).click();
-    await expect(page.locator("[data-feeding-reference]:visible")).toBeVisible();
+    const feedCard = page.locator('[data-summary-card="Bú"]:visible');
+    await expect(feedCard).toContainText("cữ đã ghi");
+    await expect(feedCard).not.toContainText("SCT");
+    await expect(page.locator("[data-feeding-reference]")).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 }

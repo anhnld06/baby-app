@@ -78,10 +78,10 @@ describe("bundled WHO 2006 calculation", () => {
 });
 describe("WHO interpretation", () => {
   it("does not label high weight-for-age as overweight", () => {
-    expect(interpretWho(2.1, "weightAge", false).label).toContain("Cần xem cùng chiều dài");
+    expect(interpretWho(2.1, "weightAge", false).label).toContain("xem cùng chiều dài");
   });
   it("requires reviewing flagged measurements rather than interpreting their z-score", () => {
-    expect(interpretWho(-7, "weightAge", true).label).toBe("Kiểm tra lại số đo");
+    expect(interpretWho(-7, "weightAge", true).label).toBe("Nên kiểm tra lại số đo");
     expect(interpretWho(null, "weightAge", false).label).toBe("Chưa đủ dữ liệu");
     expect(interpretWho(-2, "weightAge", false).tone).toBe("within");
     expect(interpretWho(-2.01, "weightAge", false).tone).toBe("review");

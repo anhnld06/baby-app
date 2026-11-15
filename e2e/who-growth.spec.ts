@@ -20,7 +20,9 @@ for (const width of [390, 1280]) {
     await page.goto("/tracking/growth");
     const card = page.locator("[data-who-reference]:visible");
     await expect(card).toBeVisible();
-    await expect(card).toContainText("Z-score:");
+    const details = card.locator("details");
+    await details.locator("summary").click();
+    await expect(card.getByText("BMI / tuổi", { exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Mở bảng tham chiếu WHO" })).toHaveCount(0);
     const babyId = await card.locator('input[name="babyId"]').inputValue();
     const before = await prisma.growthEntry.findFirstOrThrow({ where: { babyId, measuredAt: { lte: new Date() } }, orderBy: [{ measuredAt: "desc" }, { id: "desc" }], include: { assessment: true } });
@@ -33,9 +35,9 @@ for (const width of [390, 1280]) {
     expect(after.assessment?.weightAgeZ).not.toBeNull();
     if (before.assessment) expect(after.assessment!.computedAt.getTime()).toBeGreaterThan(before.assessment.computedAt.getTime());
     await page.reload();
-    await expect(card).toContainText(after.assessment!.weightAgeZ!.toFixed(2));
-    await card.getByText("Dữ liệu chuẩn & cách tính", { exact: true }).click();
-    await expect(card).toContainText("Không cần mở trang ngoài");
+    await details.locator("summary").click();
+    await expect(card).toContainText(after.assessment!.weightAgeZ!.toFixed(2).replace(".", ","));
+    await expect(card.getByText("không cần mở trang ngoài", { exact: false })).toBeVisible();
     await page.screenshot({ path: `test-results/who-growth-${width}.png`, fullPage: true, caret: "initial" });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.goto("/statistics?owner=baby");

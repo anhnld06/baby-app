@@ -1,4 +1,3 @@
-import { FeedingReferenceCard } from "@/components/feeding-reference-card";
 import { WhoGrowthReference } from "@/components/who-growth-reference";
 import Link from "next/link";
 import { JourneyOverview } from "@/components/journey-overview";
@@ -407,8 +406,7 @@ export default async function DashboardPage() {
               empty="Một ngày mới bắt đầu. Ghi cữ bú, giấc ngủ hoặc lần thay tã đầu tiên ở phía trên nhé."
             />
           </section>
-          <FeedingReferenceCard baby={baby} now={now} timeZone={user.timezone} locale="vi" compact />
-          <WhoGrowthReference babyId={baby.id} locale="vi" timeZone={user.timezone} at={now} compact />
+          <WhoGrowthReference babyId={baby.id} timeZone={user.timezone} at={now} compact />
           <details className="group rounded-3xl border border-border/60 bg-card p-4 sm:p-5">
             <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
               <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-secondary text-primary"><Activity className="size-5" /></span>
@@ -417,7 +415,7 @@ export default async function DashboardPage() {
                   Nhịp sinh hoạt 24 giờ
                 </strong>
                 <span className="mt-1 block text-xs text-muted-foreground">
-                  Bú, ngủ, tã và số đo gần nhất
+                  Bú, ngủ và tã trong 24 giờ
                 </span>
               </span>
               <ChevronRight className="ml-auto size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" />
