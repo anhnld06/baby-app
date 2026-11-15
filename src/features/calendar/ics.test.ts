@@ -6,6 +6,19 @@ describe("ICS calendar", () => {
     expect(escapeIcsText("A, B; C\\D\nE")).toBe("A\\, B\\; C\\\\D\\nE");
   });
 
+  it("escapes CRLF, lone CR and LF so no raw line break reaches the calendar", () => {
+    expect(escapeIcsText("a\r\nb\rc\nd")).toBe("a\\nb\\nc\\nd");
+    const calendar = buildIcsCalendar([{
+      uid: "visit-2",
+      title: "Khám\rSUMMARY:giả mạo",
+      date: new Date("2026-10-12T00:00:00.000Z"),
+      description: "Dòng 1\r\nDòng 2",
+    }], new Date("2026-09-11T01:00:00.000Z"));
+    expect(calendar).toContain("SUMMARY:Khám\\nSUMMARY:giả mạo");
+    expect(calendar.split("\r\n").some((line) => line.startsWith("SUMMARY:giả mạo"))).toBe(false);
+    expect(calendar.replace(/\r\n/g, "")).not.toMatch(/[\r\n]/);
+  });
+
   it("creates an all-day event with two reminders", () => {
     const calendar = buildIcsCalendar([{
       uid: "visit-1",

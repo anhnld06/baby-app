@@ -25,6 +25,15 @@ export function recordMatchesEntry(record: Omit<ChecklistRecord, "id">, entry: S
   return named && (dose || legacyIpv);
 }
 
+/**
+ * True when nothing on the record says which dose it was (no schedule key,
+ * no dose number, no "mũi N" in the name), so it only counts as dose 1 by
+ * default.
+ */
+export function hasUnknownDose(record: Omit<ChecklistRecord, "id">) {
+  return !record.scheduleKey && record.doseNumber === null && !/\b(?:mui|lieu)\s+\d+\b/.test(normalize(record.vaccineName));
+}
+
 export function findChecklistRecord<T extends ChecklistRecord>(records: T[], entry: ScheduleEntry) {
   return records.find((record) => record.scheduleKey === entry.key) ?? records.find((record) => recordMatchesEntry(record, entry));
 }
@@ -33,12 +42,19 @@ export function scheduleEntry(kind: "baby" | "mother", key: string): ScheduleEnt
   return (kind === "baby" ? BABY_SCHEDULE : MOTHER_PRENATAL_SCHEDULE).find((entry) => entry.key === key);
 }
 
+/** Calendar months from `date` (UTC day), clamped to the last day of the target month. */
+export function addCalendarMonths(date: Date, months: number) {
+  const result = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1));
+  const lastDay = new Date(Date.UTC(result.getUTCFullYear(), result.getUTCMonth() + 1, 0)).getUTCDate();
+  result.setUTCDate(Math.min(date.getUTCDate(), lastDay));
+  return result;
+}
+
 export function babyMilestoneDate(birth: Date, entry: BabyScheduleEntry) {
   if (entry.dueAgeMonths === undefined) return new Date(birth.getTime() + entry.dueAgeDays * 86_400_000);
-  const monthStart = new Date(Date.UTC(birth.getUTCFullYear(), birth.getUTCMonth() + entry.dueAgeMonths, 1));
-  const lastDay = new Date(Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 0)).getUTCDate();
-  monthStart.setUTCDate(Math.min(birth.getUTCDate(), lastDay) + (entry.offsetDays ?? 0));
-  return monthStart;
+  const date = addCalendarMonths(birth, entry.dueAgeMonths);
+  date.setUTCDate(date.getUTCDate() + (entry.offsetDays ?? 0));
+  return date;
 }
 
 export function babyMilestoneLabel(entry: BabyScheduleEntry) {

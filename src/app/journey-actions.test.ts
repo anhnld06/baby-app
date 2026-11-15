@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   user: vi.fn(),
   baby: vi.fn(),
@@ -34,6 +34,13 @@ import {
   wakeBabyAction,
   markNotificationsReadAction,
 } from "./journey-actions";
+// saveEpisodeAction lazily `await import("@/lib/date")`, which loads the whole
+// date-fns barrel (~250 entry modules plus their deps): ~2s cold on Windows and
+// well over 5s under a parallel full run. Warm it once here so that one-off
+// module-load cost is not charged to a single test's 5s budget.
+beforeAll(async () => {
+  await import("@/lib/date");
+}, 30_000);
 const form = (values: Record<string, string>) => {
   const f = new FormData();
   for (const [key, value] of Object.entries(values)) f.set(key, value);

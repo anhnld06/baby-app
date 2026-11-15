@@ -8,8 +8,10 @@ import { CareSummary } from "@/components/care-summary";
 import { RecordActions } from "@/components/record-actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { toDateTimeLocal } from "@/lib/date";
+import { asFormAction } from "@/lib/form-action";
 
 type FormAction = (formData: FormData) => Promise<void>;
+type SaveAction = (formData: FormData) => Promise<void | { error: string }>;
 type MedicalVisitView = {
   id: string;
   visitedAt: Date;
@@ -26,24 +28,24 @@ type MedicalVisitView = {
 const dateInput = (date?: Date | null) => date?.toISOString().slice(0, 10) ?? "";
 
 export function MedicalBook({
-  title, subtitle, backHref, basePath, ownerField, ownerId, items, editing, saveAction, deleteAction, locale, timeZone,
+  title, subtitle, backHref, basePath, ownerField, ownerId, items, editing, saveAction, deleteAction, timeZone,
 }: {
   title: string; subtitle: string; backHref: string; basePath: string;
   ownerField: "motherId" | "babyId"; ownerId: string;
   items: MedicalVisitView[]; editing: MedicalVisitView | null;
-  saveAction: FormAction; deleteAction: FormAction; locale: string; timeZone: string;
+  saveAction: SaveAction; deleteAction: FormAction; timeZone: string;
 }) {
   return (
     <>
       <PageHeader compact title={title} subtitle={subtitle} backHref={backHref} />
       {!editing && <CareSummary kind={ownerField === "motherId" ? "motherMedical" : "babyMedical"} title={items.length ? "Lượt khám gần nhất" : "Chưa có lượt khám"}>
         {items[0]
-          ? `${new Intl.DateTimeFormat(locale, { timeZone, dateStyle: "short" }).format(items[0].visitedAt)} · ${items[0].facility || items[0].reason || "Đã lưu thông tin khám"}`
+          ? `${new Intl.DateTimeFormat("vi-VN", { timeZone, dateStyle: "short" }).format(items[0].visitedAt)} · ${items[0].facility || items[0].reason || "Đã lưu thông tin khám"}`
           : "Thêm lần khám để lưu kết quả và lời dặn trong cùng một nơi."}
       </CareSummary>}
       <CollapsibleRecordForm prominent editingId={editing?.id} key={`${editing?.id ?? "new"}-${items.length}`} defaultOpen={!!editing} addLabel="Thêm lượt khám" closeLabel="Hủy">
         <Card className="border-0 shadow-sm"><CardContent className="p-5">
-          <form id="medical-visit-form" action={saveAction} className="space-y-4">
+          <form id="medical-visit-form" action={asFormAction(saveAction)} className="space-y-4">
             <input type="hidden" name={ownerField} value={ownerId} />
             {editing && <input type="hidden" name="id" value={editing.id} />}
             <Field name="visitedAt" type="datetime-local" required label="Ngày giờ khám" defaultValue={toDateTimeLocal(editing?.visitedAt, timeZone)} />
@@ -60,7 +62,7 @@ export function MedicalBook({
       </CollapsibleRecordForm>
       <h2 className="mb-3 mt-7 text-lg font-semibold">Lịch sử khám bệnh</h2>
       <div className="space-y-2">
-        {items.map((item) => <HistoryTimelineItem key={item.id} at={item.visitedAt} timeZone={timeZone} locale={locale} showDate><div data-history-card key={item.id} className="flex items-start gap-3 rounded-2xl bg-card p-3 shadow-sm"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"><Stethoscope className="size-5" /></span><div className="min-w-0 flex-1"><p className="font-medium">{item.diagnosis || item.reason || "Lượt khám"}</p><p className="text-xs text-muted-foreground">{new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long", year: "numeric" }).format(item.visitedAt)}{item.facility ? ` · ${item.facility}` : ""}</p>{item.treatment && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.treatment}</p>}{item.nextVisitAt && <p className="mt-1 flex items-center gap-1 text-xs font-medium text-primary"><CalendarClock className="size-3" />Tái khám {new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", year: "numeric" }).format(item.nextVisitAt)}</p>}</div><RecordActions id={item.id} editHref={`${basePath}?edit=${item.id}`} deleteAction={deleteAction} editLabel="Sửa" deleteLabel="Xóa" /></div></HistoryTimelineItem>)}
+        {items.map((item) => <HistoryTimelineItem key={item.id} at={item.visitedAt} timeZone={timeZone} showDate><div data-history-card key={item.id} className="flex items-start gap-3 rounded-2xl bg-card p-3 shadow-sm"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"><Stethoscope className="size-5" /></span><div className="min-w-0 flex-1"><p className="font-medium">{item.diagnosis || item.reason || "Lượt khám"}</p><p className="text-xs text-muted-foreground">{new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "long", year: "numeric" }).format(item.visitedAt)}{item.facility ? ` · ${item.facility}` : ""}</p>{item.treatment && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.treatment}</p>}{item.nextVisitAt && <p className="mt-1 flex items-center gap-1 text-xs font-medium text-primary"><CalendarClock className="size-3" />Tái khám {new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "short", year: "numeric" }).format(item.nextVisitAt)}</p>}</div><RecordActions id={item.id} editHref={`${basePath}?edit=${item.id}`} deleteAction={deleteAction} editLabel="Sửa" deleteLabel="Xóa" /></div></HistoryTimelineItem>)}
         {!items.length && <p className="rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground">Chưa có lượt khám nào.</p>}
       </div>
     </>

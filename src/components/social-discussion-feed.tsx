@@ -125,7 +125,7 @@ export function SocialDiscussionFeed({
                   <Badge variant="secondary">{discussion.category}</Badge>
                   <span
                     className={cn(
-                      "rounded-full border px-2.5 py-1 text-[11px] font-medium",
+                      "rounded-full border px-2.5 py-1 text-xs font-medium",
                       tone.className,
                     )}
                   >
@@ -176,7 +176,7 @@ export function SocialDiscussionFeed({
                       rel="noreferrer"
                       aria-label={`Xem chủ đề “${discussion.question}” trên ${source.platform}`}
                       className={cn(
-                        "flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium",
+                        "flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium",
                         platformStyles[source.platform],
                       )}
                     >

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Baby as BabyIcon, ChevronRight, Plus } from "lucide-react";
 import { ProfileIcon as UserRound } from "@/components/app-icons";
-import { logoutAction } from "@/app/auth-actions";
+import { logoutAction, logoutAllDevicesAction } from "@/app/auth-actions";
+import { LogoutAllDevicesButton } from "@/features/auth/logout-all-devices-button";
 import { PageHeader } from "@/components/page-header";
 import { LogoutButton } from "@/components/logout-button";
 import { OfflineStorageSettings } from "@/components/offline-storage-settings";
@@ -10,15 +11,14 @@ import { buttonVariants } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
 import { formatAge, formatDateOfBirth } from "@/lib/date";
 import { db } from "@/lib/db";
-import { getDictionary, getLocale } from "@/lib/i18n";
+import { getDictionary } from "@/lib/i18n";
 import { profileCoverUrl } from "@/lib/profile-cover";
 import { cn } from "@/lib/utils";
 
 export default async function ProfilePage() {
-  const [user, t, locale] = await Promise.all([
+  const [user, t] = await Promise.all([
     requireUser(),
     getDictionary(),
-    getLocale(),
   ]);
   const [mother, babies] = await Promise.all([
     db.mother.findUnique({
@@ -63,7 +63,7 @@ export default async function ProfilePage() {
               </h2>
               <p className="truncate text-sm opacity-90">{primaryBaby.name}</p>
               <p className="mt-1 text-xs opacity-75">
-                {formatAge(primaryBaby.dateOfBirth, new Date(), locale)}
+                {formatAge(primaryBaby.dateOfBirth, new Date(), user.timezone)}
               </p>
             </div>
           </div>
@@ -125,6 +125,12 @@ export default async function ProfilePage() {
             <p className="truncate font-medium">@{user.username}</p>
           </div>
           <LogoutButton action={logoutAction} label={t.profile.signOut} />
+        </div>
+        <div className="mt-4 border-t border-border pt-4">
+          <p className="mb-3 text-xs text-muted-foreground">
+            Mất điện thoại hoặc lỡ đăng nhập trên máy lạ? Kết thúc mọi phiên đăng nhập của tài khoản gia đình; cả hai vợ chồng cần đăng nhập lại.
+          </p>
+          <LogoutAllDevicesButton action={logoutAllDevicesAction} />
         </div>
       </section>
 

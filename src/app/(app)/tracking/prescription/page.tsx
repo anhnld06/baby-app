@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth";
 import { getSelectedBaby } from "@/lib/data";
 import { db } from "@/lib/db";
-import { getDictionary, getLocale } from "@/lib/i18n";
+import { getDictionary } from "@/lib/i18n";
 import { parseHistoryLimit } from "@/lib/pagination";
 
 export default async function PrescriptionPage({
@@ -22,10 +22,9 @@ export default async function PrescriptionPage({
 }: {
   searchParams: Promise<{ edit?: string; limit?: string; view?: string; new?: string; date?: string; saved?: string; name?: string; dosage?: string }>;
 }) {
-  const [user, t, locale, params] = await Promise.all([
+  const [user, t, params] = await Promise.all([
     requireUser(),
     getDictionary(),
-    getLocale(),
     searchParams,
   ]);
   if (params.view !== "archive" && !params.edit) {
@@ -64,8 +63,8 @@ export default async function PrescriptionPage({
         subtitle={baby.name}
         backHref="/baby"
       />
-      {!editing && <CareSummary kind="prescription" title={items[0] ? (locale === "vi" ? "Đơn thuốc gần nhất" : "Latest prescription") : (locale === "vi" ? "Chưa có đơn thuốc" : "No prescriptions yet")}>
-        {items[0] ? `${new Intl.DateTimeFormat(locale, { timeZone: user.timezone, dateStyle: "short" }).format(items[0].issuedAt)} · ${items[0].items.length} ${locale === "vi" ? "thuốc đã lưu" : "saved medications"}` : (locale === "vi" ? "Thêm đơn thuốc để lưu thông tin và hướng dẫn đã được kê." : "Save a prescription and its existing instructions.")}
+      {!editing && <CareSummary kind="prescription" title={items[0] ? "Đơn thuốc gần nhất" : "Chưa có đơn thuốc"}>
+        {items[0] ? `${new Intl.DateTimeFormat("vi-VN", { timeZone: user.timezone, dateStyle: "short" }).format(items[0].issuedAt)} · ${items[0].items.length} thuốc đã lưu` : "Thêm đơn thuốc để lưu thông tin và hướng dẫn đã được kê."}
       </CareSummary>}
       <Link href="/tracking/medication" className="mb-5 flex min-h-16 items-center gap-3 rounded-3xl bg-violet-50 p-5 font-medium text-violet-700 dark:bg-violet-950 dark:text-violet-200"><Pill className="size-5"/>Lịch thuốc hằng ngày & checklist →</Link>
       <CollapsibleRecordForm prominent editingId={editing?.id}
@@ -79,7 +78,6 @@ export default async function PrescriptionPage({
           <PrescriptionForm
             babyId={baby.id}
             editing={editing}
-            locale={locale}
             labels={{
               prescribedBy: t.tracking.prescribedBy,
               diagnosis: t.tracking.diagnosis,
@@ -113,7 +111,7 @@ export default async function PrescriptionPage({
       <h2 className="mb-2 mt-7 text-lg font-semibold">{t.tracking.history}</h2>
       <div className="space-y-2">
         {items.map((item) => (
-          <HistoryTimelineItem key={item.id} at={item.issuedAt} timeZone={user.timezone} locale={locale} showDate>
+          <HistoryTimelineItem key={item.id} at={item.issuedAt} timeZone={user.timezone} showDate>
           <div
             data-history-card
             key={item.id}
@@ -127,7 +125,7 @@ export default async function PrescriptionPage({
                 {item.items.map((line) => line.medicineName).join(", ") || item.diagnosis || t.common.unknown}
               </p>
               <p className="text-sm text-muted-foreground">
-                {new Intl.DateTimeFormat(locale, {
+                {new Intl.DateTimeFormat("vi-VN", {
                   timeZone: user.timezone,
                   day: "2-digit",
                   month: "short",

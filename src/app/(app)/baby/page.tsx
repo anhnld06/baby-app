@@ -7,11 +7,10 @@ import { requireUser } from "@/lib/auth";
 import { getSelectedBabyId, listBabies, pickSelectedBaby } from "@/lib/data";
 import { formatAge } from "@/lib/date";
 import { db } from "@/lib/db";
-import { getLocale } from "@/lib/i18n";
 import { profileCoverUrl } from "@/lib/profile-cover";
 
 export default async function BabyHubPage() {
-  const [user, locale] = await Promise.all([requireUser(), getLocale()]);
+  const user = await requireUser();
   const [babies, selectedId] = await Promise.all([listBabies(user.id), getSelectedBabyId()]);
   const baby = pickSelectedBaby(babies, selectedId);
   if (!baby) return <><PageHeader title="Của bé" /><FeatureLink href="/profile/baby/new" icon={Baby} title="Thêm hồ sơ bé" description="Tạo hồ sơ để bắt đầu nhật ký riêng cho bé." tone="blue" /></>;
@@ -27,7 +26,7 @@ export default async function BabyHubPage() {
     : undefined;
   return (
     <>
-      <PageHeader title="Của bé" subtitle={`${baby.name} · ${formatAge(baby.dateOfBirth, new Date(), locale)}`} />
+      <PageHeader title="Của bé" subtitle={`${baby.name} · ${formatAge(baby.dateOfBirth, new Date(), user.timezone)}`} />
       <BabySwitcher babies={babies} selectedBabyId={baby.id} addLabel="Thêm bé" />
       {coverImageUrl && (
         <section

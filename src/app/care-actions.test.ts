@@ -2,12 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   user: vi.fn(),
   baby: vi.fn(),
-  find: vi.fn(),
   create: vi.fn(),
   upsert: vi.fn(),
-  update: vi.fn(),
   remove: vi.fn(),
-  toggle: vi.fn(),
+  updateMany: vi.fn(),
   redirect: vi.fn(),
 }));
 vi.mock("@/lib/auth", () => ({ requireUser: mocks.user }));
@@ -15,17 +13,15 @@ vi.mock("@/lib/db", () => ({
   db: {
     baby: { findFirst: mocks.baby },
     babyCareEntry: {
-      findFirst: mocks.find,
       create: mocks.create,
       upsert: mocks.upsert,
-      update: mocks.update,
       deleteMany: mocks.remove,
-      updateMany: mocks.toggle,
+      updateMany: mocks.updateMany,
     },
   },
 }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
-vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
+vi.mock("next/navigation", () => ({ redirect: mocks.redirect, unstable_rethrow: vi.fn() }));
 import {
   saveCareAction,
   deleteCareAction,
@@ -50,6 +46,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   mocks.user.mockResolvedValue({ id: "user-1", timezone: "Asia/Ho_Chi_Minh" });
   mocks.baby.mockResolvedValue({ id: "baby-1" });
+  mocks.updateMany.mockResolvedValue({ count: 1 });
 });
 describe("care journal actions", () => {
   it("validates ownership before creating and converts account local time", async () => {
@@ -67,22 +64,41 @@ describe("care journal actions", () => {
         mood: null,
       }),
     });
+    expect(mocks.redirect).toHaveBeenCalledWith("/baby/meals?saved=1");
     mocks.baby.mockResolvedValueOnce(null);
-    await expect(saveCareAction(form())).rejects.toThrow("Không tìm thấy");
+    await expect(saveCareAction(form())).resolves.toEqual({ error: "Không tìm thấy hồ sơ bé" });
     expect(mocks.create).toHaveBeenCalledTimes(1);
+    expect(mocks.redirect).toHaveBeenCalledTimes(1);
   });
-  it("rejects foreign entry edits and invalid or future actual dates", async () => {
-    mocks.find.mockResolvedValue(null);
-    await expect(saveCareAction(form({ id: "foreign" }))).rejects.toThrow(
-      "Không tìm thấy bản ghi",
-    );
+  it("updates only entries of this baby and section", async () => {
+    await saveCareAction(form({ id: "entry-1" }));
+    expect(mocks.updateMany).toHaveBeenCalledWith({
+      where: { id: "entry-1", babyId: "baby-1", kind: "MEAL" },
+      data: expect.objectContaining({ title: "Cháo", amount: "3 thìa" }),
+    });
+    expect(mocks.redirect).toHaveBeenCalledTimes(1);
+  });
+  it("returns an error for deleted or foreign entries and invalid or future actual dates", async () => {
+    mocks.updateMany.mockResolvedValue({ count: 0 });
+    await expect(saveCareAction(form({ id: "foreign" }))).resolves.toEqual({
+      error: expect.stringContaining("không còn tồn tại"),
+    });
     await expect(
       saveCareAction(form({ occurredAt: "2026-02-31T08:30" })),
-    ).rejects.toThrow("Thời điểm");
+    ).resolves.toEqual({ error: expect.stringContaining("Thời điểm") });
     await expect(
       saveCareAction(form({ occurredAt: "2099-01-01T08:30" })),
-    ).rejects.toThrow("tương lai");
-    expect(mocks.update).not.toHaveBeenCalled();
+    ).resolves.toEqual({ error: expect.stringContaining("tương lai") });
+    await expect(saveCareAction(form({ title: "" }))).resolves.toEqual({ error: "Nhập tên hoạt động" });
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(mocks.redirect).not.toHaveBeenCalled();
+  });
+  it("explains a badge already used by another entry instead of failing generically", async () => {
+    mocks.updateMany.mockRejectedValue(Object.assign(new Error("Unique constraint failed"), { code: "P2002", meta: { target: ["babyId", "milestoneKey"] } }));
+    await expect(
+      saveCareAction(form({ section: "milestones", id: "entry-2", milestoneKey: "smile", title: "Nụ cười" })),
+    ).resolves.toEqual({ error: expect.stringContaining("Huy hiệu này đã được ghi") });
+    expect(mocks.redirect).not.toHaveBeenCalled();
   });
   it("scopes deletion to the baby and record kind", async () => {
     await deleteCareAction(form({ id: "entry-1" }));
@@ -108,7 +124,7 @@ describe("care journal actions", () => {
     await toggleRoutineAction(
       form({ section: "routine", id: "plan-1", completed: "true" }),
     );
-    expect(mocks.toggle).toHaveBeenCalledWith({
+    expect(mocks.updateMany).toHaveBeenCalledWith({
       where: { id: "plan-1", babyId: "baby-1", kind: "ROUTINE" },
       data: { completed: true },
     });
@@ -131,7 +147,7 @@ describe("care journal actions", () => {
   it("uses an ownership-scoped unique badge key and rejects unknown badge keys", async () => {
     await saveCareAction(form({ section: "milestones", milestoneKey: "smile", title: "Nụ cười" }));
     expect(mocks.upsert).toHaveBeenCalledWith(expect.objectContaining({ where: { babyId_milestoneKey: { babyId: "baby-1", milestoneKey: "smile" } }, create: expect.objectContaining({ kind: "MILESTONE", milestoneKey: "smile" }) }));
-    await expect(saveCareAction(form({ section: "milestones", milestoneKey: "invalid" }))).rejects.toThrow("Huy hiệu không hợp lệ");
+    await expect(saveCareAction(form({ section: "milestones", milestoneKey: "invalid" }))).resolves.toEqual({ error: "Huy hiệu không hợp lệ" });
   });
   it("rejects invalid uploads before writing", async () => {
     const data = form({ section: "milestones" });
@@ -139,7 +155,7 @@ describe("care journal actions", () => {
       "photo",
       new File(["not a photo"], "fake.png", { type: "image/png" }),
     );
-    await expect(saveCareAction(data)).rejects.toThrow("ảnh không hợp lệ");
+    await expect(saveCareAction(data)).resolves.toEqual({ error: "Nội dung ảnh không hợp lệ" });
     expect(mocks.create).not.toHaveBeenCalled();
   });
 });

@@ -79,8 +79,7 @@ export default async function DevelopmentPage({
   ]);
   if (query.edit && !edit) notFound();
   const active = episodes.find((e) => !e.endedAt);
-  const locale = user.locale === "en" ? "en" : "vi";
-  const date = (d: Date) => formatDateTime(d, user.timezone, locale);
+  const date = (d: Date) => formatDateTime(d, user.timezone);
   const nearest = LEAP_WEEKS.map((value, index) => ({ value, index })).sort(
     (a, b) => Math.abs(a.value - week) - Math.abs(b.value - week),
   )[0];

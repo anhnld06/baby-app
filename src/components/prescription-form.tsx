@@ -7,6 +7,7 @@ import { Field, TextAreaField } from "@/components/form-fields";
 import { OcrScanField } from "@/components/ocr-scan-field";
 import { Button } from "@/components/ui/button";
 import { toDateInputValue } from "@/lib/date";
+import { asFormAction } from "@/lib/form-action";
 
 type ItemValues = {
   medicineName: string;
@@ -41,7 +42,6 @@ export function PrescriptionForm({
   babyId,
   editing,
   labels,
-  locale,
 }: {
   babyId: string;
   editing?: {
@@ -68,11 +68,10 @@ export function PrescriptionForm({
     scanning: string;
     ocrUnavailable: string;
   };
-  locale: "vi" | "en";
 }) {
   const [prescribedBy, setPrescribedBy] = useState(editing?.prescribedBy ?? "");
   const [diagnosis, setDiagnosis] = useState(editing?.diagnosis ?? "");
-  const [issuedAt, setIssuedAt] = useState(editing ? toDateInputValue(editing.issuedAt) : "");
+  const [issuedAt, setIssuedAt] = useState(editing ? toDateInputValue(editing.issuedAt, "UTC") : "");
   const [notes, setNotes] = useState(editing?.notes ?? "");
   const [items, setItems] = useState<ItemValues[]>(
     editing && editing.items.length > 0
@@ -92,13 +91,12 @@ export function PrescriptionForm({
   }
 
   return (
-    <form id="prescription-form" action={savePrescriptionAction} className="space-y-4">
+    <form id="prescription-form" action={asFormAction(savePrescriptionAction)} className="space-y-4">
       <input type="hidden" name="babyId" value={babyId} />
       <input type="hidden" name="source" value={source} />
       {editing && <input type="hidden" name="id" value={editing.id} />}
       <OcrScanField
         recordType="prescription"
-        locale={locale}
         scanLabel={labels.scanPhoto}
         scanningLabel={labels.scanning}
         unavailableLabel={labels.ocrUnavailable}

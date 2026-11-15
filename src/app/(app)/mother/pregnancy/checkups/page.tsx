@@ -15,7 +15,6 @@ import { pregnancyAge } from "@/features/mother/pregnancy";
 import { selectRelevantPregnancy } from "@/features/mother/pregnancy";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getLocale } from "@/lib/i18n";
 
 const LEVEL_STYLE = {
   UNKNOWN: { icon: AlertTriangle, label: "Chưa đủ dữ liệu", className: "bg-secondary text-muted-foreground" },
@@ -25,7 +24,7 @@ const LEVEL_STYLE = {
 } as const;
 
 export default async function PregnancyTrackingPage({ searchParams }: { searchParams: Promise<{ edit?: string; page?: string; pregnancy?: string }> }) {
-  const [user, locale, params] = await Promise.all([requireUser(), getLocale(), searchParams]);
+  const [user, params] = await Promise.all([requireUser(), searchParams]);
   const mother = await db.mother.findUnique({ where: { userId: user.id }, include: { pregnancies: { orderBy: { createdAt: "desc" } } } });
   const sourceRecord = params.edit ? await db.pregnancyCheckup.findFirst({ where: { id: params.edit, pregnancy: { mother: { userId: user.id } } }, select: { pregnancyId: true } }) : null;
   const requestedPregnancy = sourceRecord?.pregnancyId ?? params.pregnancy;
@@ -64,7 +63,6 @@ export default async function PregnancyTrackingPage({ searchParams }: { searchPa
         },
         flags: assessment.flags,
         level: assessment.level,
-        locale: "vi",
       });
     } catch {
       aiNote = null;
@@ -75,7 +73,7 @@ export default async function PregnancyTrackingPage({ searchParams }: { searchPa
   return (
     <>
       <div className={styles.intro}><span className={styles.eyebrow}>Hồ sơ của mẹ & bé</span><h2 className={styles.heading}>Khám & lịch</h2><p className={styles.muted}>Phiếu khám, siêu âm và lời dặn. Giữ nguyên những gì bác sĩ đã ghi.</p></div>
-      <section className={`${styles.panel} flex items-center justify-between gap-3`}><div><p className={styles.eyebrow}>{pregnancy.pregnancyStatus === "PREGNANT" ? "Thai kỳ đang theo dõi" : "Hồ sơ thai kỳ"}</p><p className="mt-1 text-sm">{age ? `${age.weeks} tuần ${age.days} ngày · ` : ""}Dự sinh {pregnancy.estimatedDueDate ? new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(pregnancy.estimatedDueDate) : "chưa ghi"}</p></div>{pregnancy.id === selectRelevantPregnancy(mother.pregnancies)?.id && <Link className={styles.textLink} href="/profile/pregnancy">Chỉnh sửa</Link>}</section>
+      <section className={`${styles.panel} flex items-center justify-between gap-3`}><div><p className={styles.eyebrow}>{pregnancy.pregnancyStatus === "PREGNANT" ? "Thai kỳ đang theo dõi" : "Hồ sơ thai kỳ"}</p><p className="mt-1 text-sm">{age ? `${age.weeks} tuần ${age.days} ngày · ` : ""}Dự sinh {pregnancy.estimatedDueDate ? new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium", timeZone: "UTC" }).format(pregnancy.estimatedDueDate) : "chưa ghi"}</p></div>{pregnancy.id === selectRelevantPregnancy(mother.pregnancies)?.id && <Link className={styles.textLink} href="/profile/pregnancy">Chỉnh sửa</Link>}</section>
       {assessment && levelStyle && LevelIcon && (
         <Card className="mb-5 border-0 shadow-sm">
           <CardContent className="p-5">

@@ -4,7 +4,10 @@ import { listUserReminders } from "@/features/reminders/candidates";
 import { remindersDueForPush } from "@/features/reminders/push";
 import { medicationPushReminders } from "@/features/reminders/medication";
 import { toDateTimeLocal } from "@/lib/date";
+import { pruneExpiredRecords, releaseStaleReminderDeliveries } from "@/lib/data-retention";
 import { db } from "@/lib/db";
+import { isAllowedPushEndpoint } from "@/lib/push-endpoint";
+import { equalSecret } from "@/lib/secret-compare";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,12 +19,19 @@ function statusCode(error: unknown) {
 }
 
 export async function GET(request: Request) {
-  if (
-    !process.env.CRON_SECRET ||
-    request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || !equalSecret(request.headers.get("authorization") ?? "", `Bearer ${secret}`)) {
     return new Response("Unauthorized", { status: 401 });
   }
+
+  // Housekeeping runs even without push configured; a cleanup failure must not block reminders.
+  let pruned: Awaited<ReturnType<typeof pruneExpiredRecords>> | null = null;
+  try {
+    pruned = await pruneExpiredRecords();
+  } catch (error) {
+    console.error("Data retention cleanup failed", error);
+  }
+
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
   const subject = process.env.VAPID_SUBJECT;
@@ -31,6 +41,8 @@ export async function GET(request: Request) {
   webpush.setVapidDetails(subject, publicKey, privateKey);
 
   const now = new Date();
+  // Claims left unsent by a timed-out run would otherwise block these reminders forever.
+  const released = await releaseStaleReminderDeliveries(now);
   const users = await db.user.findMany({
     where: { pushSubscriptions: { some: {} } },
     select: { id: true, timezone: true, pushSubscriptions: true },
@@ -39,6 +51,18 @@ export async function GET(request: Request) {
   let removed = 0;
 
   for (const user of users) {
+    // Subscriptions stored before endpoints were restricted to known push
+    // services must not make the server call arbitrary hosts (SSRF).
+    const subscriptions = [];
+    for (const subscription of user.pushSubscriptions) {
+      if (isAllowedPushEndpoint(subscription.endpoint)) {
+        subscriptions.push(subscription);
+      } else {
+        await db.pushSubscription.deleteMany({ where: { id: subscription.id } });
+        removed += 1;
+      }
+    }
+    if (subscriptions.length === 0) continue;
     const day = toDateTimeLocal(now, user.timezone).slice(0, 10);
     const schedules = await db.medicationSchedule.findMany({
       where: { baby: { userId: user.id }, active: true },
@@ -49,7 +73,7 @@ export async function GET(request: Request) {
       user.timezone,
       now,
     ), ...medicationPushReminders(schedules, user.timezone, now)];
-    for (const subscription of user.pushSubscriptions) {
+    for (const subscription of subscriptions) {
       for (const reminder of candidates) {
         let delivery;
         try {
@@ -102,5 +126,5 @@ export async function GET(request: Request) {
       }
     }
   }
-  return Response.json({ sent, removed, checkedUsers: users.length });
+  return Response.json({ sent, removed, released, pruned, checkedUsers: users.length });
 }

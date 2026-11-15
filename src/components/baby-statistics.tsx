@@ -12,6 +12,7 @@ import { db } from "@/lib/db";
 import { getSelectedBabyId, listBabies, pickSelectedBaby } from "@/lib/data";
 import { dailyCareStats } from "@/features/care/stats";
 import { zonedDateTimeToUtc, toDateTimeLocal } from "@/lib/date";
+import { formatNumber } from "@/lib/format";
 export async function BabyStatistics({
   searchParams,
 }: {
@@ -146,7 +147,7 @@ export async function BabyStatistics({
                   {value == null ? "—" : Number(value.toFixed(1))}{" "}
                   <span className="text-xs font-normal">{chart.unit}</span>
                 </p>
-                <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
                   {value != null && previous != null
                     ? `${value - previous >= 0 ? "+" : ""}${Number((value - previous).toFixed(1))} ${chart.unit} so với ngày trước`
                     : "Chưa đủ bản ghi để so sánh"}
@@ -208,9 +209,7 @@ export async function BabyStatistics({
               </div>
               <p className="mt-2 text-3xl font-semibold tabular-nums">
                 {rows.some((r) => r[chart.key] !== null)
-                  ? new Intl.NumberFormat(user.locale, {
-                      maximumFractionDigits: 1,
-                    }).format(total)
+                  ? formatNumber(total, 1)
                   : "—"}{" "}
                 <span className="text-sm font-normal text-muted-foreground">
                   {chart.unit} / {days} ngày
@@ -221,7 +220,6 @@ export async function BabyStatistics({
                   label={chart.title}
                   unit={chart.unit}
                   tone={tone}
-                  locale={user.locale}
                   rows={rows.map((row) => ({
                     key: row.day,
                     label: `${row.day.slice(8)}/${row.day.slice(5, 7)}`,
@@ -280,7 +278,7 @@ export async function BabyStatistics({
         measurements={growth}
         dateOfBirth={baby.dateOfBirth}
         gestationalAgeAtBirth={baby.gestationalAgeAtBirth}
-        locale={user.locale === "en" ? "en" : "vi"}
+        timeZone={user.timezone}
       />
       <Link
         href="/tracking/growth"

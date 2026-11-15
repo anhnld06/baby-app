@@ -3,7 +3,7 @@
 Trạng thái: `DONE` | `PARTIAL` | `IN_PROGRESS` | `NOT_RESEARCHED` | `NEEDS_UPDATE` | `CONFLICTING`
 
 Ghi chú kiến trúc: ứng dụng lưu knowledge trực tiếp trong
-`src/features/knowledge/articles.ts` (mảng `curatedArticles`, khớp với model Prisma
+`prisma/data/articles.ts` (mảng `curatedArticles`, khớp với model Prisma
 `KnowledgeArticle` + `KnowledgeSource` + `KnowledgeChunk`). Không có schema
 `whatParentsMayNotice` / `whenToContactDoctor` / `emergencySigns` dạng field riêng — các
 mục này được viết dưới dạng heading markdown (`## Cần khám ngay`, `## Đi khám nếu`, ...)
@@ -380,7 +380,7 @@ vì tạo thêm bài riêng.
 # TỔNG KẾT TOÀN DỰ ÁN (sau khi hoàn tất cả 14 batch)
 
 ## Quy mô cuối cùng
-- **197 bài viết** (`curatedArticles`) trong `src/features/knowledge/articles.ts`.
+- **197 bài viết** (`curatedArticles`) trong `prisma/data/articles.ts`.
 - **~523 nguồn** (`sources`) — mỗi nguồn có organization/title/url/evidenceTier bằng tiếng Việt.
 - `npm test -- src/features/knowledge`: 9/9 pass. `npm run typecheck`: sạch, xuyên suốt 14 batch.
 

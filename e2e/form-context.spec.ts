@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+/** Wait until React has revealed every streamed segment (hidden div#S:n copies briefly duplicate content). */
+const streamed = (p: Page) => p.waitForFunction(() => !document.querySelector('div[hidden][id^="S:"]'));
 
 test.use({ viewport: { width: 390, height: 844 } });
 test.beforeEach(async ({ page }) => {
@@ -14,6 +16,7 @@ const keys = (page: Page, form: string) => page.locator(form).evaluate((element)
 // These tests only inspect drafts and FormData; they never submit health records.
 test("tã ướt không gửi chi tiết phân, đổi lại giữ bản nháp", async ({ page }) => {
   await page.goto("/tracking/diaper?new=1");
+  await streamed(page);
   const type = page.locator('#diaper-form [name="type"]');
   const color = page.locator('[name="stoolColor"]');
   await expect(color).toBeHidden();
@@ -33,6 +36,7 @@ test("tã ướt không gửi chi tiết phân, đổi lại giữ bản nháp",
 test("nơi đăng ký khám chỉ thuộc BHYT của cả mẹ và bé", async ({ page }) => {
   for (const route of ["/mother/insurance", "/baby/insurance"]) {
     await page.goto(route);
+    await streamed(page);
     await page.getByRole("button", { name: "Thêm bảo hiểm", exact: true }).click();
     const type = page.locator('[name="insuranceType"]');
     const care = page.locator('[name="registeredCare"]');
@@ -49,8 +53,11 @@ test("nơi đăng ký khám chỉ thuộc BHYT của cả mẹ và bé", async (
 
 test("tư thế đo chỉ hiện khi có chiều dài/chiều cao", async ({ page }) => {
   await page.goto("/tracking/growth?new=1");
+  await streamed(page);
   // Some journal pages open the new-record form using their add button.
-  if (!(await page.locator('[name="heightCm"]').isVisible())) {
+  // Wait for the page to finish streaming before deciding whether the form is already open.
+  await page.locator("main h1").waitFor();
+  if (!(await page.locator('[name="heightCm"]:visible').first().isVisible().catch(() => false))) {
     await page.getByRole("button", { name: /Ghi.*(tăng trưởng|số đo)|Thêm.*(số đo|tăng trưởng)/i }).click();
   }
   const height = page.locator('[name="heightCm"]');
@@ -67,6 +74,7 @@ test("tư thế đo chỉ hiện khi có chiều dài/chiều cao", async ({ pag
 
 test("hồ sơ và phiếu thai kỳ hiện đúng nhóm trường", async ({ page }) => {
   await page.goto("/profile/pregnancy");
+  await streamed(page);
   const status = page.locator('[name="pregnancyStatus"]');
   await status.selectOption("PLANNING");
   await expect(page.locator('#estimatedDueDate')).toBeHidden();
@@ -76,6 +84,7 @@ test("hồ sơ và phiếu thai kỳ hiện đúng nhóm trường", async ({ pa
   await status.selectOption("PREGNANT");
   expect(await keys(page, "#pregnancy-form")).not.toContain("actualDeliveryDate");
   await page.goto("/mother/pregnancy/checkups");
+  await streamed(page);
   await expect(page.getByRole("heading", { name: "Khám & lịch", exact: true })).toBeVisible();
   if (!(await page.locator('[name="visitType"]').isVisible())) {
     const add = page.getByRole("button", { name: "Thêm lần khám mới", exact: true });

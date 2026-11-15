@@ -91,14 +91,14 @@ export async function MilestoneCollection({
           >
             <MilestoneBadge item={item} achieved={item.achieved} />
             <span
-              className={`mt-1 rounded-full px-2 py-1 text-[9px] font-semibold ${item.achieved ? "bg-secondary text-primary" : "bg-muted text-muted-foreground"}`}
+              className={`mt-1 rounded-2xl px-2 py-1 text-xs font-semibold leading-4 ${item.achieved ? "bg-secondary text-primary" : "bg-muted text-muted-foreground"}`}
             >
               {item.achieved ? "Đã lưu dấu mốc" : "Chưa ghi nhận"}
             </span>
             <span className="mt-2 text-xs font-semibold leading-5">
               {item.title}
             </span>
-            <span className="mt-1 text-[10px] leading-4 text-muted-foreground">
+            <span className="mt-1 text-xs leading-4 text-muted-foreground">
               {item.date
                 ? item.date
                     .toISOString()
@@ -111,14 +111,14 @@ export async function MilestoneCollection({
                   : "Chạm để lưu kỷ niệm"}
             </span>
             {item.referenceMonth && (
-              <span className="mt-1 text-[10px] text-primary">
+              <span className="mt-1 text-xs text-primary">
                 {item.achieved
                   ? "Đã ghi nhận"
                   : "Ghi khi gia đình quan sát thấy"}
               </span>
             )}
           </Link>
-          <div className="flex flex-col items-center pb-3 text-center text-[10px]">
+          <div className="flex flex-col items-center pb-3 text-center text-xs">
             <Link href={`/baby/mailbox?milestone=${item.key}`} className="flex min-h-11 items-center text-primary">💌 {letterCounts.get(item.key) ?? 0} thư kỷ niệm</Link>
             <Link href={`/baby/mailbox?milestone=${item.key}&new=1`} className="flex min-h-11 items-center text-muted-foreground underline">Viết thư cho mốc này</Link>
           </div>

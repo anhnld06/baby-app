@@ -1,4 +1,7 @@
-import { differenceInCalendarDays, differenceInMonths, differenceInYears, format } from "date-fns";
+import { differenceInCalendarDays } from "date-fns/differenceInCalendarDays";
+import { differenceInMonths } from "date-fns/differenceInMonths";
+import { differenceInYears } from "date-fns/differenceInYears";
+import { format } from "date-fns/format";
 
 type DateTimeParts = {
   year: number;
@@ -45,7 +48,13 @@ export function toDateTimeLocal(date: Date = new Date(), timeZone?: string) {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
 
-export function toDateInputValue(date: Date = new Date()) {
+/**
+ * Value for an `<input type="date">`. Pass the account timezone for "today"
+ * or a timestamp, and "UTC" for `@db.Date` columns (stored at UTC midnight).
+ * Without a timezone the runtime's local calendar is used (server or browser).
+ */
+export function toDateInputValue(date: Date = new Date(), timeZone?: string) {
+  if (timeZone) return toDateTimeLocal(date, timeZone).slice(0, 10);
   const offset = date.getTimezoneOffset() * 60_000;
   return new Date(date.getTime() - offset).toISOString().slice(0, 10);
 }
@@ -84,21 +93,36 @@ export function parseDateInputDisplay(value: string, includeTime = false) {
   return `${isoDate}T${match[4]}:${match[5]}`;
 }
 
-export function formatDuration(totalMinutes: number, locale = "vi") {
+export function formatDuration(totalMinutes: number) {
   const minutes = Math.max(0, Math.round(totalMinutes));
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  if (locale === "vi") return hours > 0 ? `${hours}g ${rest}p` : `${rest}p`;
-  return hours > 0 ? `${hours}h ${rest}m` : `${rest}m`;
+  return hours > 0 ? `${hours}g ${rest}p` : `${rest}p`;
 }
 
-export function formatAge(dateOfBirth: Date, now = new Date(), locale = "vi") {
-  const days = Math.max(0, differenceInCalendarDays(now, dateOfBirth));
-  if (days < 31) return locale === "vi" ? `${days} ngày tuổi` : `${days} days old`;
-  const months = differenceInMonths(now, dateOfBirth);
-  if (months < 24) return locale === "vi" ? `${months} tháng tuổi` : `${months} months old`;
-  const years = differenceInYears(now, dateOfBirth);
-  return locale === "vi" ? `${years} tuổi` : `${years} years old`;
+/**
+ * Calendar dates to compare for an age. With a timezone, the birth date is a
+ * `@db.Date` (its UTC calendar day) and "now" is the account's calendar day,
+ * so the age does not depend on the server's or browser's timezone. Both are
+ * rebuilt as runtime-local midnights so date-fns compares exactly those days.
+ */
+function ageCalendarDates(dateOfBirth: Date, now: Date, timeZone?: string) {
+  if (!timeZone) return { birth: dateOfBirth, today: now };
+  const today = partsInTimeZone(now, timeZone);
+  return {
+    birth: new Date(dateOfBirth.getUTCFullYear(), dateOfBirth.getUTCMonth(), dateOfBirth.getUTCDate()),
+    today: new Date(today.year, today.month - 1, today.day),
+  };
+}
+
+export function formatAge(dateOfBirth: Date, now = new Date(), timeZone?: string) {
+  const { birth, today } = ageCalendarDates(dateOfBirth, now, timeZone);
+  const days = Math.max(0, differenceInCalendarDays(today, birth));
+  if (days < 31) return `${days} ngày tuổi`;
+  const months = differenceInMonths(today, birth);
+  if (months < 24) return `${months} tháng tuổi`;
+  const years = differenceInYears(today, birth);
+  return `${years} tuổi`;
 }
 
 export function formatDateOfBirth(date: Date) {
@@ -117,8 +141,8 @@ export function greetingPeriod(date: Date, timeZone: string): GreetingPeriod {
   return "evening";
 }
 
-export function formatDateTime(date: Date, timeZone: string, locale: "vi" | "en" = "vi") {
-  return new Intl.DateTimeFormat(locale === "vi" ? "vi-VN" : "en-US", {
+export function formatDateTime(date: Date, timeZone: string) {
+  return new Intl.DateTimeFormat("vi-VN", {
     timeZone,
     day: "2-digit",
     month: "2-digit",
@@ -128,8 +152,9 @@ export function formatDateTime(date: Date, timeZone: string, locale: "vi" | "en"
   }).format(date);
 }
 
-export function ageInDays(dateOfBirth: Date, now = new Date()) {
-  return Math.max(0, differenceInCalendarDays(now, dateOfBirth));
+export function ageInDays(dateOfBirth: Date, now = new Date(), timeZone?: string) {
+  const { birth, today } = ageCalendarDates(dateOfBirth, now, timeZone);
+  return Math.max(0, differenceInCalendarDays(today, birth));
 }
 
 export function zonedDateTimeToUtc(value: string, timeZone: string) {

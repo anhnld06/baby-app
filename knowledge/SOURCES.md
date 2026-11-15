@@ -1,7 +1,7 @@
 # Nguồn tham khảo (Authoritative Sources)
 
 Danh sách này liệt kê các nguồn Tier A/B đã được dùng để xây dựng nội dung trong
-`src/features/knowledge/articles.ts` (bảng `KnowledgeArticle` của ứng dụng). Ứng dụng
+`prisma/data/articles.ts` (bảng `KnowledgeArticle` của ứng dụng). Ứng dụng
 hiện lưu kiến thức trực tiếp trong code (`curatedArticles`), không dùng file JSON/Markdown
 riêng — vì vậy đây là bản mục lục kèm ghi chú, không phải nguồn dữ liệu runtime.
 

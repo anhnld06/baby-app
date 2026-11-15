@@ -6,6 +6,7 @@ import {
   saveCycleSettingsAction,
   saveMenstrualCycleAction,
 } from "@/app/actions";
+import { ActionResultForm } from "@/components/action-result-form";
 import { CycleDashboard } from "@/components/cycle-dashboard";
 import { Field, SelectField, TextAreaField } from "@/components/form-fields";
 import { PageHeader } from "@/components/page-header";
@@ -19,7 +20,6 @@ import {
 } from "@/features/mother/insights";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getLocale } from "@/lib/i18n";
 
 const dateInput = (date?: Date | null) => date?.toISOString().slice(0, 10) ?? "";
 const dayMs = 86_400_000;
@@ -31,7 +31,7 @@ const confidenceLabel = {
 } as const;
 
 export default async function CyclePage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
-  const [user, locale, params] = await Promise.all([requireUser(), getLocale(), searchParams]);
+  const [user, params] = await Promise.all([requireUser(), searchParams]);
   const mother = await db.mother.findUnique({ where: { userId: user.id } });
   if (!mother) return <><PageHeader compact title="Chu kỳ kinh" backHref="/mother" /><p className="text-sm text-muted-foreground">Hãy tạo hồ sơ mẹ trước.</p></>;
 
@@ -100,12 +100,12 @@ export default async function CyclePage({ searchParams }: { searchParams: Promis
           <div className="rounded-2xl bg-card p-4 shadow-sm">
             <p className="text-xs text-muted-foreground">Độ dài trung bình</p>
             <strong className="mt-1 block text-xl">{effectiveCycleLength} ngày</strong>
-            {!observedAverage && <span className="text-[11px] text-muted-foreground">Theo thiết lập</span>}
+            {!observedAverage && <span className="text-xs text-muted-foreground">Theo thiết lập</span>}
           </div>
           <div className="rounded-2xl bg-card p-4 shadow-sm">
             <p className="text-xs text-muted-foreground">Độ tin cậy dự báo</p>
             <strong className="mt-1 block text-xl">{confidenceLabel[analysis.confidence]}</strong>
-            <span className="text-[11px] text-muted-foreground">{analysis.lengths.length} khoảng chu kỳ</span>
+            <span className="text-xs text-muted-foreground">{analysis.lengths.length} khoảng chu kỳ</span>
           </div>
         </div>
         {analysis.irregular && (
@@ -117,7 +117,7 @@ export default async function CyclePage({ searchParams }: { searchParams: Promis
 
       <details className="mt-5 rounded-2xl border bg-card p-4 shadow-sm">
         <summary className="flex cursor-pointer list-none items-center gap-2 font-medium"><Settings2 className="size-4" />Thiết lập dự báo cá nhân</summary>
-        <form action={saveCycleSettingsAction} className="mt-5 space-y-4">
+        <ActionResultForm action={saveCycleSettingsAction} className="mt-5 space-y-4">
           <input type="hidden" name="motherId" value={mother.id} />
           <div className="grid gap-4 sm:grid-cols-3">
             <Field name="cycleLengthDays" type="number" min="15" max="60" required label="Chu kỳ thường dài (ngày)" defaultValue={mother.cycleLengthDays} />
@@ -126,13 +126,13 @@ export default async function CyclePage({ searchParams }: { searchParams: Promis
           </div>
           <p className="text-xs leading-5 text-muted-foreground">Khi có từ hai chu kỳ hợp lệ, lịch sử thực tế được ưu tiên hơn độ dài chu kỳ thiết lập.</p>
           <Button type="submit" className="h-11 w-full rounded-xl">Lưu thiết lập</Button>
-        </form>
+        </ActionResultForm>
       </details>
 
       <EditFormTarget recordId={editing?.id}>
       <details open={Boolean(editing)} className="mt-5 rounded-2xl border bg-card p-4 shadow-sm">
         <summary className="cursor-pointer font-medium">{editing ? "Chỉnh sửa kỳ kinh" : "Thêm kỳ kinh theo khoảng ngày"}</summary>
-        <form action={saveMenstrualCycleAction} className="mt-5 space-y-4">
+        <ActionResultForm action={saveMenstrualCycleAction} className="mt-5 space-y-4">
           <input type="hidden" name="motherId" value={mother.id} />
           {editing && <input type="hidden" name="id" value={editing.id} />}
           <div className="grid gap-4 sm:grid-cols-2">
@@ -148,7 +148,7 @@ export default async function CyclePage({ searchParams }: { searchParams: Promis
             {editing && <Link href="/mother/cycle" className="grid h-11 place-items-center rounded-xl border px-4 text-sm font-medium">Hủy</Link>}
             <Button type="submit" className="h-11 flex-1 rounded-xl"><CalendarDays className="size-4" />{editing ? "Cập nhật kỳ kinh" : "Xác nhận kỳ kinh"}</Button>
           </div>
-        </form>
+        </ActionResultForm>
       </details>
       </EditFormTarget>
 
@@ -158,8 +158,8 @@ export default async function CyclePage({ searchParams }: { searchParams: Promis
             <div key={cycle.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 shadow-sm">
               <span className="grid size-10 place-items-center rounded-xl bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"><CalendarDays className="size-4" /></span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">{new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long", year: "numeric" }).format(cycle.periodStart)}</p>
-                <p className="text-xs text-muted-foreground">{cycle.periodEnd ? `Đến ${new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" }).format(cycle.periodEnd)}` : "Chưa ghi ngày kết thúc"}</p>
+                <p className="text-sm font-medium">{new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "long", year: "numeric" }).format(cycle.periodStart)}</p>
+                <p className="text-xs text-muted-foreground">{cycle.periodEnd ? `Đến ${new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "short" }).format(cycle.periodEnd)}` : "Chưa ghi ngày kết thúc"}</p>
               </div>
               <EditRecordLink href={`/mother/cycle?edit=${cycle.id}`} aria-label="Sửa kỳ kinh" className="grid size-11 place-items-center rounded-lg text-muted-foreground hover:bg-secondary"><Pencil className="size-4" /></EditRecordLink>
               <form action={deleteMenstrualCycleAction}>

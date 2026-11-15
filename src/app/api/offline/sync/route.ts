@@ -3,6 +3,7 @@ import { OFFLINE_MUTATION_TYPES } from "@/features/offline/types";
 import { getCurrentUser } from "@/lib/auth";
 import { zonedDateTimeToUtc } from "@/lib/date";
 import { db } from "@/lib/db";
+import { isUniqueConstraintError } from "@/lib/prisma-errors";
 import { diaperSchema, feedingSchema, sleepSchema } from "@/lib/validation";
 
 const mutationSchema = z.object({
@@ -88,6 +89,28 @@ export async function POST(request: Request) {
     });
     return Response.json({ ok: true, ...result });
   } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      // Same mutation sent twice concurrently (e.g. two tabs flushing): the other request's receipt
+      // is committed by the time Postgres reports the conflict, so answer like the idempotent path.
+      const receipt = await db.offlineMutationReceipt
+        .findUnique({ where: { id: mutation.id } })
+        .catch(() => null);
+      if (receipt) {
+        if (receipt.userId !== user.id) {
+          return Response.json({ error: "Không có quyền ghi dữ liệu này" }, { status: 403 });
+        }
+        return Response.json({ ok: true, resultId: receipt.resultId, duplicate: true });
+      }
+      // Otherwise an open sleep/breastfeeding entry already exists (one running timer per baby).
+      return Response.json(
+        {
+          error: mutation.type === "CREATE_SLEEP"
+            ? "Bé đang có giấc ngủ chưa kết thúc. Hãy kết thúc giấc đó rồi đồng bộ lại."
+            : "Đang có cữ bú mẹ chưa kết thúc. Hãy kết thúc cữ đó rồi đồng bộ lại.",
+        },
+        { status: 409 },
+      );
+    }
     const message = error instanceof Error ? error.message : "sync-failed";
     if (message === "baby-not-found" || message === "mutation-owner-mismatch") {
       return Response.json({ error: "Không có quyền ghi dữ liệu này" }, { status: 403 });

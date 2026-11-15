@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { curatedArticles } from "@/features/knowledge/articles";
+import { curatedArticles } from "../../../prisma/data/articles";
 
 describe("curated mother and baby handbook", () => {
   it("covers every journey stage", () => {

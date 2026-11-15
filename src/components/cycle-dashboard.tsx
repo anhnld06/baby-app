@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, Printer, Save, Sparkles, Trash2 } from "lucide-react";
 import { deleteMotherDailyHealthLogAction, saveMotherDailyHealthLogAction } from "@/app/actions";
+import { ActionResultForm } from "@/components/action-result-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -121,7 +122,7 @@ export function CycleDashboard({
         <div className="relative flex items-center gap-5">
           <div className="relative grid size-32 shrink-0 place-items-center rounded-full bg-white/15" style={{ background: `conic-gradient(rgba(255,255,255,.95) ${progress}%, rgba(255,255,255,.18) ${progress}% 100%)` }}>
             <div className="grid size-[7rem] place-items-center rounded-full bg-rose-500/90 text-center backdrop-blur">
-              <div>{currentCycleDay ? <><strong className="block text-3xl">{currentCycleDay}</strong><span className="text-[11px] opacity-85">ngày chu kỳ</span></> : <CalendarDays className="size-7" />}</div>
+              <div>{currentCycleDay ? <><strong className="block text-3xl">{currentCycleDay}</strong><span className="text-xs opacity-85">ngày chu kỳ</span></> : <CalendarDays className="size-7" />}</div>
             </div>
           </div>
           <div className="min-w-0"><p className="text-xs font-medium uppercase tracking-[.15em] opacity-75">Hôm nay</p><h2 className="mt-2 text-xl font-semibold leading-6">{status}</h2><p className="mt-2 text-sm leading-5 opacity-85">{predictionText}</p></div>
@@ -135,7 +136,7 @@ export function CycleDashboard({
           <h2 className="font-semibold capitalize">{new Intl.DateTimeFormat("vi", { month: "long", year: "numeric" }).format(visibleMonth)}</h2>
           <button type="button" aria-label="Tháng sau" onClick={() => setVisibleMonth(new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1))} className="grid size-11 place-items-center rounded-full bg-secondary"><ChevronRight className="size-4" /></button>
         </div>
-        <div className="grid grid-cols-7 text-center">{weekDays.map((day) => <span key={day} className="pb-2 text-[11px] font-medium text-muted-foreground">{day}</span>)}</div>
+        <div className="grid grid-cols-7 text-center">{weekDays.map((day) => <span key={day} className="pb-2 text-xs font-medium text-muted-foreground">{day}</span>)}</div>
         <div className="grid grid-cols-7 gap-y-1">{calendarDays.map((date) => {
           const key = dateKey(date);
           const inMonth = date.getMonth() === visibleMonth.getMonth();
@@ -148,7 +149,7 @@ export function CycleDashboard({
             {date.getDate()}{log && <span className={cn("absolute -bottom-0.5 size-1 rounded-full bg-primary", actualPeriod && "bg-white", (log.ovulationTest === "POSITIVE" || log.ovulationTest === "PEAK") && "size-1.5 bg-teal-600")} />}
           </button>;
         })}</div>
-        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t pt-3 text-[11px] text-muted-foreground"><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-full bg-rose-500" />Kỳ kinh đã ghi</span><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-full border border-dashed border-rose-500" />Kỳ dự kiến</span><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-full bg-teal-200" />Dễ thụ thai ước tính</span></div>
+        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t pt-3 text-xs text-muted-foreground"><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-full bg-rose-500" />Kỳ kinh đã ghi</span><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-full border border-dashed border-rose-500" />Kỳ dự kiến</span><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-full bg-teal-200" />Dễ thụ thai ước tính</span></div>
       </section>
 
       <section className="mb-5 rounded-3xl bg-card p-4 shadow-sm">
@@ -163,9 +164,9 @@ export function CycleDashboard({
           <div className="mt-5 flex h-36 items-end gap-2 border-b border-l px-2 pt-3" aria-label="Biểu đồ độ dài chu kỳ">
             {cycleLengths.map((length, index) => (
               <div key={`${index}-${length}`} className="flex h-full min-w-0 flex-1 flex-col justify-end text-center">
-                <span className="mb-1 text-[10px] font-medium">{length}</span>
+                <span className="mb-1 text-xs font-medium">{length}</span>
                 <span className={cn("mx-auto w-full max-w-10 rounded-t-lg", length < 21 || length > 35 ? "bg-amber-400" : "bg-rose-400")} style={{ height: `${Math.max(18, Math.min(100, (length / 45) * 100))}%` }} />
-                <span className="mt-1 text-[9px] text-muted-foreground">K{index + 1}</span>
+                <span className="mt-1 text-xs text-muted-foreground">K{index + 1}</span>
               </div>
             ))}
           </div>
@@ -173,18 +174,18 @@ export function CycleDashboard({
       </section>
 
       <section className="rounded-3xl bg-card p-5 shadow-sm">
-        <div className="mb-5 flex items-start justify-between gap-3"><div><p className="text-xs text-muted-foreground">Nhật ký ngày</p><h2 className="mt-1 text-lg font-semibold capitalize">{new Intl.DateTimeFormat("vi", { weekday: "long", day: "2-digit", month: "long" }).format(parseDate(selected))}</h2></div>{selectedLog && <span className="rounded-full bg-secondary px-2 py-1 text-[11px] font-medium text-primary">Đã ghi</span>}</div>
-        <form key={`${selected}-${selectedLog?.id ?? "new"}`} action={saveMotherDailyHealthLogAction} className="space-y-6">
+        <div className="mb-5 flex items-start justify-between gap-3"><div><p className="text-xs text-muted-foreground">Nhật ký ngày</p><h2 className="mt-1 text-lg font-semibold capitalize">{new Intl.DateTimeFormat("vi", { weekday: "long", day: "2-digit", month: "long" }).format(parseDate(selected))}</h2></div>{selectedLog && <span className="rounded-full bg-secondary px-2 py-1 text-xs font-medium text-primary">Đã ghi</span>}</div>
+        <ActionResultForm key={`${selected}-${selectedLog?.id ?? "new"}`} action={saveMotherDailyHealthLogAction} className="space-y-6">
           <input type="hidden" name="motherId" value={motherId} /><input type="hidden" name="loggedAt" value={selected} />
           <fieldset><legend className="mb-3 text-sm font-medium">Lượng kinh</legend><div className="grid grid-cols-4 gap-2">{flowOptions.map((option) => <label key={option.value} className="cursor-pointer"><input className="peer sr-only" type="radio" name="flow" value={option.value} defaultChecked={selectedLog?.flow === option.value} /><span className="flex h-10 items-center justify-center rounded-xl border text-xs text-muted-foreground peer-checked:border-rose-500 peer-checked:bg-rose-50 peer-checked:font-medium peer-checked:text-rose-700 dark:peer-checked:bg-rose-950">{option.label}</span></label>)}</div><label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground"><input type="radio" name="flow" value="" defaultChecked={!selectedLog?.flow} />Không có kinh</label></fieldset>
           <ChipGroup name="symptoms" title="Triệu chứng" options={symptomOptions} selected={selectedLog?.symptoms ?? []} />
           <ChipGroup name="moods" title="Tâm trạng" options={moodOptions} selected={selectedLog?.moods ?? []} />
           <div className="space-y-2"><Label htmlFor="discharge">Dịch âm đạo</Label><select id="discharge" name="discharge" defaultValue={selectedLog?.discharge ?? ""} className="h-11 w-full rounded-xl border bg-background px-3 text-sm"><option value="">Không ghi</option><option value="DRY">Khô / ít</option><option value="CREAMY">Dạng kem</option><option value="WATERY">Loãng</option><option value="EGG_WHITE">Trong, dai như lòng trắng trứng</option><option value="UNUSUAL">Khác thường</option></select></div>
-          <div className="space-y-2"><Label htmlFor="ovulationTest">Que thử rụng trứng (LH)</Label><select id="ovulationTest" name="ovulationTest" defaultValue={selectedLog?.ovulationTest ?? ""} className="h-11 w-full rounded-xl border bg-background px-3 text-sm"><option value="">Chưa thử / không ghi</option><option value="NEGATIVE">Âm tính</option><option value="POSITIVE">Dương tính</option><option value="PEAK">Đỉnh LH</option></select><p className="text-[11px] leading-4 text-muted-foreground">Kết quả dương tính hoặc đỉnh LH sẽ điều chỉnh ngày rụng trứng ước tính của chu kỳ hiện tại.</p></div>
+          <div className="space-y-2"><Label htmlFor="ovulationTest">Que thử rụng trứng (LH)</Label><select id="ovulationTest" name="ovulationTest" defaultValue={selectedLog?.ovulationTest ?? ""} className="h-11 w-full rounded-xl border bg-background px-3 text-sm"><option value="">Chưa thử / không ghi</option><option value="NEGATIVE">Âm tính</option><option value="POSITIVE">Dương tính</option><option value="PEAK">Đỉnh LH</option></select><p className="text-xs leading-4 text-muted-foreground">Kết quả dương tính hoặc đỉnh LH sẽ điều chỉnh ngày rụng trứng ước tính của chu kỳ hiện tại.</p></div>
           <div className="grid grid-cols-2 gap-3"><MetricField name="sleepHours" label="Ngủ (giờ)" step="0.1" max="24" value={selectedLog?.sleepHours} /><MetricField name="basalTemperatureC" label="Nhiệt độ cơ bản (°C)" step="0.01" min="30" max="45" value={selectedLog?.basalTemperatureC} /><MetricField name="weightKg" label="Cân nặng (kg)" step="0.1" value={selectedLog?.weightKg} /><MetricField name="waterGlasses" label="Nước (ly)" step="1" max="100" value={selectedLog?.waterGlasses} /></div>
           <div className="space-y-2"><Label htmlFor="daily-notes">Ghi chú</Label><Textarea id="daily-notes" name="notes" className="min-h-20 rounded-xl bg-background" defaultValue={selectedLog?.notes ?? ""} placeholder="Điều gì đáng chú ý hôm nay?" /></div>
-          <div className="flex gap-2"><SaveDailyButton />{selectedLog && <Button type="submit" formAction={deleteMotherDailyHealthLogAction} name="id" value={selectedLog.id} variant="destructive" className="h-11 rounded-xl" aria-label="Xóa nhật ký ngày" onClick={(event) => { if (!window.confirm("Xóa nhật ký ngày này? Hành động này không thể hoàn tác.")) event.preventDefault(); }}><Trash2 className="size-4" /></Button>}</div>
-        </form>
+          <div className="flex gap-2"><SaveDailyButton />{selectedLog && <Button type="submit" data-own-action formAction={deleteMotherDailyHealthLogAction} name="id" value={selectedLog.id} variant="destructive" className="h-11 rounded-xl" aria-label="Xóa nhật ký ngày" onClick={(event) => { if (!window.confirm("Xóa nhật ký ngày này? Hành động này không thể hoàn tác.")) event.preventDefault(); }}><Trash2 className="size-4" /></Button>}</div>
+        </ActionResultForm>
       </section>
       <p className="mt-4 flex gap-2 rounded-2xl bg-secondary/60 p-3 text-xs leading-5 text-muted-foreground"><Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />Ngày rụng trứng và cửa sổ dễ thụ thai chỉ là ước tính từ lịch chu kỳ, có thể sai ngay cả khi chu kỳ đều. Không dùng dự báo này như biện pháp tránh thai hoặc chẩn đoán.</p>
     </>

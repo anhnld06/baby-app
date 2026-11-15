@@ -10,7 +10,8 @@ export type CalendarReminder = {
 export function escapeIcsText(value: string) {
   return value
     .replace(/\\/g, "\\\\")
-    .replace(/\r?\n/g, "\\n")
+    // Normalise CRLF, lone CR and LF: a raw CR would otherwise end the content line early.
+    .replace(/\r\n|\r|\n/g, "\\n")
     .replace(/,/g, "\\,")
     .replace(/;/g, "\\;");
 }

@@ -1,13 +1,20 @@
 import { forwardRef } from "react";
 import type { LucideIcon, LucideProps } from "lucide-react";
 
-/** Shared SVG assets from the approved pastel sticker collection. */
+/**
+ * Shared SVG assets from the approved pastel sticker collection.
+ * The artwork is a fixed-colour external file rendered through <image>, so
+ * stroke/colour props (and `text-*` classes) cannot restyle it; they are accepted
+ * only for drop-in compatibility with lucide icons and are discarded here.
+ * In dark mode `.dark .app-icon` (globals.css) adds a light backdrop for legibility.
+ */
 function createAppIcon(name: string): LucideIcon {
   const Icon = forwardRef<SVGSVGElement, LucideProps>(function AppIcon(
-    { size = 24, className, absoluteStrokeWidth: _absoluteStrokeWidth, ...props }, ref,
+    { size = 24, className, absoluteStrokeWidth: _absoluteStrokeWidth, strokeWidth: _strokeWidth, color: _color, ...props }, ref,
   ) {
-    // The artwork has fixed, intentionally rounded strokes.
     void _absoluteStrokeWidth;
+    void _strokeWidth;
+    void _color;
     return (
       <svg
         ref={ref}

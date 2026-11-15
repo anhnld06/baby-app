@@ -1,12 +1,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { getSelectedBaby } from "@/lib/data";
 import { db } from "@/lib/db";
-
-function safeCell(value: unknown) {
-  let text = value == null ? "" : String(value);
-  if (/^[=+\-@]/.test(text)) text = `'${text}`;
-  return `"${text.replace(/"/g, '""')}"`;
-}
+import { safeCsvCell } from "@/lib/csv";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -85,7 +80,7 @@ export async function GET() {
   const csv = [
     ["time", "type", "summary", "detail", "notes"],
     ...rows.map((row) => [row.at.toISOString(), row.type, row.summary, row.detail, row.notes]),
-  ].map((row) => row.map(safeCell).join(",")).join("\r\n");
+  ].map((row) => row.map(safeCsvCell).join(",")).join("\r\n");
 
   return new Response(`\uFEFF${csv}`, {
     headers: {

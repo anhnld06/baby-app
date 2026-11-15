@@ -19,8 +19,9 @@ export function correctedAgeInDays(
   dateOfBirth: Date,
   measuredAt: Date,
   gestationalAgeAtBirth?: number | null,
+  timeZone?: string,
 ) {
-  const chronologicalDays = ageInDays(dateOfBirth, measuredAt);
+  const chronologicalDays = ageInDays(dateOfBirth, measuredAt, timeZone);
   if (
     gestationalAgeAtBirth == null ||
     gestationalAgeAtBirth >= 37 ||
@@ -35,6 +36,7 @@ export function buildGrowthSeries(
   dateOfBirth: Date,
   metric: GrowthMetric,
   gestationalAgeAtBirth?: number | null,
+  timeZone?: string,
 ) {
   return measurements
     .flatMap<GrowthPoint>((measurement) => {
@@ -45,6 +47,7 @@ export function buildGrowthSeries(
           dateOfBirth,
           measurement.measuredAt,
           gestationalAgeAtBirth,
+          timeZone,
         ),
         measuredAt: measurement.measuredAt,
         value,

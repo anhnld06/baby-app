@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { unstable_rethrow } from "next/navigation";
+import { unstable_isUnrecognizedActionError, unstable_rethrow } from "next/navigation";
+import { useOffline } from "next/offline";
 import { LoaderCircle, Save, Trash2, X } from "lucide-react";
 import { useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
@@ -10,10 +11,21 @@ import type { OfflineMutationType } from "@/features/offline/types";
 import {
   isOfflineStorageEnabled,
   queueOfflineForm,
+  requestOfflineSync,
 } from "@/lib/offline-db";
+import {
+  actionErrorMessage,
+  failureKind,
+  SAVE_MESSAGES,
+} from "@/lib/form-action-errors";
 import { cn } from "@/lib/utils";
 
-type FormAction = (formData: FormData) => void | Promise<void>;
+/**
+ * Server actions may return `{ error }` (validation or business error, shown
+ * as-is and the inputs are kept) or throw (redirects are rethrown; anything
+ * else is reported without blaming the user's input).
+ */
+type FormAction = (formData: FormData) => void | Promise<void | { error: string }>;
 
 function DeleteButton({
   label,
@@ -67,6 +79,21 @@ export function FormActionBar({
   const [isSaving, startSaving] = useTransition();
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  // True once Next.js sees a failed request or the browser reports "offline".
+  // While offline, Next.js holds server actions and replays them when the
+  // connection returns, so a pending save is waiting rather than failing.
+  const networkOffline = useOffline();
+
+  async function queueLocally(form: HTMLFormElement, type: OfflineMutationType, formData: FormData) {
+    if (!isOfflineStorageEnabled()) {
+      setError(SAVE_MESSAGES.offlineDisabled);
+      return;
+    }
+    await queueOfflineForm(type, formData);
+    await requestOfflineSync();
+    form.reset();
+    setNotice(SAVE_MESSAGES.queued);
+  }
 
   function submitForm() {
     const form = document.getElementById(formId);
@@ -75,28 +102,51 @@ export function FormActionBar({
     setError("");
     setNotice("");
     startSaving(async () => {
-      try {
-        if (!navigator.onLine && offlineMutationType) {
-          if (!isOfflineStorageEnabled()) {
-            setError("Thiết bị đang mất mạng. Hãy bật “Ghi nhanh khi mất mạng” trong Hồ sơ để lưu tạm bản ghi.");
-            return;
-          }
-          await queueOfflineForm(offlineMutationType, new FormData(form));
-          const registration = await navigator.serviceWorker?.ready.catch(() => undefined);
-          const withSync = registration as
-            | (ServiceWorkerRegistration & { sync?: { register(tag: string): Promise<void> } })
-            | undefined;
-          await withSync?.sync?.register("vani-offline-sync").catch(() => undefined);
-          form.reset();
-          setNotice("Đã lưu tạm trên thiết bị. Bản ghi sẽ tự đồng bộ khi có mạng.");
-          return;
+      const formData = new FormData(form);
+      // Queue before calling the action: once a server action has been sent it
+      // cannot be cancelled, and queuing it too could create a duplicate record.
+      if (offlineMutationType && (!navigator.onLine || networkOffline)) {
+        try {
+          await queueLocally(form, offlineMutationType, formData);
+        } catch {
+          setError(SAVE_MESSAGES.queueFailed);
         }
-        await saveAction(new FormData(form));
+        return;
+      }
+      try {
+        const message = actionErrorMessage(await saveAction(formData));
+        if (message) setError(message);
       } catch (error) {
         unstable_rethrow(error);
-        setError("Chưa thể lưu vì có thông tin chưa hợp lệ. Hãy kiểm tra lại các trường và thử lại.");
+        const kind = failureKind(error, unstable_isUnrecognizedActionError(error));
+        if (kind === "network") {
+          // The request never reached the server, so it is safe to keep it locally instead.
+          if (offlineMutationType && isOfflineStorageEnabled()) {
+            try {
+              await queueLocally(form, offlineMutationType, formData);
+              return;
+            } catch {
+              // fall through to the network message
+            }
+          }
+        }
+        setError(SAVE_MESSAGES[kind]);
       }
     });
+  }
+
+  async function runDelete(formData: FormData) {
+    if (!deleteAction) return;
+    setError("");
+    setNotice("");
+    try {
+      const message = actionErrorMessage(await deleteAction(formData));
+      if (message) setError(message);
+    } catch (error) {
+      unstable_rethrow(error);
+      const kind = failureKind(error, unstable_isUnrecognizedActionError(error));
+      setError(kind === "generic" ? SAVE_MESSAGES.deleteFailed : SAVE_MESSAGES[kind]);
+    }
   }
 
   return (
@@ -121,7 +171,7 @@ export function FormActionBar({
         )}
         {deleteAction && deleteId && (
           <form
-            action={deleteAction}
+            action={runDelete}
             className="shrink-0"
             onSubmit={(event) => {
               if (!window.confirm(`${deleteLabel}? Hành động này không thể hoàn tác.`)) {
@@ -152,6 +202,11 @@ export function FormActionBar({
           <span className="truncate">{isSaving ? `${saveLabel}…` : saveLabel}</span>
         </Button>
       </div>
+      {isSaving && networkOffline && (
+        <p className="mt-3 rounded-xl bg-amber-100 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100" role="status">
+          {SAVE_MESSAGES.waitingForNetwork}
+        </p>
+      )}
       {error && (
         <p className="mt-3 rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
           {error}

@@ -9,8 +9,8 @@ import { pumpingSummary } from "@/features/pumping/pumping";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getLocalDayRange } from "@/lib/date";
-import { getLocale } from "@/lib/i18n";
 import { getSelectedBabyId, listBabies, pickSelectedBaby } from "@/lib/data";
+import { formatNumber } from "@/lib/format";
 export async function MotherStatistics({
   chart,
   date,
@@ -18,8 +18,7 @@ export async function MotherStatistics({
   chart?: string;
   date?: string;
 }) {
-  const [user, locale] = await Promise.all([requireUser(), getLocale()]);
-  const vi = locale === "vi";
+  const user = await requireUser();
   const [mother, babies, selected] = await Promise.all([
     db.mother.findUnique({ where: { userId: user.id } }),
     listBabies(user.id),
@@ -31,9 +30,7 @@ export async function MotherStatistics({
         href="/profile/mother"
         className="block rounded-3xl border border-dashed p-6 text-sm text-primary"
       >
-        {vi
-          ? "Thêm hồ sơ mẹ để xem thống kê hút sữa →"
-          : "Add mother's profile to view pumping statistics →"}
+        Thêm hồ sơ mẹ để xem thống kê hút sữa →
       </Link>
     );
   const now = new Date();
@@ -81,39 +78,35 @@ export async function MotherStatistics({
     }),
   ]);
   const summary = pumpingSummary(today);
-  const number = (value: number) =>
-    new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value);
   return (
     <>
       <p className="mb-4 text-sm text-muted-foreground">
-        {mother.name} · {vi ? "Thống kê hút sữa" : "Pumping statistics"}
+        {mother.name} · {"Thống kê hút sữa"}
       </p>
       <MetricGrid
         items={[
           {
-            label: vi ? "Cữ hút hôm nay" : "Sessions today",
+            label: "Cữ hút hôm nay",
             value: String(summary.count),
           },
           {
-            label: vi ? "Lượng đã ghi hôm nay" : "Volume logged today",
+            label: "Lượng đã ghi hôm nay",
             value: today.some(
               (e) => e.leftAmountMl != null || e.rightAmountMl != null,
             )
-              ? `${number(summary.totalMl)} ml`
+              ? `${formatNumber(summary.totalMl, 1)} ml`
               : "—",
           },
           {
-            label: vi
-              ? "Trung bình / cữ có lượng"
-              : "Average / measured session",
+            label: "Trung bình / cữ có lượng",
             value: today.some(
               (e) => e.leftAmountMl != null || e.rightAmountMl != null,
             )
-              ? `${number(summary.averageMl)} ml`
+              ? `${formatNumber(summary.averageMl, 1)} ml`
               : "—",
           },
           {
-            label: vi ? "Cữ chờ nhập lượng" : "Sessions pending volume",
+            label: "Cữ chờ nhập lượng",
             value: String(
               today.filter(
                 (e) => e.leftAmountMl == null && e.rightAmountMl == null,
@@ -129,32 +122,28 @@ export async function MotherStatistics({
         previous={period.previous}
         next={period.next}
         today={period.today}
-        locale={locale}
       />
       {baby && (
         <div className="mt-6">
           <p className="mb-3 text-sm text-muted-foreground">
-            {vi
-              ? "Chọn bé để đối chiếu phần sữa mẹ uống bình"
-              : "Select a baby to compare logged bottle breast milk"}
+            Chọn bé để đối chiếu phần sữa mẹ uống bình
           </p>
           <BabySwitcher
             babies={babies}
             selectedBabyId={baby.id}
-            addLabel={vi ? "Thêm bé" : "Add baby"}
+            addLabel="Thêm bé"
           />
         </div>
       )}
       <PumpingTrends
         trend={pumpingTrends(now, user.timezone, recent, bottles)}
         babyName={baby?.name}
-        locale={locale}
       />
       <Link
         href="/mother/pumping"
         className="mt-5 inline-flex min-h-12 items-center text-primary"
       >
-        {vi ? "Mở nhật ký & ghi cữ hút sữa →" : "Open pumping journal →"}
+        {"Mở nhật ký & ghi cữ hút sữa →"}
       </Link>
     </>
   );

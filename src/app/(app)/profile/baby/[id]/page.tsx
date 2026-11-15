@@ -9,6 +9,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getDictionary } from "@/lib/i18n";
 import { profileCoverUrl } from "@/lib/profile-cover";
+import { asFormAction } from "@/lib/form-action";
 
 function dateInput(date?: Date | null) {
   return date?.toISOString().slice(0, 10) ?? "";
@@ -42,7 +43,7 @@ export default async function BabyProfilePage({
       />
       <Card className="border-0 shadow-sm">
         <CardContent className="p-5">
-          <form id="baby-form" action={saveBabyAction} className="space-y-5">
+          <form id="baby-form" action={asFormAction(saveBabyAction)} className="space-y-5">
             {baby && <input type="hidden" name="id" value={baby.id} />}
             <ProfileCoverUpload
               currentImageUrl={baby?.coverImage

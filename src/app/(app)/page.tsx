@@ -13,6 +13,7 @@ import { TimelineList } from "@/components/timeline-list";
 import { CareHandover } from "@/components/care-handover";
 import { FamilyStart } from "@/components/family-start";
 import { UpcomingVaccination } from "@/components/upcoming-vaccination";
+import { isoDay, nextExpectedDose, planDoses } from "@/features/vaccination/expected";
 import { DashboardRefresh } from "@/components/dashboard-refresh";
 import { buildTimeline, todayTimeline } from "@/features/timeline/timeline";
 import { activeFeedingWhere } from "@/features/timeline/active-feeding";
@@ -27,22 +28,27 @@ import {
   greetingPeriod,
 } from "@/lib/date";
 import { db } from "@/lib/db";
-import { getDictionary, getLocale } from "@/lib/i18n";
+import { getDictionary } from "@/lib/i18n";
 import { totalDurationWithinRangeMinutes } from "@/lib/metrics";
 
 export default async function DashboardPage() {
-  const [user, t, locale] = await Promise.all([
+  const [user, t] = await Promise.all([
     requireUser(),
     getDictionary(),
-    getLocale(),
   ]);
   const [babies, selectedBabyId, mother] = await Promise.all([
     listBabies(user.id),
     getSelectedBabyId(),
     db.mother.findUnique({
       where: { userId: user.id },
-      include: {
-        pregnancies: { orderBy: { createdAt: "desc" } },
+      select: {
+        id: true,
+        // Only what selectRelevantPregnancy, the "pregnant" card below and
+        // FamilyStart (no-baby branch) read.
+        pregnancies: {
+          orderBy: { createdAt: "desc" },
+          select: { pregnancyStatus: true, createdAt: true, estimatedDueDate: true, lastMenstrualPeriod: true },
+        },
         pumpingEntries: {
           where: { isRunning: true },
           select: { id: true, startTime: true },
@@ -55,7 +61,6 @@ export default async function DashboardPage() {
   const pumpingTimer = mother ? (
     <PumpingTimer
       compact
-      locale={locale}
       active={
         openPumping
           ? {
@@ -70,9 +75,7 @@ export default async function DashboardPage() {
       href="/profile/mother"
       className="mt-2 block rounded-2xl bg-card p-3 text-sm text-primary shadow-sm"
     >
-      {locale === "vi"
-        ? "Thêm hồ sơ mẹ để bấm giờ hút sữa"
-        : "Add mother profile to use pumping timer"}
+      Thêm hồ sơ mẹ để bấm giờ hút sữa
     </Link>
   );
   const baby = pickSelectedBaby(babies, selectedBabyId);
@@ -87,6 +90,23 @@ export default async function DashboardPage() {
           orderBy: { scheduledAt: "asc" },
         })
       : null;
+    const [motherRecords, motherAppointments] = mother
+      ? await Promise.all([
+          db.motherVaccinationRecord.findMany({
+            where: { motherId: mother.id },
+            select: { id: true, scheduleKey: true, vaccineName: true, doseNumber: true, administeredAt: true },
+          }),
+          db.vaccinationAppointment.findMany({
+            where: { motherId: mother.id, motherVaccinationRecordId: null },
+            select: { id: true, vaccineName: true, doseNumber: true, scheduledAt: true },
+          }),
+        ])
+      : [[], []];
+    const motherToday = new Intl.DateTimeFormat("en-CA", { timeZone: user.timezone }).format(new Date());
+    // Display-only "Dự kiến" dose (e.g. tetanus dose 2); it never creates reminders.
+    const expectedVaccination = mother
+      ? nextExpectedDose(planDoses("mother", { records: motherRecords, appointments: motherAppointments, today: motherToday }), motherToday)
+      : undefined;
     return (
       <>
         <FamilyStart
@@ -94,6 +114,7 @@ export default async function DashboardPage() {
           name={user.name}
           timeZone={user.timezone}
           nextVaccination={nextVaccination}
+          expectedVaccination={expectedVaccination}
         />
         {pumpingTimer}
         <Link
@@ -127,6 +148,8 @@ export default async function DashboardPage() {
     todayMedicationDoses,
     todayTemperature,
     todayMeals,
+    babyVaccinationRecords,
+    pendingBabyAppointments,
   ] = await Promise.all([
     db.temperatureEntry.findMany({where:{babyId:baby.id,measuredAt:{gte:start,lte:now}},orderBy:{measuredAt:"desc"},take:5}),
     db.medicationDose.findMany({where:{schedule:{babyId:baby.id},takenAt:{gte:start,lte:now}},orderBy:{takenAt:"desc"},take:5,include:{schedule:{select:{name:true,dosage:true}}}}),
@@ -214,7 +237,22 @@ export default async function DashboardPage() {
       select: { id: true, title: true },
       orderBy: { occurredAt: "asc" },
     }),
+    db.vaccinationRecord.findMany({
+      where: { babyId: baby.id },
+      select: { id: true, scheduleKey: true, vaccineName: true, doseNumber: true, administeredAt: true },
+    }),
+    db.vaccinationAppointment.findMany({
+      where: { babyId: baby.id, vaccinationRecordId: null },
+      select: { id: true, vaccineName: true, doseNumber: true, scheduledAt: true },
+      orderBy: { scheduledAt: "asc" },
+    }),
   ]);
+  // Display-only "Dự kiến" dose for the home card; it never creates reminders.
+  const todayIso = isoDay(calendarDay);
+  const nextExpectedVaccination = nextExpectedDose(
+    planDoses("baby", { birth: baby.dateOfBirth, records: babyVaccinationRecords, appointments: pendingBabyAppointments, today: todayIso }),
+    todayIso,
+  );
   const pregnancy = selectRelevantPregnancy(mother?.pregnancies ?? []);
   const timeline = todayTimeline(buildTimeline(
     {
@@ -244,7 +282,6 @@ export default async function DashboardPage() {
       firstMolar: t.tracking.firstMolar,
       secondMolar: t.tracking.secondMolar,
     },
-    locale,
   ), start, now, user.timezone);
   const activeSleep = sleeps.find((sleep) => sleep.endTime === null);
   const activeFeeding = openFeeding;
@@ -256,7 +293,7 @@ export default async function DashboardPage() {
   ).length;
   const sleepMinutes = totalDurationWithinRangeMinutes(sleeps, start, end, now);
   const clock = (date: Date) =>
-    new Intl.DateTimeFormat(locale, {
+    new Intl.DateTimeFormat("vi-VN", {
       timeZone: user.timezone,
       hour: "2-digit",
       minute: "2-digit",
@@ -264,9 +301,9 @@ export default async function DashboardPage() {
       month: "2-digit",
     }).format(date);
   const summary = [
-    `${baby.name} · ${formatAge(baby.dateOfBirth, now, locale)}`,
-    `Cập nhật: ${formatDateTime(now, user.timezone, locale)}`,
-    `Hôm nay: ${feedings.length} cữ bú · ngủ ${formatDuration(sleepMinutes, locale)} · ${wet} tã ướt / ${stool} tã phân.`,
+    `${baby.name} · ${formatAge(baby.dateOfBirth, now, user.timezone)}`,
+    `Cập nhật: ${formatDateTime(now, user.timezone)}`,
+    `Hôm nay: ${feedings.length} cữ bú · ngủ ${formatDuration(sleepMinutes)} · ${wet} tã ướt / ${stool} tã phân.`,
     lastFeed
       ? `Cữ bú gần nhất: ${clock(lastFeed.startTime)}${lastFeed.amountMl != null ? ` · ${lastFeed.amountMl} ml` : ""}.`
       : "Chưa có bản ghi bú.",
@@ -297,7 +334,7 @@ export default async function DashboardPage() {
       <DashboardRefresh />
       <PageHeader
         title="Hôm nay"
-        subtitle={`${greetingLabel} · ${new Intl.DateTimeFormat(locale, { timeZone: user.timezone, weekday: "short", day: "numeric", month: "numeric" }).format(now)}`}
+        subtitle={`${greetingLabel} · ${new Intl.DateTimeFormat("vi-VN", { timeZone: user.timezone, weekday: "short", day: "numeric", month: "numeric" }).format(now)}`}
       />
       <BabySwitcher
         babies={babies}
@@ -309,7 +346,6 @@ export default async function DashboardPage() {
           <DailySentence
             baby={baby}
             now={now}
-            locale={locale}
             feedCount={feedings.length}
             bottleMl={bottleMl}
             sleepMinutes={sleepMinutes}
@@ -333,7 +369,6 @@ export default async function DashboardPage() {
             </p>
             <QuickTimers
               babyId={baby.id}
-              locale={locale}
               activeFeedingStartedAt={activeFeeding?.startTime.toISOString()}
               activeSleepStartedAt={activeSleep?.startTime.toISOString()}
             />
@@ -345,7 +380,7 @@ export default async function DashboardPage() {
           >
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-muted-foreground">
+                <p className="text-xs font-semibold uppercase tracking-[.12em] text-muted-foreground">
                   Từng khoảnh khắc của con
                 </p>
                 <h2
@@ -366,7 +401,6 @@ export default async function DashboardPage() {
             <TimelineList
               items={timeline}
               showDate
-              locale={locale}
               timeZone={user.timezone}
               empty="Một ngày mới bắt đầu. Ghi cữ bú, giấc ngủ hoặc lần thay tã đầu tiên ở phía trên nhé."
             />
@@ -387,7 +421,6 @@ export default async function DashboardPage() {
             <BabyDailySummary
               baby={baby}
               now={now}
-              locale={locale}
               timeZone={user.timezone}
             />
           </details>
@@ -395,7 +428,7 @@ export default async function DashboardPage() {
         <div className="min-w-0 space-y-6 xl:sticky xl:top-8">
           <section aria-labelledby="family-recap-heading" className="overflow-hidden rounded-[1.75rem] border border-border/40 bg-card shadow-[0_8px_30px_-22px_rgba(25,66,80,0.25)]">
             <div className="flex items-center justify-between px-4 pb-1 pt-4 sm:px-5">
-              <h2 id="family-recap-heading" className="text-[10px] font-semibold uppercase tracking-[.16em] text-muted-foreground">Nhìn lại hôm nay</h2>
+              <h2 id="family-recap-heading" className="text-xs font-semibold uppercase tracking-[.12em] text-muted-foreground">Nhìn lại hôm nay</h2>
               <span aria-hidden="true" className="size-1.5 rounded-full bg-primary/50" />
             </div>
             <Link href="/statistics?owner=baby" className="flex items-center gap-3 p-4 transition-colors hover:bg-secondary/30 sm:p-5">
@@ -406,7 +439,7 @@ export default async function DashboardPage() {
             <div className="mx-4 border-t border-border/60 sm:mx-5" />
             <CareHandover key={baby.id} summary={summary} />
           </section>
-          <UpcomingVaccination appointment={nextAppointment} />
+          <UpcomingVaccination appointment={nextAppointment} expected={nextExpectedVaccination} />
           <JourneyOverview baby={baby} timeZone={user.timezone} />
           {pregnancy?.pregnancyStatus === "PREGNANT" && (
             <Link

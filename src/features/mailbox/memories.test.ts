@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { memoryMonth, validMemoryMedia, memoryAge } from "./memories";
+import { memoryMonth, validMemoryMedia, memoryAge, MAX_MEMORY_MEDIA, MEMORY_MEDIA_TOO_LARGE, memoryMediaKind, memoryVideoType, sniffMemoryMediaType } from "./memories";
 describe("memory envelopes and media", () => {
   it("groups by the family's local month across UTC boundaries", () => {
     expect(memoryMonth(new Date("2026-10-31T18:00:00Z"), "Asia/Ho_Chi_Minh")).toBe("2026-11");
@@ -12,6 +12,31 @@ describe("memory envelopes and media", () => {
     expect(validMemoryMedia(new Uint8Array([255,216,255,0]), "image/jpeg")).toBe(true);
     expect(validMemoryMedia(text.encode("\0\0\0\0ftypisom"), "video/mp4")).toBe(true);
     expect(validMemoryMedia(new Uint8Array([26,69,223,163,0]), "video/webm")).toBe(true);
+    expect(validMemoryMedia(new Uint8Array([255,216,255,0]), "text/html")).toBe(false);
+  });
+  it("caps new media at 4 MB for both the composer and the server action", () => {
+    expect(MAX_MEMORY_MEDIA).toBe(4_000_000);
+    expect(MEMORY_MEDIA_TOO_LARGE).toContain("Tệp tối đa 4 MB");
+  });
+  it("recognises phone photos and videos even without a MIME type", () => {
+    expect(memoryMediaKind({ type: "image/heic", name: "IMG_1.HEIC" })).toBe("image");
+    expect(memoryMediaKind({ type: "", name: "IMG_1.heic" })).toBe("image");
+    expect(memoryMediaKind({ type: "video/quicktime", name: "IMG_2.MOV" })).toBe("video");
+    expect(memoryMediaKind({ type: "", name: "clip.mov" })).toBe("video");
+    expect(memoryMediaKind({ type: "application/pdf", name: "a.pdf" })).toBeNull();
+    expect(memoryMediaKind({ type: "", name: "notes" })).toBeNull();
+    expect(memoryVideoType({ type: "", name: "clip.MOV" })).toBe("video/quicktime");
+    expect(memoryVideoType({ type: "application/octet-stream", name: "clip.mp4" })).toBe("video/mp4");
+    expect(memoryVideoType({ type: "video/webm;codecs=vp8", name: "boomerang.webm" })).toBe("video/webm");
+  });
+  it("sniffs the media type from file signatures", () => {
+    const text = new TextEncoder();
+    expect(sniffMemoryMediaType(new Uint8Array([255,216,255,224]))).toBe("image/jpeg");
+    expect(sniffMemoryMediaType(new Uint8Array([137,80,78,71,13,10,26,10]))).toBe("image/png");
+    expect(sniffMemoryMediaType(text.encode("RIFF\0\0\0\0WEBP"))).toBe("image/webp");
+    expect(sniffMemoryMediaType(text.encode("\0\0\0\x14ftypqt  "))).toBe("video/quicktime");
+    expect(sniffMemoryMediaType(text.encode("\0\0\0\x18ftypisom"))).toBe("video/mp4");
+    expect(sniffMemoryMediaType(text.encode("<svg></svg>"))).toBeNull();
   });
 });
 

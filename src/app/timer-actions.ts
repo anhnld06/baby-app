@@ -5,7 +5,18 @@ import { redirect, RedirectType } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { isUniqueConstraintError } from "@/lib/prisma-errors";
 import { activeFeedingWhere } from "@/features/timeline/active-feeding";
+
+// Partial unique indexes allow one running timer per baby. When both parents tap "start" at the
+// same time, the second insert hits P2002 and is treated like the existing open timer.
+async function ignoreAlreadyRunning(create: () => Promise<unknown>) {
+  try {
+    await create();
+  } catch (error) {
+    if (!isUniqueConstraintError(error)) throw error;
+  }
+}
 
 async function ownedBabyId(formData: FormData) {
   const user = await requireUser();
@@ -30,9 +41,9 @@ export async function startFeedingTimerAction(formData: FormData) {
   const { babyId } = await ownedBabyId(formData);
   const open = await db.feeding.findFirst({ where: { babyId, ...activeFeedingWhere }, select: { id: true } });
   if (!open) {
-    await db.feeding.create({
+    await ignoreAlreadyRunning(() => db.feeding.create({
       data: { babyId, type: "BREASTFEEDING", startTime: new Date() },
-    });
+    }));
   }
   refreshTracking();
 }
@@ -65,9 +76,9 @@ export async function startSleepTimerAction(formData: FormData) {
       hour: "numeric",
       hourCycle: "h23",
     }).format(new Date()));
-    await db.sleepEntry.create({
+    await ignoreAlreadyRunning(() => db.sleepEntry.create({
       data: { babyId, type: hour >= 18 || hour < 6 ? "NIGHT" : "NAP", startTime: new Date() },
-    });
+    }));
   }
   refreshTracking();
 }
@@ -79,6 +90,7 @@ export async function finishSleepTimerAction(formData: FormData) {
     orderBy: { startTime: "desc" },
     select: { id: true },
   });
-  if (open) await db.sleepEntry.update({ where: { id: open.id }, data: { endTime: new Date() } });
+  // Conditional update: never overwrite a wake time already saved from the other phone.
+  if (open) await db.sleepEntry.updateMany({ where: { id: open.id, endTime: null }, data: { endTime: new Date() } });
   refreshTracking();
 }

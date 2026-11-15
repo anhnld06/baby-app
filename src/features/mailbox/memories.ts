@@ -1,18 +1,59 @@
+import { hasExpectedSignature, IMAGE_MIME_TYPES, MAX_UPLOAD_BYTES, VIDEO_MIME_TYPES } from "@/lib/upload";
+
 export const MEMORY_FRAMES = [
   { key: "blossom", name: "Hoa yêu thương", emoji: "🌷", className: "bg-rose-100 text-rose-950 dark:bg-rose-950 dark:text-rose-100" },
   { key: "sunshine", name: "Nắng đầu đời", emoji: "☀️", className: "bg-amber-100 text-amber-950 dark:bg-amber-950 dark:text-amber-100" },
   { key: "cloud", name: "Mây êm đềm", emoji: "☁️", className: "bg-sky-100 text-sky-950 dark:bg-sky-950 dark:text-sky-100" },
   { key: "garden", name: "Mầm nhỏ lớn lên", emoji: "🌱", className: "bg-emerald-100 text-emerald-950 dark:bg-emerald-950 dark:text-emerald-100" },
 ] as const;
-export const MAX_MEMORY_MEDIA = 10 * 1024 * 1024;
+/**
+ * New memory photos/videos are capped at 4 MB (shared by the composer and the server action).
+ * Older memories stored before this limit (up to 10 MB) are still served by /api/memories/[id].
+ */
+export const MAX_MEMORY_MEDIA = MAX_UPLOAD_BYTES;
+export const MEMORY_MEDIA_TOO_LARGE = "Tệp tối đa 4 MB. Hãy chọn ảnh nhỏ hơn hoặc video ngắn hơn.";
+export const MEMORY_MEDIA_TYPES: readonly string[] = [...IMAGE_MIME_TYPES, ...VIDEO_MIME_TYPES];
+export function isMemoryMediaType(mime: string) {
+  return MEMORY_MEDIA_TYPES.includes(mime);
+}
 export function validMemoryMedia(bytes: Uint8Array, mime: string) {
-  const ascii = (start: number, end: number) => new TextDecoder().decode(bytes.slice(start, end));
-  if (mime === "image/jpeg") return bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
-  if (mime === "image/png") return [137,80,78,71,13,10,26,10].every((v,i) => bytes[i] === v);
-  if (mime === "image/webp") return ascii(0,4) === "RIFF" && ascii(8,12) === "WEBP";
-  if (mime === "video/mp4" || mime === "video/quicktime") return ascii(4,8) === "ftyp";
-  if (mime === "video/webm") return [26,69,223,163].every((v,i) => bytes[i] === v);
-  return false;
+  return isMemoryMediaType(mime) && hasExpectedSignature(bytes, mime);
+}
+
+/** Photos are shrunk on the device before upload; videos cannot be, so they keep the 4 MB cap. */
+export const MEMORY_VIDEO_TOO_LARGE = "Video tối đa 4 MB (khoảng vài giây). Hãy cắt ngắn video hoặc quay Boomerang.";
+export const MEMORY_MEDIA_UNSUPPORTED = "Chọn ảnh JPG, PNG, WebP hoặc video MP4, MOV, WebM hợp lệ.";
+export const MEMORY_SAVE_FAILED = "Chưa lưu được thư. Hãy kiểm tra kết nối mạng hoặc tải lại trang rồi thử lại nhé.";
+
+const VIDEO_EXTENSIONS: Record<string, string> = { mp4: "video/mp4", m4v: "video/mp4", mov: "video/quicktime", qt: "video/quicktime", webm: "video/webm" };
+
+/**
+ * "image" or "video" for a picked file, or null when it cannot be a memory. Some phones send an
+ * empty or generic type, so the file extension is used as a fallback.
+ */
+export function memoryMediaKind(file: { type: string; name?: string }): "image" | "video" | null {
+  const type = file.type.split(";")[0].trim().toLowerCase();
+  if (type.startsWith("image/")) return "image";
+  if (type.startsWith("video/")) return "video";
+  const extension = /\.([a-z0-9]+)$/i.exec(file.name ?? "")?.[1]?.toLowerCase() ?? "";
+  if (/^(jpe?g|png|webp|gif|bmp|hei[cf]|avif)$/.test(extension)) return "image";
+  if (extension in VIDEO_EXTENSIONS) return "video";
+  return null;
+}
+
+/** The declared MIME type for a video, inferred from its extension when the browser gave none. */
+export function memoryVideoType(file: { type: string; name?: string }) {
+  const type = file.type.split(";")[0].trim().toLowerCase();
+  if (type && type !== "application/octet-stream") return type;
+  const extension = /\.([a-z0-9]+)$/i.exec(file.name ?? "")?.[1]?.toLowerCase() ?? "";
+  return VIDEO_EXTENSIONS[extension] ?? type;
+}
+
+/** Detects the media type from magic bytes, for uploads that arrive without a usable type. */
+export function sniffMemoryMediaType(bytes: Uint8Array): string | null {
+  for (const mime of ["image/jpeg", "image/png", "image/webp", "video/webm"]) if (hasExpectedSignature(bytes, mime)) return mime;
+  if (hasExpectedSignature(bytes, "video/mp4")) return String.fromCharCode(...bytes.subarray(8, 12)) === "qt  " ? "video/quicktime" : "video/mp4";
+  return null;
 }
 export function memoryMonth(date: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat("en", { timeZone, year: "numeric", month: "2-digit" }).formatToParts(date);

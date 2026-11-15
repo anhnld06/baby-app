@@ -15,23 +15,16 @@ import { requireUser } from "@/lib/auth";
 import { getSelectedBaby } from "@/lib/data";
 import { formatDuration, getLocalDayRange, toDateTimeLocal } from "@/lib/date";
 import { db } from "@/lib/db";
-import { getDictionary, getLocale } from "@/lib/i18n";
+import { getDictionary } from "@/lib/i18n";
 import { averageGapMinutes, totalDurationMinutes } from "@/lib/metrics";
 import { parseHistoryLimit } from "@/lib/pagination";
+import { asFormAction } from "@/lib/form-action";
 
 const typeLabels = {
-  vi: {
-    BREASTFEEDING: "Bú mẹ",
-    BOTTLE_BREAST_MILK: "Sữa mẹ bình",
-    FORMULA: "Sữa công thức",
-    MIXED: "Kết hợp",
-  },
-  en: {
-    BREASTFEEDING: "Breastfeeding",
-    BOTTLE_BREAST_MILK: "Bottle breast milk",
-    FORMULA: "Formula",
-    MIXED: "Mixed",
-  },
+  BREASTFEEDING: "Bú mẹ",
+  BOTTLE_BREAST_MILK: "Sữa mẹ bình",
+  FORMULA: "Sữa công thức",
+  MIXED: "Kết hợp",
 } as const;
 
 export default async function FeedingPage({
@@ -39,10 +32,9 @@ export default async function FeedingPage({
 }: {
   searchParams: Promise<{ edit?: string; limit?: string; new?: string; type?: string }>;
 }) {
-  const [user, t, locale, params] = await Promise.all([
+  const [user, t, params] = await Promise.all([
     requireUser(),
     getDictionary(),
-    getLocale(),
     searchParams,
   ]);
   const baby = await getSelectedBaby(user.id);
@@ -87,15 +79,15 @@ export default async function FeedingPage({
           { label: t.dashboard.feedsToday, value: String(today.length) },
           {
             label: t.tracking.totalDuration,
-            value: formatDuration(totalDurationMinutes(today, now), locale),
+            value: formatDuration(totalDurationMinutes(today, now)),
           },
           {
             label: t.tracking.averageGap,
-            value: formatDuration(averageGapMinutes(today), locale),
+            value: formatDuration(averageGapMinutes(today)),
           },
           {
             label: t.dashboard.lastFeed,
-            value: items[0] ? formatDuration(sinceLast, locale) : "—",
+            value: items[0] ? formatDuration(sinceLast) : "—",
           },
         ]}
       />}
@@ -110,7 +102,7 @@ export default async function FeedingPage({
         <CardContent className="p-5">
           <form
             id="feeding-form"
-            action={saveFeedingAction}
+            action={asFormAction(saveFeedingAction)}
             className="space-y-4"
           >
             <input type="hidden" name="babyId" value={baby.id} />
@@ -118,9 +110,8 @@ export default async function FeedingPage({
             <FeedingFields
               initialType={params.type === "BOTTLE_BREAST_MILK" || params.type === "FORMULA" || params.type === "MIXED" ? params.type : "BREASTFEEDING"}
               key={editing?.id ?? "new"}
-              locale={locale}
               labels={t.tracking}
-              typeLabels={typeLabels[locale]}
+              typeLabels={typeLabels}
               initial={editing ? {
                 type: editing.type,
                 leftBreastDuration: editing.leftBreastDuration,
@@ -159,7 +150,7 @@ export default async function FeedingPage({
       <FormActionBar
         formId="feeding-form"
         saveAction={saveFeedingAction}
-        saveLabel={editing ? t.common.update : locale === "vi" ? "Lưu cữ bú" : t.common.save}
+        saveLabel={editing ? t.common.update : "Lưu cữ bú"}
         cancelHref={editing || params.new === "1" ? "/tracking/feeding" : undefined}
         cancelLabel={t.common.cancel}
         deleteAction={editing ? deleteFeedingAction : undefined}
@@ -172,7 +163,7 @@ export default async function FeedingPage({
       <h2 className="mb-2 mt-7 text-lg font-semibold">{t.tracking.history}</h2>
       <div className="space-y-2">
         {items.map((item) => (
-          <HistoryTimelineItem key={item.id} at={item.startTime} timeZone={user.timezone} locale={locale} showDate>
+          <HistoryTimelineItem key={item.id} at={item.startTime} timeZone={user.timezone} showDate>
           <div
             data-history-card
             key={item.id}
@@ -182,9 +173,9 @@ export default async function FeedingPage({
               <BabyIcon className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="font-medium">{typeLabels[locale][item.type]}</p>
+              <p className="font-medium">{typeLabels[item.type]}</p>
               <p className="text-sm text-muted-foreground">
-                {new Intl.DateTimeFormat(locale, {
+                {new Intl.DateTimeFormat("vi-VN", {
                   timeZone: user.timezone,
                   day: "2-digit",
                   month: "short",

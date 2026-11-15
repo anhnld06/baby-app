@@ -88,7 +88,7 @@ test("lưu cữ bú, đóng biểu mẫu và quay về đúng nơi mở", async 
   await page.getByRole("button", { name: "Ghi cữ bú", exact: true }).click();
   await page.locator('#feeding-form select[name="type"]').selectOption("FORMULA");
   await page.locator('#feeding-form input[name="amountMl"]').fill("95");
-  await page.getByRole("button", { name: "Lưu", exact: true }).click();
+  await page.getByRole("button", { name: "Lưu cữ bú", exact: true }).click();
   await expect(page.locator("#feeding-form")).not.toBeVisible();
   await expect(page.getByRole("alert")).not.toContainText("Chưa thể lưu");
   const record = page.locator("div.rounded-2xl").filter({ has: page.getByText("Sữa công thức", { exact: true }) }).filter({ has: page.getByRole("button", { name: "Xóa", exact: true }) }).first();
@@ -132,7 +132,7 @@ test("hai thiết bị dùng chung tài khoản cùng xem được nhật ký", 
     await page.getByRole("link", { name: "Ghi cữ bú", exact: true }).click();
     await page.locator('#feeding-form select[name="type"]').selectOption("FORMULA");
     await page.locator('#feeding-form input[name="amountMl"]').fill("96");
-    await page.getByRole("button", { name: "Lưu", exact: true }).click();
+    await page.getByRole("button", { name: "Lưu cữ bú", exact: true }).click();
     await expect(page.locator("#feeding-form")).not.toBeVisible();
     await secondPage.reload();
     await expect(secondPage.getByText("96 ml", { exact: true })).toBeVisible();

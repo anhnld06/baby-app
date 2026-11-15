@@ -20,6 +20,7 @@ import {
 import { requireUser } from "@/lib/auth";
 import { getSelectedBaby } from "@/lib/data";
 import { toDateInputValue } from "@/lib/date";
+import { asFormAction } from "@/lib/form-action";
 import { db } from "@/lib/db";
 import { getDictionary } from "@/lib/i18n";
 
@@ -74,7 +75,7 @@ export default async function TeethPage({
             selectedPosition={selectedPosition}
             labels={t.tracking}
           />
-          <div className="mt-5 rounded-2xl bg-muted/60 px-3 py-2.5 text-center text-[11px] leading-relaxed text-muted-foreground">
+          <div className="mt-5 rounded-2xl bg-muted/60 px-3 py-2.5 text-center text-xs leading-relaxed text-muted-foreground">
             <p>{t.tracking.timingVaries}</p>
             <a
               href="https://www.mouthhealthy.org/all-topics-a-z/eruption-charts/"
@@ -101,18 +102,18 @@ export default async function TeethPage({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-2xl bg-secondary px-3 py-2.5">
-                <span className="block text-[11px] text-muted-foreground">{t.tracking.expectedEruption}</span>
+                <span className="block text-xs text-muted-foreground">{t.tracking.expectedEruption}</span>
                 <strong className="mt-0.5 block text-sm">{selectedInfo.expectedMonths[0]}–{selectedInfo.expectedMonths[1]} {t.tracking.monthShort}</strong>
               </div>
               <div className="rounded-2xl bg-secondary px-3 py-2.5">
-                <span className="block text-[11px] text-muted-foreground">{t.tracking.eruptionOrder}</span>
+                <span className="block text-xs text-muted-foreground">{t.tracking.eruptionOrder}</span>
                 <strong className="mt-0.5 block text-sm">#{selectedInfo.eruptionOrder}</strong>
               </div>
             </div>
             <form
               key={selectedPosition}
               id="tooth-form"
-              action={saveToothAction}
+              action={asFormAction(saveToothAction)}
               className="space-y-4"
             >
               <input type="hidden" name="babyId" value={baby.id} />
@@ -122,10 +123,11 @@ export default async function TeethPage({
                 type="date"
                 required
                 label={t.tracking.eruptedAt}
+                max={toDateInputValue(new Date(), user.timezone)}
                 defaultValue={
                   selectedRecord
-                    ? toDateInputValue(selectedRecord.eruptedAt)
-                    : toDateInputValue()
+                    ? toDateInputValue(selectedRecord.eruptedAt, "UTC")
+                    : toDateInputValue(new Date(), user.timezone)
                 }
               />
               <TextAreaField

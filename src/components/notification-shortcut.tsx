@@ -13,7 +13,7 @@ export function NotificationShortcut() {
     >
       <Bell className="size-5" />
       {count > 0 && (
-        <span className="absolute right-0 top-0 grid min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[10px] text-white">
+        <span className="absolute right-0 top-0 grid min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-xs text-white">
           {count > 99 ? "99+" : count}
         </span>
       )}

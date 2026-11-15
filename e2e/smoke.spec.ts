@@ -40,11 +40,8 @@ test("đăng nhập và mở hồ sơ", async ({ page }) => {
   }
 
   await expect(page).toHaveURL(/\/(?:profile)?$/);
-  await page
-    .getByRole("navigation", { name: "Điều hướng chính" })
-    .first()
-    .getByRole("link", { name: "Hồ sơ" })
-    .click();
+  // Desktop has "Hồ sơ" in the sidebar; the mobile bottom bar does not, but the page header always links to it.
+  await page.locator('a[href="/profile"]:visible').first().click();
   await expect(page).toHaveURL(/\/profile$/);
   await expect(page.getByRole("main")).toBeVisible();
 });

@@ -17,6 +17,7 @@ import {
   type VaccinationOwner,
 } from "@/components/vaccination-journal-fields";
 import { Field, TextAreaField } from "@/components/form-fields";
+import { NextAppointmentField } from "@/components/next-appointment-field";
 import { RecordActions } from "@/components/record-actions";
 import { HistoryLoadMore } from "@/components/history-load-more";
 import { parseHistoryLimit } from "@/lib/pagination";
@@ -30,7 +31,9 @@ import {
   completeAppointment,
   changeAppointment,
 } from "@/app/vaccination-actions";
-import { appointmentStatus } from "@/features/vaccination/journal";
+import { appointmentStatus, dateFromInput } from "@/features/vaccination/journal";
+import { recordMatchesEntry } from "@/features/vaccination/checklist";
+import { formatDay as formatPlanDay, isoDay, planDoses, scheduleEntries, suggestNextAppointment } from "@/features/vaccination/expected";
 
 export default async function VaccinationSchedulePage({
   searchParams,
@@ -42,6 +45,7 @@ export default async function VaccinationSchedulePage({
     edit?: string;
     record?: string;
     limit?: string;
+    book?: string;
   }>;
 }) {
   const [user, params] = await Promise.all([requireUser(), searchParams]);
@@ -64,7 +68,7 @@ export default async function VaccinationSchedulePage({
       ? `mother:${mother.id}`
       : (owners[0]?.value ?? "");
   const limit = parseHistoryLimit(params.limit);
-  const [appointments, babyHistory, motherHistory, babyChecklistRecords, motherChecklistRecords] = await Promise.all([
+  const [appointments, babyHistory, motherHistory, babyChecklistRecords, motherChecklistRecords, recordEditing] = await Promise.all([
     db.vaccinationAppointment.findMany({
       where: {
         OR: [
@@ -91,6 +95,17 @@ export default async function VaccinationSchedulePage({
       : [],
     baby ? db.vaccinationRecord.findMany({ where: { babyId: baby.id }, include: { appointment: { select: { id: true } } }, orderBy: { administeredAt: "desc" } }) : [],
     mother ? db.motherVaccinationRecord.findMany({ where: { motherId: mother.id }, include: { appointment: { select: { id: true } } }, orderBy: { administeredAt: "desc" } }) : [],
+    params.record
+      ? params.owner === "mother" && mother
+        ? db.motherVaccinationRecord.findFirst({
+            where: { id: params.record, motherId: mother.id, appointment: null },
+          })
+        : baby
+          ? db.vaccinationRecord.findFirst({
+              where: { id: params.record, babyId: baby.id, appointment: null },
+            })
+          : null
+      : null,
   ]);
   const today = toDateTimeLocal(new Date(), user.timezone).slice(0, 10);
   const formatDay = (date: Date) =>
@@ -109,17 +124,26 @@ export default async function VaccinationSchedulePage({
     (item) => item.vaccinationRecordId || item.motherVaccinationRecordId,
   );
   const editing = appointments.find((item) => item.id === params.edit);
-  const recordEditing = params.record
-    ? params.owner === "mother" && mother
-      ? await db.motherVaccinationRecord.findFirst({
-          where: { id: params.record, motherId: mother.id, appointment: null },
-        })
-      : baby
-        ? await db.vaccinationRecord.findFirst({
-            where: { id: params.record, babyId: baby.id, appointment: null },
-          })
-        : null
-    : null;
+  // Expected dates are display-only; nothing here creates reminders.
+  const babyPlans = baby
+    ? planDoses("baby", { birth: baby.dateOfBirth, records: babyChecklistRecords, appointments: pending.filter((item) => item.babyId === baby.id), today })
+    : [];
+  const motherPlans = mother
+    ? planDoses("mother", { records: motherChecklistRecords, appointments: pending.filter((item) => item.motherId === mother.id), today })
+    : [];
+  const booking = params.book
+    ? (defaultOwner.startsWith("mother:") ? motherPlans : babyPlans).find((plan) => plan.entry.key === params.book && !plan.record && !plan.appointment)
+    : undefined;
+  // "Ngày hẹn tiếp theo" suggestion when confirming an appointment of a known series dose.
+  const nextSuggestion = (item: (typeof pending)[number]) => {
+    const kind = item.babyId ? "baby" : "mother";
+    const entry = scheduleEntries(kind).find((candidate) => recordMatchesEntry(item, candidate));
+    if (!entry) return undefined;
+    const suggestion = suggestNextAppointment(kind, entry, dateFromInput(today), item.babyId ? baby?.dateOfBirth : undefined);
+    const nextPlan = suggestion && (kind === "baby" ? babyPlans : motherPlans).find((plan) => plan.entry.key === suggestion.entry.key);
+    return suggestion && nextPlan && !nextPlan.record && !nextPlan.appointment ? suggestion : undefined;
+  };
+  const suggestions = new Map(pending.map((item) => [item.id, nextSuggestion(item)]));
   const revision = [
     ...appointments.map((item) => `${item.id}-${item.updatedAt.toISOString()}`),
     ...babyHistory.map((item) => `${item.id}-${item.updatedAt.toISOString()}`),
@@ -201,8 +225,8 @@ export default async function VaccinationSchedulePage({
             <Link replace scroll={false} href="/vaccination-schedule?owner=baby" aria-current={params.owner !== "mother" ? "page" : undefined} className="rounded-full border px-4 py-3 text-sm aria-[current=page]:bg-secondary aria-[current=page]:text-primary">Của bé</Link>
             <Link replace scroll={false} href="/vaccination-schedule?owner=mother" aria-current={params.owner === "mother" ? "page" : undefined} className="rounded-full border px-4 py-3 text-sm aria-[current=page]:bg-secondary aria-[current=page]:text-primary">Của mẹ</Link>
           </nav>}
-          {!editing && !recordEditing && baby && params.owner !== "mother" && <VaccinationChecklist view={params.view === "age" ? "age" : "vaccine"} kind="baby" ownerId={baby.id} name={baby.name} birth={baby.dateOfBirth} records={babyChecklistRecords} appointments={pending.filter((item) => item.babyId === baby.id)} today={today} />}
-          {!editing && !recordEditing && mother && (params.owner === "mother" || !baby) && <VaccinationChecklist view={params.view === "age" ? "age" : "vaccine"} kind="mother" ownerId={mother.id} name={mother.name} records={motherChecklistRecords} appointments={pending.filter((item) => item.motherId === mother.id)} today={today} />}
+          {!editing && !recordEditing && baby && params.owner !== "mother" && <VaccinationChecklist view={params.view === "age" ? "age" : "vaccine"} kind="baby" ownerId={baby.id} name={baby.name} plans={babyPlans} today={today} />}
+          {!editing && !recordEditing && mother && (params.owner === "mother" || !baby) && <VaccinationChecklist view={params.view === "age" ? "age" : "vaccine"} kind="mother" ownerId={mother.id} name={mother.name} plans={motherPlans} today={today} />}
           {editing || recordEditing ? (
             <EditFormTarget recordId={editing?.id ?? recordEditing?.id}>
             <section className="mb-6 rounded-3xl border bg-card p-5">
@@ -262,12 +286,17 @@ export default async function VaccinationSchedulePage({
             </section>
             </EditFormTarget>
           ) : (
-            <div className="mb-6 space-y-3" key={revision}>
-              <details className="rounded-3xl border border-primary/20 bg-card p-4">
+            <div className="mb-6 space-y-3" key={`${revision}-${booking?.entry.key ?? ""}`}>
+              <details id="dat-hen" open={Boolean(booking)} className="scroll-mt-6 rounded-3xl border border-primary/20 bg-card p-4">
                 <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold text-primary">
                   + Thêm lịch hẹn tiêm
                 </summary>
                 <div className="mt-4">
+                  {booking?.expected && (
+                    <p className="mb-3 rounded-2xl bg-secondary/50 p-3 text-xs leading-5 text-muted-foreground">
+                      Điền sẵn ngày dự kiến {formatPlanDay(booking.expected)} cho {booking.entry.label}. Đổi theo ngày hẹn thực tế của cơ sở tiêm trước khi lưu.
+                    </p>
+                  )}
                   <VaccinationActionForm
                     action={saveAppointment.bind(null, null)}
                     label="Lưu lịch hẹn"
@@ -278,6 +307,7 @@ export default async function VaccinationSchedulePage({
                       owner={defaultOwner}
                       today={today}
                       appointment
+                      editing={booking ? { vaccineName: booking.entry.label, doseNumber: booking.entry.doseNumber, scheduledAt: booking.expected, notes: null } : undefined}
                     />
                   </VaccinationActionForm>
                 </div>
@@ -340,7 +370,7 @@ export default async function VaccinationSchedulePage({
                         {formatDay(item.scheduledAt)}
                       </p>
                     </div>
-                    <span className="shrink-0 rounded-full bg-secondary px-2 py-1 text-[11px] text-primary">
+                    <span className="shrink-0 rounded-full bg-secondary px-2 py-1 text-xs text-primary">
                       {appointmentStatus(item.scheduledAt, today)}
                     </span>
                   </div>
@@ -368,17 +398,18 @@ export default async function VaccinationSchedulePage({
                             max={today}
                             defaultValue={today}
                           />
+                          {suggestions.get(item.id) && (
+                            <NextAppointmentField
+                              id={`next-${item.id}`}
+                              suggestion={{ date: isoDay(suggestions.get(item.id)!.date), text: suggestions.get(item.id)!.text }}
+                            />
+                          )}
                           <details>
                             <summary className="min-h-11 cursor-pointer content-center text-xs text-muted-foreground">
-                              Thêm hẹn tiếp theo / ghi chú
+                              {suggestions.get(item.id) ? "Thêm nơi tiêm / ghi chú" : "Thêm hẹn tiếp theo / ghi chú"}
                             </summary>
                             <div className="space-y-3">
-                              <Field
-                                id={`next-${item.id}`}
-                                name="nextScheduledAt"
-                                type="date"
-                                label="Ngày hẹn tiếp theo (nếu có)"
-                              />
+                              {!suggestions.get(item.id) && <NextAppointmentField id={`next-${item.id}`} />}
                               <Field
                                 id={`facility-${item.id}`}
                                 name="facility"

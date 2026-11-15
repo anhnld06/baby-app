@@ -8,6 +8,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getDictionary } from "@/lib/i18n";
 import { profileCoverUrl } from "@/lib/profile-cover";
+import { asFormAction } from "@/lib/form-action";
 
 function dateInput(date?: Date | null) {
   return date?.toISOString().slice(0, 10) ?? "";
@@ -31,7 +32,7 @@ export default async function MotherProfilePage({ searchParams }: { searchParams
         <CardContent className="p-5">
           <form
             id="mother-form"
-            action={saveMotherAction}
+            action={asFormAction(saveMotherAction)}
             className="space-y-5"
           >
             {next === "pregnancy" && <input type="hidden" name="next" value="pregnancy" />}

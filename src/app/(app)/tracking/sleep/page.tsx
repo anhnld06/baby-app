@@ -14,7 +14,7 @@ import { requireUser } from "@/lib/auth";
 import { getSelectedBaby } from "@/lib/data";
 import { formatDuration, getLocalDayRange, toDateTimeLocal } from "@/lib/date";
 import { db } from "@/lib/db";
-import { getDictionary, getLocale } from "@/lib/i18n";
+import { getDictionary } from "@/lib/i18n";
 import {
   averageCompletedDurationMinutes,
   durationMinutes,
@@ -22,16 +22,16 @@ import {
   totalDurationWithinRangeMinutes,
 } from "@/lib/metrics";
 import { parseHistoryLimit } from "@/lib/pagination";
+import { asFormAction } from "@/lib/form-action";
 
 export default async function SleepPage({
   searchParams,
 }: {
   searchParams: Promise<{ edit?: string; limit?: string; new?: string }>;
 }) {
-  const [user, t, locale, params] = await Promise.all([
+  const [user, t, params] = await Promise.all([
     requireUser(),
     getDictionary(),
-    getLocale(),
     searchParams,
   ]);
   const baby = await getSelectedBaby(user.id);
@@ -85,7 +85,6 @@ export default async function SleepPage({
             label: t.dashboard.sleepToday,
             value: formatDuration(
               totalDurationWithinRangeMinutes(today, start, end, now),
-              locale,
             ),
           },
           { label: t.tracking.sleepCount, value: String(today.length) },
@@ -93,22 +92,20 @@ export default async function SleepPage({
             label: t.tracking.averageNap,
             value: formatDuration(
               averageCompletedDurationMinutes(naps),
-              locale,
             ),
           },
           {
             label: t.tracking.longestSleep,
             value: formatDuration(
               longestDurationWithinRangeMinutes(today, start, end, now),
-              locale,
             ),
           },
           {
             label: latest?.endTime ? t.tracking.awakeFor : t.dashboard.sleeping,
             value: latest?.endTime
-              ? formatDuration(awakeMinutes, locale)
+              ? formatDuration(awakeMinutes)
               : latest
-                ? formatDuration(durationMinutes(latest.startTime, null, now), locale)
+                ? formatDuration(durationMinutes(latest.startTime, null, now))
                 : "—",
           },
         ]}
@@ -122,7 +119,7 @@ export default async function SleepPage({
       <RecordScene kind="sleep" timeZone={user.timezone} initialValues={{startTime: toDateTimeLocal(editing?.startTime, user.timezone), endTime: editing?.endTime ? toDateTimeLocal(editing.endTime, user.timezone) : ""}}>
       <Card className="border-0 shadow-sm">
         <CardContent className="p-5">
-          <form id="sleep-form" action={saveSleepAction} className="space-y-4">
+          <form id="sleep-form" action={asFormAction(saveSleepAction)} className="space-y-4">
             <input type="hidden" name="babyId" value={baby.id} />
             {editing && <input type="hidden" name="id" value={editing.id} />}
             <SelectField
@@ -166,7 +163,7 @@ export default async function SleepPage({
       <FormActionBar
         formId="sleep-form"
         saveAction={saveSleepAction}
-        saveLabel={editing ? t.common.update : locale === "vi" ? "Lưu giấc ngủ" : t.common.save}
+        saveLabel={editing ? t.common.update : "Lưu giấc ngủ"}
         cancelHref={editing || params.new === "1" ? "/tracking/sleep" : undefined}
         cancelLabel={t.common.cancel}
         deleteAction={editing ? deleteSleepAction : undefined}
@@ -179,7 +176,7 @@ export default async function SleepPage({
       <h2 className="mb-2 mt-7 text-lg font-semibold">{t.tracking.history}</h2>
       <div className="space-y-2">
         {items.map((item) => (
-          <HistoryTimelineItem key={item.id} at={item.startTime} timeZone={user.timezone} locale={locale} showDate>
+          <HistoryTimelineItem key={item.id} at={item.startTime} timeZone={user.timezone} showDate>
           <div
             data-history-card
             key={item.id}
@@ -193,7 +190,7 @@ export default async function SleepPage({
                 {item.type === "NAP" ? t.tracking.nap : t.tracking.night}
               </p>
               <p className="text-sm text-muted-foreground">
-                {new Intl.DateTimeFormat(locale, {
+                {new Intl.DateTimeFormat("vi-VN", {
                   timeZone: user.timezone,
                   day: "2-digit",
                   month: "short",
@@ -205,7 +202,6 @@ export default async function SleepPage({
                   ? formatDuration(
                       (item.endTime.getTime() - item.startTime.getTime()) /
                         60_000,
-                      locale,
                     )
                   : t.tracking.openSession}
               </p>

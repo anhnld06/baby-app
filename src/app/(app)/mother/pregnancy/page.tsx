@@ -1,4 +1,3 @@
-import { PushNotificationSettings } from "@/components/push-notification-settings";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Activity, Archive, BookHeart, CalendarDays, ChevronRight, Footprints, Heart, Scale, ScanLine } from "lucide-react";
@@ -45,7 +44,6 @@ export default async function PregnancyPage({ searchParams }: { searchParams: Pr
   return <>
     <div className="mb-5 flex items-end justify-between gap-3"><div><p className={styles.eyebrow}>{status}</p><h2 className={styles.heading}>{active ? "Chào mẹ, hôm nay thế nào?" : "Những ngày mình chờ con"}</h2></div><Heart className="mb-1 shrink-0 text-rose-300" size={22} /></div>
     {!active && <div className={styles.archive}><Archive size={17} className="shrink-0" /><span>{pregnancy.pregnancyStatus === "DELIVERED" ? `Bé đã chào đời${pregnancy.actualDeliveryDate ? ` ngày ${format(pregnancy.actualDeliveryDate)}` : ""}. Cùng nhìn lại những dấu mốc của mẹ.` : pregnancy.pregnancyStatus === "PLANNING" ? "Mẹ có thể khám phá các tuần thai và chuẩn bị cho hành trình sắp tới." : "Thai kỳ đã kết thúc. Những ghi chép của mẹ được giữ lại tại đây."}</span></div>}
-    {active && <PushNotificationSettings publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY} description="Dùng chung cài đặt với Hồ sơ. Nhắc khi bắt đầu tuần thai mới (tuần 4–40) và trước lịch khám đã lưu; không tự tạo chỉ định khám hay bổ sung."/>}
     <PregnancyWeekJourney care={{ pregnancyId: pregnancy.id, today, saved: journey.map((row) => ({ taskKey: row.taskKey, done: row.done, note: row.note, remindOn: row.remindOn?.toISOString().slice(0, 10) ?? "" })), visits: checkups.map((row) => ({ id: row.id, week: row.gestationalWeek, scan: row.visitType !== "PRENATAL_VISIT", date: recordedDate(row) })), advice: latestAdvice?.careInstructions, adviceId: latestAdvice?.id }} key={pregnancy.id} initialWeek={age?.weeks ?? latest?.gestationalWeek ?? undefined} currentWeek={age?.weeks} days={age?.days} active={active} dueDate={pregnancy.estimatedDueDate ? format(pregnancy.estimatedDueDate) : undefined} deliveredOn={pregnancy.actualDeliveryDate ? format(pregnancy.actualDeliveryDate) : undefined} />
     <div className={styles.sectionHeading}><h2>{active ? "Dành một chút cho mẹ & bé" : "Công cụ & nhật ký"}</h2><span className={styles.muted}>Gọn trong một chạm</span></div>
     <div className={styles.tools}>{[

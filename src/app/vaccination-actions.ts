@@ -8,12 +8,20 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { BABY_SCHEDULE, MOTHER_PRENATAL_SCHEDULE } from "@/features/vaccination/schedule";
 import { findChecklistRecord, recordMatchesEntry, scheduleEntry } from "@/features/vaccination/checklist";
+import {
+  ALREADY_LINKED_ERROR,
+  createdByCompletion,
+  planCompletion,
+  reusedRecordUpdate,
+} from "@/features/vaccination/completion";
+import { nextDoseEntry } from "@/features/vaccination/expected";
 import { toDateTimeLocal } from "@/lib/date";
 import {
   appointmentSchema,
   completionSchema,
   historySchema,
   dateFromInput,
+  vaccinationDate,
   type VaccinationFormState,
 } from "@/features/vaccination/journal";
 
@@ -76,6 +84,7 @@ async function mutation(
       "Không tìm thấy lịch hẹn.",
       "Không tìm thấy lần tiêm.",
       "Ngày đã tiêm không thể ở tương lai.",
+      ALREADY_LINKED_ERROR,
     ];
     return {
       error:
@@ -159,44 +168,65 @@ export async function completeAppointment(
       if (item.vaccinationRecordId || item.motherVaccinationRecordId) return;
       const kind = item.babyId ? "baby" : "mother";
       const entry = (kind === "baby" ? BABY_SCHEDULE : MOTHER_PRENATAL_SCHEDULE).find((candidate) => recordMatchesEntry(item, candidate));
+      const include = { appointment: { select: { id: true } } } as const;
       const existingRecords = item.babyId
-        ? await tx.vaccinationRecord.findMany({ where: { babyId: item.babyId } })
-        : await tx.motherVaccinationRecord.findMany({ where: { motherId: item.motherId! } });
+        ? await tx.vaccinationRecord.findMany({ where: { babyId: item.babyId }, include })
+        : await tx.motherVaccinationRecord.findMany({ where: { motherId: item.motherId! }, include });
       const existing = entry ? findChecklistRecord<(typeof existingRecords)[number]>(existingRecords, entry) : undefined;
-      const details = {
-        ...(entry ? { scheduleKey: entry.key } : {}),
-        vaccineName: item.vaccineName,
-        doseNumber: item.doseNumber,
-        administeredAt: dateFromInput(data.administeredAt),
-        facility: data.facility ?? null,
-        notes: data.notes ?? null,
-      };
-      if (item.babyId) {
-        const record = existing ?? await tx.vaccinationRecord.create({
-          data: { ...details, babyId: item.babyId },
+      const plan = planCompletion(id, existing);
+      if (plan.kind === "conflict") throw new Error(ALREADY_LINKED_ERROR);
+      const administeredAt = dateFromInput(data.administeredAt);
+      let recordId: string;
+      if (plan.kind === "reuse") {
+        // The dose was already in the journal (e.g. ticked on the checklist):
+        // keep that record but store what was just typed on it.
+        const update = reusedRecordUpdate(existing!, {
+          administeredAt,
+          facility: data.facility,
+          notes: data.notes,
+          scheduleKey: entry?.key,
         });
-        await tx.vaccinationAppointment.update({
-          where: { id },
-          data: { vaccinationRecordId: record.id },
-        });
+        if (item.babyId)
+          await tx.vaccinationRecord.update({ where: { id: plan.recordId }, data: update });
+        else
+          await tx.motherVaccinationRecord.update({ where: { id: plan.recordId }, data: update });
+        recordId = plan.recordId;
       } else {
-        const record = existing ?? await tx.motherVaccinationRecord.create({
-          data: { ...details, motherId: item.motherId! },
-        });
-        await tx.vaccinationAppointment.update({
-          where: { id },
-          data: { motherVaccinationRecordId: record.id },
-        });
+        const details = {
+          ...(entry ? { scheduleKey: entry.key } : {}),
+          vaccineName: item.vaccineName,
+          doseNumber: item.doseNumber,
+          administeredAt,
+          facility: data.facility ?? null,
+          notes: data.notes ?? null,
+          // Undo may delete only records this completion created (see completion.ts).
+          createdByAppointmentId: item.id,
+        };
+        const record = item.babyId
+          ? await tx.vaccinationRecord.create({ data: { ...details, babyId: item.babyId } })
+          : await tx.motherVaccinationRecord.create({ data: { ...details, motherId: item.motherId! } });
+        recordId = record.id;
       }
-      if (data.nextScheduledAt)
+      await tx.vaccinationAppointment.update({
+        where: { id },
+        data: item.babyId
+          ? { vaccinationRecordId: recordId }
+          : { motherVaccinationRecordId: recordId },
+      });
+      if (data.nextScheduledAt) {
+        // Name the follow-up after the next dose of the series so the
+        // checklist links it to that dose instead of the one just given.
+        const next = entry ? nextDoseEntry(kind, entry.key) : undefined;
         await tx.vaccinationAppointment.create({
           data: {
             babyId: item.babyId,
             motherId: item.motherId,
-            vaccineName: item.vaccineName,
+            vaccineName: next?.label ?? item.vaccineName,
+            ...(next ? { doseNumber: next.doseNumber } : {}),
             scheduledAt: dateFromInput(data.nextScheduledAt),
           },
         });
+      }
     });
   });
 }
@@ -209,6 +239,18 @@ export async function changeAppointment(
   return mutation(() =>
     db.$transaction(async (tx) => {
       const item = await lockedAppointment(tx, id, user.id);
+      const select = { id: true, createdByAppointmentId: true } as const;
+      const linked = item.vaccinationRecordId
+        ? await tx.vaccinationRecord.findFirst({
+            where: { id: item.vaccinationRecordId, baby: { userId: user.id } },
+            select,
+          })
+        : item.motherVaccinationRecordId
+          ? await tx.motherVaccinationRecord.findFirst({
+              where: { id: item.motherVaccinationRecordId, mother: { userId: user.id } },
+              select,
+            })
+          : null;
       if (operation === "delete")
         await tx.vaccinationAppointment.delete({ where: { id } });
       else
@@ -216,17 +258,12 @@ export async function changeAppointment(
           where: { id },
           data: { vaccinationRecordId: null, motherVaccinationRecordId: null },
         });
+      // Only a record this appointment's completion created goes away; one
+      // that already existed (checklist tick, past entry) is just unlinked.
+      if (!linked || !createdByCompletion(item, linked)) return;
       if (item.vaccinationRecordId)
-        await tx.vaccinationRecord.deleteMany({
-          where: { id: item.vaccinationRecordId, baby: { userId: user.id } },
-        });
-      if (item.motherVaccinationRecordId)
-        await tx.motherVaccinationRecord.deleteMany({
-          where: {
-            id: item.motherVaccinationRecordId,
-            mother: { userId: user.id },
-          },
-        });
+        await tx.vaccinationRecord.delete({ where: { id: linked.id } });
+      else await tx.motherVaccinationRecord.delete({ where: { id: linked.id } });
     }),
   );
 }
@@ -282,13 +319,18 @@ export async function toggleScheduledDose(
   ownerId: string,
   key: string,
   done: boolean,
-  ..._submission: [VaccinationFormState, FormData]
+  _state: VaccinationFormState,
+  form: FormData,
 ): Promise<VaccinationFormState> {
-  void _submission;
   const user = await requireUser();
   return mutation(async () => {
     const entry = scheduleEntry(kind, key);
     if (!entry) throw new Error("Không tìm thấy lần tiêm.");
+    // The tick dialog sends the real date; older clients without it mean today.
+    const today = toDateTimeLocal(new Date(), user.timezone).slice(0, 10);
+    const typed = form.get("administeredAt");
+    const administeredOn = done && typeof typed === "string" && typed ? vaccinationDate.parse(typed) : today;
+    if (done) checkActualDate(administeredOn, user.timezone);
     await db.$transaction(async (tx) => {
       await ownerFor(tx, `${kind}:${ownerId}`, user.id);
       // Serialize both spouses marking the same child's checklist.
@@ -312,7 +354,7 @@ export async function toggleScheduledDose(
         scheduleKey: entry.key,
         vaccineName: entry.label,
         doseNumber: entry.doseNumber,
-        administeredAt: dateFromInput(toDateTimeLocal(new Date(), user.timezone).slice(0, 10)),
+        administeredAt: dateFromInput(administeredOn),
       };
       const created = kind === "baby"
         ? await tx.vaccinationRecord.create({ data: { ...details, babyId: ownerId } })

@@ -1,10 +1,10 @@
 import type { AssistantAnswer, AssistantContext, AssistantSource } from "@/features/ai/types";
 
-export type ProviderInput = { question: string; context: AssistantContext; excerpts: string[]; sources: AssistantSource[]; locale: "vi" | "en" };
+export type ProviderInput = { question: string; context: AssistantContext; excerpts: string[]; sources: AssistantSource[] };
 
 export type HealthRecordType = "vaccination" | "prescription" | "pregnancyCheckup";
 
-export type ExtractionInput = { imageDataUrl: string; recordType: HealthRecordType; locale: "vi" | "en" };
+export type ExtractionInput = { imageDataUrl: string; recordType: HealthRecordType };
 
 const EXTRACTION_FIELDS: Record<HealthRecordType, string[]> = {
   vaccination: ["vaccineName", "doseNumber", "administeredAt", "facility", "batchNumber", "nextDueAt", "notes"],
@@ -24,7 +24,6 @@ export type CheckupAssessmentInput = {
   checkup: CheckupValues;
   flags: string[];
   level: "GOOD" | "WATCH" | "URGENT";
-  locale: "vi" | "en";
 };
 
 export type CheckupAssessment = { summary: string; suggestions: string[] };
@@ -36,9 +35,9 @@ export interface AIProvider {
 }
 
 class SafeFallbackProvider implements AIProvider {
-  async answer(input: ProviderInput): Promise<Pick<AssistantAnswer, "answer" | "evidenceLevel" | "sources">> {
+  async answer(): Promise<Pick<AssistantAnswer, "answer" | "evidenceLevel" | "sources">> {
     return {
-      answer: input.locale === "vi" ? "Kho kiến thức hiện chưa đủ dữ liệu đã kiểm duyệt để trả lời an toàn. Mình sẽ không suy đoán. Hãy hỏi bác sĩ hoặc chuyên gia y tế phù hợp." : "The reviewed knowledge base does not contain enough information to answer safely. I won't guess. Please contact an appropriate health professional.",
+      answer: "Kho kiến thức hiện chưa đủ dữ liệu đã kiểm duyệt để trả lời an toàn. Mình sẽ không suy đoán. Hãy hỏi bác sĩ hoặc chuyên gia y tế phù hợp.",
       evidenceLevel: "INSUFFICIENT",
       sources: [],
     };
@@ -48,11 +47,9 @@ class SafeFallbackProvider implements AIProvider {
     throw new Error("OCR_UNAVAILABLE");
   }
 
-  async assessCheckup(input: CheckupAssessmentInput): Promise<CheckupAssessment> {
+  async assessCheckup(): Promise<CheckupAssessment> {
     return {
-      summary: input.locale === "vi"
-        ? "Đã kiểm tra các chỉ số theo ngưỡng chuẩn ở trên. Chưa cấu hình trợ lý AI nên chưa có gợi ý chi tiết thêm — hãy trao đổi với bác sĩ khi tái khám."
-        : "The values above were checked against standard thresholds. No AI assistant is configured for further suggestions — please discuss with your doctor at the next visit.",
+      summary: "Đã kiểm tra các chỉ số theo ngưỡng chuẩn ở trên. Chưa cấu hình trợ lý AI nên chưa có gợi ý chi tiết thêm — hãy trao đổi với bác sĩ khi tái khám.",
       suggestions: [],
     };
   }
@@ -62,7 +59,7 @@ class OpenAICompatibleProvider implements AIProvider {
   constructor(private readonly baseUrl: string, private readonly apiKey: string, private readonly model: string) {}
 
   async answer(input: ProviderInput): Promise<Pick<AssistantAnswer, "answer" | "evidenceLevel" | "sources">> {
-    if (input.excerpts.length === 0 || input.sources.length === 0) return new SafeFallbackProvider().answer(input);
+    if (input.excerpts.length === 0 || input.sources.length === 0) return new SafeFallbackProvider().answer();
     const response = await fetch(`${this.baseUrl.replace(/\/$/, "")}/chat/completions`, {
       method: "POST",
       headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json" },
@@ -102,7 +99,7 @@ class OpenAICompatibleProvider implements AIProvider {
           {
             role: "user",
             content: [
-              { type: "text", text: input.locale === "vi" ? "Trích xuất thông tin từ ảnh sau." : "Extract the information from this image." },
+              { type: "text", text: "Trích xuất thông tin từ ảnh sau." },
               { type: "image_url", image_url: { url: input.imageDataUrl } },
             ],
           },
@@ -134,7 +131,7 @@ class OpenAICompatibleProvider implements AIProvider {
           },
           {
             role: "user",
-            content: JSON.stringify({ locale: input.locale, checkup: input.checkup, level: input.level, flags: input.flags }),
+            content: JSON.stringify({ locale: "vi", checkup: input.checkup, level: input.level, flags: input.flags }),
           },
         ],
       }),

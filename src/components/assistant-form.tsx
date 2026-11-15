@@ -17,10 +17,8 @@ type Values = z.infer<typeof schema>;
 export function AssistantForm({
   babyId,
   labels,
-  locale,
 }: {
   babyId?: string;
-  locale: "vi" | "en";
   labels: {
     placeholder: string;
     ask: string;
@@ -42,7 +40,7 @@ export function AssistantForm({
       const response = await fetch("/api/assistant", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...values, babyId, locale }),
+      body: JSON.stringify({ ...values, babyId }),
       signal: AbortSignal.timeout(30_000),
     });
     if (!response.ok) {
@@ -128,7 +126,7 @@ export function AssistantForm({
 
 function BadgeLike({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-semibold tracking-wide text-muted-foreground">
+    <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold tracking-wide text-muted-foreground">
       {children}
     </span>
   );

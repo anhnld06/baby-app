@@ -3,49 +3,10 @@
 import { Camera, ImagePlus, LoaderCircle, Trash2 } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { compressImageFile } from "@/lib/image-compress";
 
 const MAX_SOURCE_BYTES = 20 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 450 * 1024;
-
-type DrawableImage = ImageBitmap | HTMLImageElement;
-
-async function decodeImage(file: File): Promise<DrawableImage> {
-  if (typeof createImageBitmap === "function") {
-    try {
-      return await createImageBitmap(file, { imageOrientation: "from-image" });
-    } catch {
-      // Safari can decode some camera formats through an image element only.
-    }
-  }
-
-  const objectUrl = URL.createObjectURL(file);
-  try {
-    return await new Promise<HTMLImageElement>((resolve, reject) => {
-      const image = new Image();
-      image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error("Không đọc được ảnh này."));
-      image.src = objectUrl;
-    });
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
-}
-
-function imageSize(image: DrawableImage) {
-  return "naturalWidth" in image
-    ? { width: image.naturalWidth, height: image.naturalHeight }
-    : { width: image.width, height: image.height };
-}
-
-function canvasBlob(canvas: HTMLCanvasElement, quality: number) {
-  return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => blob ? resolve(blob) : reject(new Error("Không thể xử lý ảnh.")),
-      "image/jpeg",
-      quality,
-    );
-  });
-}
 
 function blobDataUrl(blob: Blob) {
   return new Promise<string>((resolve, reject) => {
@@ -59,32 +20,14 @@ function blobDataUrl(blob: Blob) {
 async function compressProfileCover(file: File) {
   if (!file.type.startsWith("image/")) throw new Error("Vui lòng chọn một file ảnh.");
   if (file.size > MAX_SOURCE_BYTES) throw new Error("Ảnh gốc không được lớn hơn 20 MB.");
-
-  const image = await decodeImage(file);
-  try {
-    const source = imageSize(image);
-    for (const maxEdge of [1280, 1080, 900, 720]) {
-      const scale = Math.min(1, maxEdge / Math.max(source.width, source.height));
-      const width = Math.max(1, Math.round(source.width * scale));
-      const height = Math.max(1, Math.round(source.height * scale));
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const context = canvas.getContext("2d");
-      if (!context) throw new Error("Trình duyệt không hỗ trợ xử lý ảnh.");
-      context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, width, height);
-      context.drawImage(image, 0, 0, width, height);
-
-      for (const quality of [0.82, 0.72, 0.62, 0.52]) {
-        const blob = await canvasBlob(canvas, quality);
-        if (blob.size <= MAX_OUTPUT_BYTES) return blobDataUrl(blob);
-      }
-    }
-    throw new Error("Không thể nén ảnh đủ nhỏ. Vui lòng chọn ảnh khác.");
-  } finally {
-    if ("close" in image) image.close();
-  }
+  // Always re-encode to JPEG: the server only accepts covers up to 500 KB.
+  const compressed = await compressImageFile(file, {
+    maxEdge: 1280,
+    maxBytes: MAX_OUTPUT_BYTES,
+    alwaysReencode: true,
+    maxSourceBytes: MAX_SOURCE_BYTES,
+  });
+  return blobDataUrl(compressed);
 }
 
 export function ProfileCoverUpload({ currentImageUrl }: { currentImageUrl?: string }) {

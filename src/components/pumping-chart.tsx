@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { StatisticsIcon as BarChart3 } from "@/components/app-icons";
 import type { ChartBucket, PumpingChartMode } from "@/features/pumping/chart";
+import { formatNumber } from "@/lib/format";
 
 export function PumpingChart({
   rows,
@@ -14,7 +15,6 @@ export function PumpingChart({
   previous,
   next,
   today,
-  locale,
 }: {
   rows: ChartBucket[];
   mode: PumpingChartMode;
@@ -22,9 +22,7 @@ export function PumpingChart({
   previous: string;
   next: string;
   today: string;
-  locale: "vi" | "en";
 }) {
-  const vi = locale === "vi";
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -33,9 +31,7 @@ export function PumpingChart({
     rows.find((row) => row.key === selected) ??
     rows.findLast((row) => row.totalMl != null) ??
     rows[0];
-  const number = (n: number) =>
-    new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(n);
-  const volume = (n: number | null) => (n == null ? "—" : `${number(n)} ml`);
+  const volume = (n: number | null) => (n == null ? "—" : `${formatNumber(n, 1)} ml`);
   const total = rows.reduce((sum, row) => sum + (row.totalMl ?? 0), 0);
   const measured = rows.reduce((sum, row) => sum + row.measured, 0);
   const pending = rows.reduce((sum, row) => sum + row.pending, 0);
@@ -57,30 +53,30 @@ export function PumpingChart({
       : mode === "month"
         ? `${anchor.slice(5, 7)}/${anchor.slice(0, 4)}`
         : anchor.slice(0, 4);
-  const chosenLabel = chosen
-    ? mode === "day"
-      ? chosen.label
+  const bucketLabel = (row: ChartBucket) =>
+    mode === "day"
+      ? row.label
       : mode === "month"
-        ? `${chosen.label}/${anchor.slice(5, 7)}`
-        : `${vi ? "Tháng" : "Month"} ${chosen.label}`
-    : "";
+        ? `${row.label}/${anchor.slice(5, 7)}`
+        : `Tháng ${row.label}`;
+  const chosenLabel = chosen ? bucketLabel(chosen) : "";
   return (
     <section
       className="mt-7 overflow-hidden rounded-3xl border border-primary/10 bg-card shadow-sm"
       aria-labelledby="pumping-chart-title"
     >
-      <div className="bg-gradient-to-br from-secondary/30 to-card p-4 sm:p-5">
+      <div className="bg-linear-to-br from-secondary/30 to-card p-4 sm:p-5">
         <h2
           id="pumping-chart-title"
           className="flex items-center gap-2 text-lg font-semibold"
         >
           <BarChart3 className="size-5 text-primary" />
-          {vi ? "Lượng sữa theo thời gian" : "Milk over time"}
+          Lượng sữa theo thời gian
         </h2>
         <div
           className="mt-4 grid grid-cols-3 gap-1 rounded-2xl bg-secondary/60 p-1"
           role="group"
-          aria-label={vi ? "Chế độ biểu đồ" : "Chart view"}
+          aria-label="Chế độ biểu đồ"
         >
           {(["day", "month", "year"] as const).map((value, index) => (
             <button
@@ -91,7 +87,7 @@ export function PumpingChart({
               className={`min-h-11 rounded-xl text-sm font-medium transition-colors ${mode === value ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
               {
-                (vi ? ["Ngày", "Tháng", "Năm"] : ["Day", "Month", "Year"])[
+                ["Ngày", "Tháng", "Năm"][
                   index
                 ]
               }
@@ -102,7 +98,7 @@ export function PumpingChart({
           <button
             type="button"
             onClick={() => navigate(mode, previous)}
-            aria-label={vi ? "Kỳ trước" : "Previous period"}
+            aria-label="Kỳ trước"
             className="grid size-11 shrink-0 place-items-center rounded-xl hover:bg-secondary"
           >
             <ChevronLeft className="size-4" />
@@ -114,20 +110,20 @@ export function PumpingChart({
               onClick={() => navigate(mode, today)}
               className="min-h-8 text-xs text-primary underline underline-offset-4"
             >
-              {vi ? "Về hiện tại" : "Current period"}
+              Về hiện tại
             </button>
           </div>
           <button
             type="button"
             onClick={() => navigate(mode, next)}
-            aria-label={vi ? "Kỳ sau" : "Next period"}
+            aria-label="Kỳ sau"
             className="grid size-11 shrink-0 place-items-center rounded-xl hover:bg-secondary"
           >
             <ChevronRight className="size-4" />
           </button>
         </div>
         <label className="mt-1 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          {vi ? "Chọn mốc thời gian" : "Choose date"}
+          Chọn mốc thời gian
           <input
             type="date"
             min="1900-01-01"
@@ -141,24 +137,24 @@ export function PumpingChart({
         </label>
         <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border/50 pt-4">
           <div>
-            <p className="text-[11px] text-muted-foreground">
-              {vi ? "Tổng đã ghi" : "Logged volume"}
+            <p className="text-xs text-muted-foreground">
+              Tổng đã ghi
             </p>
             <p className="mt-1 text-base font-semibold tabular-nums sm:text-xl">
               {measured ? volume(total) : "—"}
             </p>
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground">
-              {vi ? "Trung bình / cữ" : "Average / session"}
+            <p className="text-xs text-muted-foreground">
+              Trung bình / cữ
             </p>
             <p className="mt-1 text-base font-semibold tabular-nums sm:text-xl">
               {measured ? volume(total / measured) : "—"}
             </p>
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground">
-              {vi ? "Ngày có lượng" : "Days with volume"}
+            <p className="text-xs text-muted-foreground">
+              Ngày có lượng
             </p>
             <p className="mt-1 text-base font-semibold tabular-nums sm:text-xl">
               {days}
@@ -170,19 +166,19 @@ export function PumpingChart({
         <div className="mb-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
           <span>
             <span className="mr-1 inline-block size-2 rounded-full bg-primary" />
-            {vi ? "Trái" : "Left"}
+            Trái
           </span>
           <span>
             <span className="mr-1 inline-block size-2 rounded-full bg-violet-400" />
-            {vi ? "Phải" : "Right"}
+            Phải
           </span>
           <span>
-            {vi ? "Đơn vị: ml · nhấn cột để xem" : "Unit: ml · select a bar"}
+            Đơn vị: ml · nhấn cột để xem
           </span>
         </div>
         {rows.length ? (
           <MetricBarChart
-            label={vi ? "Biểu đồ cột lượng sữa" : "Milk volume bar chart"}
+            label="Biểu đồ cột lượng sữa"
             rows={rows.map((row) => ({
               key: row.key,
               label: row.label,
@@ -191,16 +187,13 @@ export function PumpingChart({
               current: row.partial,
             }))}
             unit="ml"
-            locale={locale}
             selectedKey={chosen?.key}
             onSelect={setSelected}
             showSelection={false}
           />
         ) : (
           <p className="rounded-2xl bg-muted/50 p-6 text-center text-sm text-muted-foreground">
-            {vi
-              ? "Chưa có cữ hút trong ngày này."
-              : "No pumping sessions on this day."}
+            Chưa có cữ hút trong ngày này.
           </p>
         )}
         {chosen && (
@@ -213,49 +206,75 @@ export function PumpingChart({
               <span>{volume(chosen.totalMl)}</span>
             </p>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              {chosen.count} {vi ? "cữ" : "sessions"} ·{" "}
-              {vi ? "Trung bình" : "Average"}{" "}
+              {chosen.count} {"cữ"} ·{" "}
+              {"Trung bình"}{" "}
               {chosen.measured
                 ? volume((chosen.totalMl ?? 0) / chosen.measured)
                 : "—"}
               {mode === "year"
-                ? ` · ${chosen.recordedDays} ${vi ? "ngày có lượng" : "days with volumes"}`
+                ? ` · ${chosen.recordedDays} ngày có lượng`
                 : ""}
             </p>
             {chosen.totalMl != null && (
               <p className="mt-1 text-xs text-muted-foreground">
-                {vi ? "Trái" : "Left"}: {volume(chosen.leftMl)} ·{" "}
-                {vi ? "Phải" : "Right"}: {volume(chosen.rightMl)}
+                {"Trái"}: {volume(chosen.leftMl)} ·{" "}
+                {"Phải"}: {volume(chosen.rightMl)}
               </p>
             )}
             {chosen.partial && (
               <p className="mt-2 text-xs text-primary">
-                {vi
-                  ? "Khoảng hiện tại chưa kết thúc."
-                  : "This period is still ongoing."}
+                Khoảng hiện tại chưa kết thúc.
               </p>
             )}
             {chosen.pending > 0 && (
               <p className="mt-2 text-xs text-muted-foreground">
                 {chosen.pending}{" "}
-                {vi
-                  ? "cữ chờ nhập ml, chưa cộng vào lượng."
-                  : "sessions await volumes and are excluded from volume totals."}
+                cữ chờ nhập ml, chưa cộng vào lượng.
               </p>
             )}
           </div>
         )}
         <p className="mt-3 text-xs leading-5 text-muted-foreground">
-          {vi
-            ? "— là chưa có lượng được ghi, khác với 0 ml. Biểu đồ chỉ tính cữ đã kết thúc; tổng tháng/năm phụ thuộc số ngày đã ghi. Cuộn ngang để xem thêm cột."
-            : "— means no volume logged, distinct from zero. Only finished sessions are included; monthly/yearly totals depend on days logged. Scroll horizontally for more bars."}
+          — là chưa có lượng được ghi, khác với 0 ml. Biểu đồ chỉ tính cữ đã kết thúc; tổng tháng/năm phụ thuộc số ngày đã ghi. Cuộn ngang để xem thêm cột.
         </p>
+        {rows.length > 0 && (
+          <details className="mt-3">
+            <summary className="flex min-h-11 cursor-pointer items-center text-sm text-primary">
+              Xem bảng số liệu
+            </summary>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <caption className="sr-only">
+                  Lượng sữa theo từng khoảng thời gian, đơn vị ml
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col" className="py-2 font-medium">Thời gian</th>
+                    <th scope="col" className="text-right font-medium">Tổng</th>
+                    <th scope="col" className="text-right font-medium">Trái</th>
+                    <th scope="col" className="text-right font-medium">Phải</th>
+                    <th scope="col" className="text-right font-medium">Số cữ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.key} className="border-t">
+                      <td className="py-2">{bucketLabel(row)}</td>
+                      <td className="text-right tabular-nums">{volume(row.totalMl)}</td>
+                      <td className="text-right tabular-nums">{row.totalMl == null ? "—" : volume(row.leftMl)}</td>
+                      <td className="text-right tabular-nums">{row.totalMl == null ? "—" : volume(row.rightMl)}</td>
+                      <td className="text-right tabular-nums">{row.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        )}
         {pending > 0 && (
           <p className="mt-2 text-xs text-muted-foreground">
             {pending}{" "}
-            {vi
-              ? "cữ trong kỳ chưa nhập lượng sữa."
-              : "sessions in this period have no milk volume."}
+            cữ trong kỳ chưa nhập lượng sữa.
           </p>
         )}
       </div>

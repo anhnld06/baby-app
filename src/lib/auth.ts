@@ -44,6 +44,11 @@ export async function deleteSession() {
   cookieStore.delete(SESSION_COOKIE);
 }
 
+export async function deleteAllSessions(userId: string) {
+  await db.session.deleteMany({ where: { userId } });
+  (await cookies()).delete(SESSION_COOKIE);
+}
+
 export const getCurrentUser = cache(async () => {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -57,7 +62,6 @@ export const getCurrentUser = cache(async () => {
           name: true,
           username: true,
           timezone: true,
-          locale: true,
         },
       },
     },

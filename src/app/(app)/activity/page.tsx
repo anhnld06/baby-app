@@ -6,7 +6,7 @@ import { buildTimeline } from "@/features/timeline/timeline";
 import { requireUser } from "@/lib/auth";
 import { getSelectedBaby } from "@/lib/data";
 import { db } from "@/lib/db";
-import { getDictionary, getLocale } from "@/lib/i18n";
+import { getDictionary } from "@/lib/i18n";
 import { parseHistoryLimit } from "@/lib/pagination";
 
 export default async function ActivityPage({
@@ -14,10 +14,9 @@ export default async function ActivityPage({
 }: {
   searchParams: Promise<{ limit?: string }>;
 }) {
-  const [user, t, locale, params] = await Promise.all([
+  const [user, t, params] = await Promise.all([
     requireUser(),
     getDictionary(),
-    getLocale(),
     searchParams,
   ]);
   const baby = await getSelectedBaby(user.id);
@@ -88,7 +87,6 @@ export default async function ActivityPage({
       firstMolar: t.tracking.firstMolar,
       secondMolar: t.tracking.secondMolar,
     },
-    locale,
   );
   const hasMore = timeline.length > limit || [temperatures, medicationDoses, careEntries, feedings, sleeps, diapers, growthEntries, vaccinations, prescriptions, toothRecords].some((items) => items.length > limit);
   return (
@@ -100,11 +98,10 @@ export default async function ActivityPage({
         className="mb-5 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-secondary px-4 text-sm font-semibold text-primary"
       >
         <Download className="size-4" />
-        {locale === "vi" ? "Tải báo cáo CSV" : "Download CSV report"}
+        Tải báo cáo CSV
       </a>
       <TimelineList
         items={timeline.slice(0, limit)}
-        locale={locale}
         timeZone={user.timezone}
         showDate
         empty={t.common.noData}

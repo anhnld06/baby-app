@@ -9,7 +9,7 @@ export default async function SocialDiscussionsPage() {
   const user = await requireUser();
   const baby = await getSelectedBaby(user.id);
   const currentStage = baby
-    ? stageForAge(ageInDays(baby.dateOfBirth))
+    ? stageForAge(ageInDays(baby.dateOfBirth, new Date(), user.timezone))
     : undefined;
 
   return (

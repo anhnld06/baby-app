@@ -22,7 +22,7 @@ export default async function KnowledgePage({
     getLibraryIndex(),
     searchParams,
   ]);
-  const ageDays = baby ? ageInDays(baby.dateOfBirth) : undefined;
+  const ageDays = baby ? ageInDays(baby.dateOfBirth, new Date(), user.timezone) : undefined;
   const stage = stageForAge(ageDays);
   const query = parseLibraryQuery(params);
   const initialPage =

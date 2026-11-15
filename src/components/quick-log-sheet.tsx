@@ -14,34 +14,20 @@ import {
   DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog";
+// The pastel sticker artwork carries its own colours, so tiles share one neutral backdrop.
 const actions = [
-  ["Nhiệt độ", "/tracking/temperature?new=1", Thermometer, "bg-rose-100 text-rose-700"],
-  ["Thuốc", "/tracking/medication", Pill, "bg-violet-100 text-violet-700"],
-  [
-    "Bú mẹ",
-    "/tracking/feeding?new=1&type=BREASTFEEDING",
-    Baby,
-    "bg-orange-100 text-orange-700",
-  ],
-  [
-    "Giấc ngủ",
-    "/tracking/sleep?new=1",
-    BedDouble,
-    "bg-violet-100 text-violet-700",
-  ],
-  [
-    "Bú bình",
-    "/tracking/feeding?new=1&type=BOTTLE_BREAST_MILK",
-    Milk,
-    "bg-teal-100 text-teal-700",
-  ],
-  ["Thay tã", "/tracking/diaper?new=1", Shell, "bg-teal-100 text-teal-700"],
-  ["Hút sữa", "/mother/pumping", PumpingIcon, "bg-pink-100 text-pink-700"],
-  ["Ăn dặm", "/baby/meals?new=1", Utensils, "bg-amber-100 text-amber-700"],
-  ["Số đo", "/tracking/growth?new=1", Ruler, "bg-blue-100 text-blue-700"],
-  ["Dấu hiệu", "/baby/wellbeing?new=1", MoodIcon, "bg-rose-100 text-rose-700"],
-  ["Kỷ niệm", "/baby/milestones?new=1", MilestoneIcon, "bg-yellow-100 text-yellow-700"],
-  ["Nếp ngày", "/baby/routine?new=1", RoutineIcon, "bg-indigo-100 text-indigo-700"],
+  ["Nhiệt độ", "/tracking/temperature?new=1", Thermometer],
+  ["Thuốc", "/tracking/medication", Pill],
+  ["Bú mẹ", "/tracking/feeding?new=1&type=BREASTFEEDING", Baby],
+  ["Giấc ngủ", "/tracking/sleep?new=1", BedDouble],
+  ["Bú bình", "/tracking/feeding?new=1&type=BOTTLE_BREAST_MILK", Milk],
+  ["Thay tã", "/tracking/diaper?new=1", Shell],
+  ["Hút sữa", "/mother/pumping", PumpingIcon],
+  ["Ăn dặm", "/baby/meals?new=1", Utensils],
+  ["Số đo", "/tracking/growth?new=1", Ruler],
+  ["Dấu hiệu", "/baby/wellbeing?new=1", MoodIcon],
+  ["Kỷ niệm", "/baby/milestones?new=1", MilestoneIcon],
+  ["Nếp ngày", "/baby/routine?new=1", RoutineIcon],
 ] as const;
 export function QuickLogSheet({ babyId }: { babyId?: string }) {
   const [pending, startTransition] = useTransition();
@@ -88,16 +74,14 @@ export function QuickLogSheet({ babyId }: { babyId?: string }) {
               </span>
               {pending ? "Đang lưu…" : "Thức giấc"}
             </button>
-            {actions.map(([title, href, Icon, tone]) => (
+            {actions.map(([title, href, Icon]) => (
               <Link
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
                 className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border bg-card p-2 text-center text-xs font-medium"
               >
-                <span
-                  className={`grid size-11 place-items-center rounded-2xl bg-secondary/70 ${tone.split(" ").filter(value => !value.startsWith("bg-")).join(" ")}`}
-                >
+                <span className="grid size-11 place-items-center rounded-2xl bg-secondary/70">
                   <Icon aria-hidden="true" className="size-8" />
                 </span>
                 {title}

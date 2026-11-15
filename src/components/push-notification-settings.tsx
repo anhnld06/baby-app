@@ -3,12 +3,12 @@
 import { Bell, BellOff, LoaderCircle } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
-
-function applicationServerKey(value: string) {
-  const padding = "=".repeat((4 - (value.length % 4)) % 4);
-  const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
-  return Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
-}
+import {
+  applicationServerKey,
+  deleteSubscriptionOnServer,
+  saveSubscriptionOnServer,
+  subscriptionUsesOtherKey,
+} from "@/lib/push-client";
 
 function pushSupported() {
   return (
@@ -18,7 +18,37 @@ function pushSupported() {
   );
 }
 
-export function PushNotificationSettings({ publicKey, description }: { publicKey?: string; description?: string }) {
+async function subscribe(registration: ServiceWorkerRegistration, publicKey: string) {
+  return registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: applicationServerKey(publicKey),
+  });
+}
+
+/**
+ * The server prunes subscriptions that the push service reports as gone, and
+ * VAPID keys may be rotated. Re-register the browser subscription on every
+ * visit so "Bật" in the UI matches what the server can actually deliver to.
+ */
+async function renewSubscription(publicKey?: string) {
+  const registration = await navigator.serviceWorker.ready;
+  let subscription = await registration.pushManager.getSubscription();
+  if (!subscription) return { enabled: false, synced: true };
+  if (publicKey && subscriptionUsesOtherKey(subscription, publicKey)) {
+    const oldEndpoint = subscription.endpoint;
+    await subscription.unsubscribe();
+    await deleteSubscriptionOnServer(oldEndpoint).catch(() => undefined);
+    if (Notification.permission !== "granted") return { enabled: false, synced: true };
+    // Some browsers only allow subscribe() after a tap; the user can then press "Bật" again.
+    const renewed = await subscribe(registration, publicKey).catch(() => null);
+    if (!renewed) return { enabled: false, synced: true };
+    subscription = renewed;
+  }
+  const response = await saveSubscriptionOnServer(subscription).catch(() => null);
+  return { enabled: true, synced: Boolean(response?.ok) || response === null };
+}
+
+export function PushNotificationSettings({ publicKey }: { publicKey?: string }) {
   const [enabled, setEnabled] = useState(false);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
@@ -30,11 +60,22 @@ export function PushNotificationSettings({ publicKey, description }: { publicKey
 
   useEffect(() => {
     if (!supported) return;
-    navigator.serviceWorker.ready
-      .then((registration) => registration.pushManager.getSubscription())
-      .then((subscription) => setEnabled(Boolean(subscription)))
-      .catch(() => setMessage("Chưa thể đọc trạng thái thông báo."));
-  }, [supported]);
+    let cancelled = false;
+    renewSubscription(publicKey)
+      .then(({ enabled: active, synced }) => {
+        if (cancelled) return;
+        setEnabled(active);
+        if (!synced) {
+          setMessage("Máy chủ chưa nhận đăng ký thông báo của thiết bị này. Hãy tắt rồi bật lại.");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMessage("Chưa thể đọc trạng thái thông báo.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [supported, publicKey]);
 
   async function enable() {
     if (!supported || !publicKey) return;
@@ -49,15 +90,8 @@ export function PushNotificationSettings({ publicKey, description }: { publicKey
       const registration = await navigator.serviceWorker.ready;
       const subscription =
         (await registration.pushManager.getSubscription()) ??
-        (await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: applicationServerKey(publicKey),
-        }));
-      const response = await fetch("/api/push/subscription", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(subscription.toJSON()),
-      });
+        (await subscribe(registration, publicKey));
+      const response = await saveSubscriptionOnServer(subscription);
       if (!response.ok) throw new Error("save failed");
       setEnabled(true);
       setMessage("Đã bật nhắc lịch trên thiết bị này.");
@@ -75,11 +109,7 @@ export function PushNotificationSettings({ publicKey, description }: { publicKey
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
-        const response = await fetch("/api/push/subscription", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ endpoint: subscription.endpoint }),
-        });
+        const response = await deleteSubscriptionOnServer(subscription.endpoint);
         if (!response.ok) throw new Error("delete failed");
         await subscription.unsubscribe();
       }
@@ -102,7 +132,7 @@ export function PushNotificationSettings({ publicKey, description }: { publicKey
           <div>
             <p className="font-medium">Nhắc lịch trên thiết bị</p>
             <p className="text-xs text-muted-foreground">
-              {description ?? "Nhắc lịch tiêm, tái khám, hành trình thai kỳ và giờ dùng thuốc kể cả khi ứng dụng đã đóng. Dùng chung cài đặt cho thiết bị này."}
+              Nhắc lịch tiêm, tái khám, hành trình thai kỳ và giờ dùng thuốc kể cả khi ứng dụng đã đóng. Dùng chung cài đặt cho thiết bị này.
             </p>
           </div>
         </div>

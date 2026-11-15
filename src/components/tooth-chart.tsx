@@ -40,7 +40,7 @@ export function ToothChart({
 }) {
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 text-[10px] font-medium text-muted-foreground">
+      <div className="grid grid-cols-2 text-xs font-medium text-muted-foreground">
         <span>{labels.babyRight}</span>
         <span className="text-right">{labels.babyLeft}</span>
       </div>
@@ -67,7 +67,7 @@ export function ToothChart({
       <p className="text-center text-xs font-semibold text-foreground">
         {labels.lowerJaw}
       </p>
-      <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
+      <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <span><strong className="text-foreground">51</strong> {labels.fdiCode}</span>
         <span><strong className="text-foreground">#1</strong> {labels.eruptionOrder}</span>
         <span><strong className="text-foreground">6–10</strong> {labels.monthShort}</span>
@@ -123,7 +123,7 @@ function ToothRow({
             <span className="text-[8px] font-medium leading-none opacity-75 sm:text-[9px]">
               #{info.eruptionOrder}
             </span>
-            <strong className="mt-1 text-[10px] leading-none sm:text-xs">
+            <strong className="mt-1 text-xs leading-none">
               {info.fdiNumber}
             </strong>
             <span className="mt-1 whitespace-nowrap text-[7px] font-medium leading-none opacity-80 sm:text-[8px]">

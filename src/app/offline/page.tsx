@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { WifiOff } from "lucide-react";
+import { RetryButton } from "./retry-button";
 
 export default function OfflinePage() {
   return (
@@ -8,11 +8,14 @@ export default function OfflinePage() {
         <WifiOff className="mx-auto size-10 text-primary" />
         <h1 className="mt-4 text-2xl font-semibold">Thiết bị đang mất mạng</h1>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Bạn vẫn có thể ghi nhanh bú, ngủ và tã nếu đã bật lưu ngoại tuyến trong Hồ sơ.
+          Trang này cần có mạng để mở. Khi mất mạng, ứng dụng không mở được trang mới.
         </p>
-        <Link href="/" className="mt-5 inline-flex min-h-12 items-center rounded-2xl bg-primary px-5 font-medium text-primary-foreground">
-          Thử tải lại
-        </Link>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          Nếu đã bật “Ghi nhanh khi mất mạng” trong Hồ sơ, bạn chỉ ghi được bú, ngủ và tã trên
+          trang đã mở sẵn trước khi mất mạng. Bản ghi được lưu tạm trên thiết bị và tự đồng bộ khi
+          có mạng lại.
+        </p>
+        <RetryButton />
       </div>
     </main>
   );

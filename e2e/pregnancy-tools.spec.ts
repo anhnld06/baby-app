@@ -352,6 +352,8 @@ test("Hôm nay sắp xếp timeline theo giờ thực tế, không trộn lịch
   await prisma.growthEntry.create({ data: { babyId: baby.id, weightKg: 6.6, measuredAt: new Date(start.getTime() - 86400000) } });
   await prisma.temperatureEntry.create({ data: { babyId: baby.id, celsius: 39.9, method: "AXILLARY", measuredAt: new Date(now.getTime() + 3600000) } });
   await page.goto("/");
+  // Wait until React has revealed every streamed segment; a hidden div#S:n copy can be removed mid-action.
+  await page.waitForFunction(() => !document.querySelector('div[hidden][id^="S:"]'));
   const timeline = page.locator('[aria-label="Dòng thời gian hoạt động"]');
   await expect(timeline.locator("[data-history-timeline-item]")).toHaveCount(4);
   await expect(timeline.locator("time")).toHaveText([

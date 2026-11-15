@@ -1,14 +1,18 @@
 import Link from "next/link";
-import type { Mother, Pregnancy } from "@prisma/client";
+import type { Pregnancy } from "@prisma/client";
 import { ArrowUpRight, CalendarDays, Heart, Sparkles } from "lucide-react";
 import { BabyIcon as Baby, HandbookIcon as BookHeart, MotherIcon as HeartPulse } from "@/components/app-icons";
 import { FeatureLink } from "@/components/feature-link";
 import { PageHeader } from "@/components/page-header";
 import { UpcomingVaccination } from "@/components/upcoming-vaccination";
+import type { DosePlan } from "@/features/vaccination/expected";
 
 import { pregnancyAge, selectRelevantPregnancy } from "@/features/mother/pregnancy";
 
-export function FamilyStart({ mother, name, nextVaccination, timeZone = "Asia/Ho_Chi_Minh" }: { mother: (Mother & { pregnancies: Pregnancy[] }) | null; name: string; timeZone?: string; nextVaccination?: { vaccineName: string; scheduledAt: Date } | null }) {
+/** Only the pregnancy fields this screen reads, so the home page can select just these. */
+export type FamilyStartPregnancy = Pick<Pregnancy, "pregnancyStatus" | "createdAt" | "estimatedDueDate" | "lastMenstrualPeriod">;
+
+export function FamilyStart({ mother, name, nextVaccination, expectedVaccination, timeZone = "Asia/Ho_Chi_Minh" }: { mother: { pregnancies: FamilyStartPregnancy[] } | null; name: string; timeZone?: string; nextVaccination?: { vaccineName: string; scheduledAt: Date } | null; expectedVaccination?: DosePlan | null }) {
   const pregnancy = selectRelevantPregnancy(mother?.pregnancies ?? []);
   const pregnant = pregnancy?.pregnancyStatus === "PREGNANT";
   const age = pregnant ? pregnancyAge(pregnancy, new Date(), timeZone) : undefined;
@@ -23,7 +27,7 @@ export function FamilyStart({ mother, name, nextVaccination, timeZone = "Asia/Ho
         <p className="mt-3 max-w-sm text-sm leading-6 text-white/80">{pregnant ? "Lưu lần khám, ghi lại thay đổi của cơ thể và chuẩn bị đón con trong một không gian riêng." : "Từ những ngày chờ con đến cữ bú đầu tiên. Bắt đầu với giai đoạn của gia đình mình."}</p>
         {pregnant && <Link href="/mother/pregnancy" className="mt-6 inline-flex min-h-12 items-center gap-3 rounded-2xl bg-white px-4 text-sm font-semibold text-[#713649]">Mở nhật ký thai kỳ <ArrowUpRight className="size-4" /></Link>}
       </section>
-      <UpcomingVaccination appointment={nextVaccination} />
+      <UpcomingVaccination appointment={nextVaccination} expected={expectedVaccination} />
       {pregnant ? (
         <div className="mt-5 space-y-3">
           <FeatureLink href="/mother/pregnancy" icon={CalendarDays} title="Lịch khám và chỉ số thai kỳ" description={pregnancy.estimatedDueDate ? `Ngày dự sinh đã ghi: ${new Intl.DateTimeFormat("vi", { timeZone: "UTC" }).format(pregnancy.estimatedDueDate)}` : "Bổ sung ngày dự sinh và lưu kết quả mỗi lần khám."} tone="rose" />

@@ -70,7 +70,7 @@ export function HomeQuickActions() {
     <section aria-labelledby="daily-actions-title">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-[.15em] text-muted-foreground">
             Những điều nhỏ mỗi ngày
           </p>
           <h2 id="daily-actions-title" className="mt-1 text-lg font-semibold">
@@ -104,7 +104,7 @@ export function HomeQuickActions() {
             <strong className="mt-1 text-xs font-semibold sm:text-sm">
               {action.title}
             </strong>
-            <span className="mt-1 hidden text-[11px] leading-4 text-muted-foreground sm:block">
+            <span className="mt-1 hidden text-xs leading-4 text-muted-foreground sm:block">
               {action.detail}
             </span>
           </Link>

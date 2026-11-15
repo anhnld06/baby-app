@@ -1,0 +1,144 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Throwaway values for CI only. Nothing here may point at a real database or
+# reuse a real credential; the production secrets live only in Vercel/.env.
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  APP_USERNAME: demo
+  APP_PASSWORD: ci-only-not-a-real-password
+  APP_DISPLAY_NAME: Gia đình CI
+  VAPID_SUBJECT: mailto:ci@example.invalid
+  CRON_SECRET: ci-only-cron-secret
+  AI_BASE_URL: ""
+  AI_API_KEY: ""
+  AI_MODEL: ""
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # No database is reachable here: lint/typecheck/unit tests mock Prisma and
+      # every page is dynamic (session cookie), so the build never connects.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/baby_app_ci?schema=public
+      DATABASE_URL_UNPOOLED: postgresql://ci:ci@localhost:5432/baby_app_ci?schema=public
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        # next-env.d.ts and route types are gitignored; generate them first.
+        run: |
+          npx next typegen
+          npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  e2e:
+    name: e2e
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: baby
+          POSTGRES_PASSWORD: ci_only_password
+          POSTGRES_DB: baby_app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U baby -d baby_app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://baby:ci_only_password@localhost:5432/baby_app?schema=public
+      DATABASE_URL_UNPOOLED: postgresql://baby:ci_only_password@localhost:5432/baby_app?schema=public
+      # Use Playwright's bundled Chromium instead of the Google Chrome channel.
+      E2E_BROWSER_CHANNEL: ""
+      # Onboarding needs an empty family and pregnancy-tools a dedicated
+      # E2E_TEST_USERNAME server; both stay skipped against the seeded family.
+      E2E_EMPTY_FAMILY: "0"
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Apply migrations to the CI database
+        run: npm run db:deploy:ci
+
+      - name: Seed the CI database
+        run: npm run db:seed:ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Generate throwaway VAPID keys
+        # The Web Push spec needs a public key inlined at build time. A fresh
+        # pair per run keeps any real key out of CI.
+        run: |
+          keys="$(npm run --silent push:keys)"
+          public="$(printf '%s' "$keys" | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0, "utf8")).publicKey)')"
+          private="$(printf '%s' "$keys" | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0, "utf8")).privateKey)')"
+          echo "::add-mask::$private"
+          echo "NEXT_PUBLIC_VAPID_PUBLIC_KEY=$public" >> "$GITHUB_ENV"
+          echo "VAPID_PRIVATE_KEY=$private" >> "$GITHUB_ENV"
+
+      - name: Build
+        run: npm run build
+
+      - name: Run Playwright tests
+        run: npm run test:e2e:ci
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+          if-no-files-found: ignore

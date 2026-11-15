@@ -29,4 +29,13 @@ describe("growth trend", () => {
     expect(correctedAgeInDays(birth, new Date("2026-03-26T00:00:00.000Z"), 32)).toBe(28);
     expect(correctedAgeInDays(birth, new Date("2028-01-01T00:00:00.000Z"), 32)).toBe(730);
   });
+
+  it("counts age in the account timezone calendar day", () => {
+    const dateOfBirth = new Date("2026-01-01T00:00:00.000Z");
+    // 2026-01-10 23:30 UTC is already 2026-01-11 in Vietnam.
+    const measuredAt = new Date("2026-01-10T23:30:00.000Z");
+    expect(correctedAgeInDays(dateOfBirth, measuredAt, null, "UTC")).toBe(9);
+    expect(correctedAgeInDays(dateOfBirth, measuredAt, null, "Asia/Ho_Chi_Minh")).toBe(10);
+    expect(buildGrowthSeries([{ measuredAt, weightKg: 3.6, heightCm: null, headCircumferenceCm: null }], dateOfBirth, "weightKg", null, "Asia/Ho_Chi_Minh")[0].ageDays).toBe(10);
+  });
 });

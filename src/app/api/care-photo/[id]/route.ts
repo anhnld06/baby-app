@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { isImageMimeType } from "@/lib/upload";
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -10,7 +11,8 @@ export async function GET(
     where: { id, baby: { userId: user.id } },
     select: { photoData: true, photoMime: true },
   });
-  if (!entry?.photoData || !entry.photoMime)
+  // Uploads are limited to 500 KB JPEG/PNG/WebP (care-actions.ts); never serve any other type.
+  if (!entry?.photoData || !entry.photoMime || !isImageMimeType(entry.photoMime))
     return new Response(null, { status: 404 });
   return new Response(new Uint8Array(entry.photoData), {
     headers: {

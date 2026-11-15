@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { curatedArticles } from "./articles";
+import { curatedArticles } from "../../../prisma/data/articles";
 import {
   SOCIAL_DISCUSSIONS,
   prioritizeSocialDiscussions,

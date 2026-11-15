@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
 import { chartScale } from "@/features/charts/scale";
+import { formatNumber } from "@/lib/format";
 export type MetricBar = {
   key: string;
   label: string;
@@ -19,7 +20,6 @@ export function MetricBarChart({
   rows,
   unit,
   tone = "teal",
-  locale = "vi",
   selectedKey,
   onSelect,
   showSelection = true,
@@ -28,7 +28,6 @@ export function MetricBarChart({
   rows: MetricBar[];
   unit: string;
   tone?: keyof typeof chartColors;
-  locale?: string;
   selectedKey?: string;
   onSelect?: (key: string) => void;
   showSelection?: boolean;
@@ -67,11 +66,36 @@ export function MetricBarChart({
     !["giờ", "hours"].includes(unit),
   );
   const color = chartColors[tone];
-  const number = (value: number) =>
-    new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(value);
   const pick = (key: string) => {
     setSelection(key);
     onSelect?.(key);
+  };
+  // Roving tabindex: the chart is a single tab stop; arrow keys move between bars.
+  const bars = useRef<(SVGGElement | null)[]>([]);
+  const activeIndex = Math.max(
+    0,
+    rows.findIndex((row) => row.key === chosen?.key),
+  );
+  const onBarKeyDown = (event: React.KeyboardEvent, index: number) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      pick(rows[index].key);
+      return;
+    }
+    const next =
+      event.key === "ArrowRight"
+        ? Math.min(rows.length - 1, index + 1)
+        : event.key === "ArrowLeft"
+          ? Math.max(0, index - 1)
+          : event.key === "Home"
+            ? 0
+            : event.key === "End"
+              ? rows.length - 1
+              : undefined;
+    if (next === undefined) return;
+    event.preventDefault();
+    pick(rows[next].key);
+    bars.current[next]?.focus();
   };
   return (
     <div ref={container} className="min-w-0" data-metric-chart>
@@ -79,7 +103,11 @@ export function MetricBarChart({
         className="overflow-x-auto overscroll-x-contain pb-1"
         role="group"
         aria-label={label}
+        aria-describedby={`${id}-hint`}
       >
+        <p id={`${id}-hint`} className="sr-only">
+          Dùng phím mũi tên trái, phải, Home hoặc End để chuyển giữa các cột.
+        </p>
         <svg
           width={chartWidth}
           height="242"
@@ -121,7 +149,7 @@ export function MetricBarChart({
                     className="fill-muted-foreground"
                     fontSize="10"
                   >
-                    {number(tick)}
+                    {formatNumber(tick)}
                   </text>
                 )}
               </g>
@@ -135,9 +163,7 @@ export function MetricBarChart({
               className="fill-muted-foreground"
               fontSize="12"
             >
-              {locale === "vi"
-                ? "Chưa có số liệu được ghi"
-                : "No records for this period"}
+              Chưa có số liệu được ghi
             </text>
           )}
           {rows.map((row, index) => {
@@ -161,18 +187,16 @@ export function MetricBarChart({
             return (
               <g
                 key={row.key}
+                ref={(node) => {
+                  bars.current[index] = node;
+                }}
                 role="button"
-                aria-label={`${row.label}: ${row.value == null ? (locale === "vi" ? "chưa ghi" : "not logged") : `${number(row.value)} ${unit}`}${row.current ? (locale === "vi" ? ", chưa kết thúc" : ", ongoing") : ""}`}
+                aria-label={`${row.label}: ${row.value == null ? "chưa ghi" : `${formatNumber(row.value)} ${unit}`}${row.current ? ", chưa kết thúc" : ""}`}
                 aria-pressed={selected}
-                tabIndex={0}
+                tabIndex={index === activeIndex ? 0 : -1}
                 className="chart-bar-focus cursor-pointer outline-none"
                 onClick={() => pick(row.key)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    pick(row.key);
-                  }
-                }}
+                onKeyDown={(event) => onBarKeyDown(event, index)}
               >
                 <rect
                   x={x - slot / 2}
@@ -238,7 +262,7 @@ export function MetricBarChart({
                     fontSize="11"
                     fontWeight="700"
                   >
-                    {number(row.value)}
+                    {formatNumber(row.value)}
                   </text>
                 )}
                 {tick && (
@@ -272,19 +296,15 @@ export function MetricBarChart({
         >
           <div>
             <p className="text-xs font-semibold">{chosen.label}</p>
-            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
               {chosen.note ||
                 (chosen.current
-                  ? locale === "vi"
-                    ? "Hôm nay chưa kết thúc"
-                    : "Today is ongoing"
-                  : locale === "vi"
-                    ? "Theo nhật ký đã ghi"
-                    : "Based on logged records")}
+                  ? "Hôm nay chưa kết thúc"
+                  : "Theo nhật ký đã ghi")}
             </p>
           </div>
           <p className="shrink-0 text-base font-semibold tabular-nums">
-            {chosen.value == null ? "—" : number(chosen.value)}{" "}
+            {chosen.value == null ? "—" : formatNumber(chosen.value)}{" "}
             <span className="text-xs font-normal text-muted-foreground">
               {unit}
             </span>

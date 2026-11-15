@@ -6,7 +6,6 @@ export type MotherScheduleEntry = {
   label: string;
   matchNames: string[];
   doseNumber: number;
-  dueByWeek: number;
   program: VaccineProgram;
   tier: VaccineTier;
   priceRangeVnd?: string;
@@ -21,6 +20,8 @@ export type BabyScheduleEntry = {
   dueAgeDays: number;
   dueAgeMonths?: number;
   offsetDays?: number;
+  /** The dose must be given before this age (calendar months), e.g. rotavirus. */
+  completeBeforeAgeMonths?: number;
   program: VaccineProgram;
   tier: VaccineTier;
   priceRangeVnd?: string;
@@ -53,20 +54,18 @@ export const MOTHER_PRENATAL_SCHEDULE: MotherScheduleEntry[] = [
     label: "Uốn ván (VAT) - mũi 1",
     matchNames: ["uốn ván", "vat"],
     doseNumber: 1,
-    dueByWeek: 20,
     program: "free",
     tier: "core",
-    note: "TCMR khuyến nghị tiêm càng sớm càng tốt khi phát hiện có thai, không bắt buộc đúng tuần 20 — đây chỉ là mốc tham khảo.",
+    note: "TCMR khuyến nghị tiêm càng sớm càng tốt khi phát hiện có thai; số mũi tùy tiền sử tiêm.",
   },
   {
     key: "tetanus-2",
     label: "Uốn ván (VAT) - mũi 2",
     matchNames: ["uốn ván", "vat"],
     doseNumber: 2,
-    dueByWeek: 24,
     program: "free",
     tier: "core",
-    note: "Cách mũi 1 ít nhất 1 tháng và trước ngày dự sinh ít nhất 1 tháng — mốc tuần 24 chỉ là ước lượng.",
+    note: "Cách mũi 1 ít nhất 1 tháng và tiêm xong trước ngày dự sinh ít nhất 1 tháng (NIHE).",
   },
 ];
 
@@ -246,9 +245,10 @@ export const BABY_SCHEDULE: BabyScheduleEntry[] = [
     doseNumber: 1,
     dueAgeDays: 60,
     dueAgeMonths: 2,
+    completeBeforeAgeMonths: 6,
     program: "free",
     tier: "core",
-    note: "Đã đưa vào TCMR miễn phí toàn quốc từ 2026; uống, không phải tiêm.",
+    note: "Đã đưa vào TCMR miễn phí toàn quốc từ 2026; uống, không phải tiêm. Phải uống xong trước 6 tháng tuổi (NIHE; Rotarix: trước 24 tuần tuổi).",
   },
   {
     key: "rotavirus-2",
@@ -257,6 +257,7 @@ export const BABY_SCHEDULE: BabyScheduleEntry[] = [
     doseNumber: 2,
     dueAgeDays: 90,
     dueAgeMonths: 3,
+    completeBeforeAgeMonths: 6,
     program: "free",
     tier: "core",
   },
@@ -403,3 +404,68 @@ export const BABY_SCHEDULE: BabyScheduleEntry[] = [
     note: "Khoảng cách giữa 2 mũi dao động 6-36 tháng tùy sản phẩm — xác nhận lại với cơ sở tiêm chủng.",
   },
 ];
+
+/** A calendar span: `months` are calendar months (clamped to month end), then `days`. */
+export type Span = { months?: number; days?: number };
+
+/**
+ * Spacing between a dose and the previous dose of the same series.
+ * `recommended` drives the "Dự kiến" date shown to parents; `min` is the
+ * earliest valid date ("sớm nhất") and is only shown as detail. Late doses
+ * never restart a series. Values are reference guidance, not a medical order.
+ */
+export type DoseInterval = {
+  /** Schedule key of the previous dose. */
+  after: string;
+  min: Span;
+  recommended: Span;
+  /** URL(s) the values come from. */
+  source: string;
+  /** Shown when the spacing depends on the product actually used. */
+  confirm?: string;
+};
+
+const CDC_INTERVALS =
+  "https://www.cdc.gov/vaccines/hcp/acip-recs/general-recs/timing.html"; // ACIP General Best Practice, Table 3-2 "Recommended and minimum ages and intervals between vaccine doses"
+const NIHE_TCMR =
+  "https://nihe.org.vn/chuyen-mon/tiem-chung-vac-xin/cac-vac-xin-trong-tiem-chung-mo-rong/";
+const WHO_POLIO_2022 = "https://www.who.int/publications/i/item/who-wer9725-277-300";
+const WHO_TETANUS_2017 = "https://www.who.int/publications/i/item/WER9206";
+const CONFIRM = "Khoảng cách tùy sản phẩm — xác nhận với cơ sở tiêm.";
+
+// Only series with a sourced interval are listed. Deliberately left out (age
+// milestone only): meningococcal B+C (no WHO/CDC/NIHE interval found),
+// measles → MR (different products; MR at 18 months never binds), HepB birth
+// dose → 5-in-1, and single-dose entries (BCG, flu, Td).
+export const BABY_DOSE_INTERVALS: Record<string, DoseInterval> = {
+  // DTaP-1→2, 2→3: minimum 4 weeks (CDC Table 3-2; WHO tetanus 2017 "minimum interval of 4 weeks");
+  // TCMR gives the doses 1 month apart (2, 3, 4 months, NIHE).
+  "5in1-2": { after: "5in1-1", min: { days: 28 }, recommended: { months: 1 }, source: `${CDC_INTERVALS} ; ${NIHE_TCMR}` },
+  "5in1-3": { after: "5in1-2", min: { days: 28 }, recommended: { months: 1 }, source: `${CDC_INTERVALS} ; ${NIHE_TCMR}` },
+  // DTaP-3→4: minimum 6 months (CDC Table 3-2, footnote f). The 18-month TCMR milestone normally wins.
+  "5in1-booster": { after: "5in1-3", min: { months: 6 }, recommended: { months: 6 }, source: CDC_INTERVALS },
+  // bOPV 1→2→3: 4 weeks (WHO polio position paper 2022); TCMR 2, 3, 4 months (NIHE).
+  "polio-2": { after: "polio-1", min: { days: 28 }, recommended: { months: 1 }, source: `${WHO_POLIO_2022} ; ${NIHE_TCMR}` },
+  "polio-3": { after: "polio-2", min: { days: 28 }, recommended: { months: 1 }, source: `${WHO_POLIO_2022} ; ${NIHE_TCMR}` },
+  // IPV 1→2: "second IPV dose being given at least 4 months later" (WHO polio position paper 2022); TCMR 5 → 9 months.
+  "polio-ipv-2": { after: "polio-ipv", min: { months: 4 }, recommended: { months: 4 }, source: `${WHO_POLIO_2022} ; ${NIHE_TCMR}` },
+  // Rotavirus-1→2: minimum 4 weeks (CDC Table 3-2); TCMR 2 → 3 months, complete before 6 months (NIHE).
+  "rotavirus-2": { after: "rotavirus-1", min: { days: 28 }, recommended: { months: 1 }, source: `${CDC_INTERVALS} ; ${NIHE_TCMR}`, confirm: CONFIRM },
+  // JE (Jevax, TCMR): dose 2 "7-14 ngày sau mũi 1", dose 3 "1 năm sau liều 2" (NIHE).
+  "je-2": { after: "je-1", min: { days: 7 }, recommended: { days: 14 }, source: NIHE_TCMR, confirm: "Lịch theo Jevax (TCMR). Imojev (dịch vụ) có lịch khác — xác nhận với cơ sở tiêm." },
+  "je-3": { after: "je-2", min: { months: 12 }, recommended: { months: 12 }, source: NIHE_TCMR, confirm: "Lịch theo Jevax (TCMR). Imojev (dịch vụ) có lịch khác — xác nhận với cơ sở tiêm." },
+  // PCV-1→2, 2→3: minimum 4 weeks; PCV-3→4: minimum 8 weeks (CDC Table 3-2). Product schedules differ.
+  "pneumococcal-2": { after: "pneumococcal-1", min: { days: 28 }, recommended: { months: 1 }, source: CDC_INTERVALS, confirm: CONFIRM },
+  "pneumococcal-3": { after: "pneumococcal-2", min: { days: 28 }, recommended: { months: 1 }, source: CDC_INTERVALS, confirm: CONFIRM },
+  "pneumococcal-booster": { after: "pneumococcal-3", min: { days: 56 }, recommended: { days: 56 }, source: CDC_INTERVALS, confirm: CONFIRM },
+  // Varicella-1→2: minimum 3 months for ages 12 months-12 years (CDC Table 3-2, 12 weeks / footnote bb "3 months").
+  "varicella-2": { after: "varicella-1", min: { months: 3 }, recommended: { months: 3 }, source: CDC_INTERVALS, confirm: CONFIRM },
+  // HepA-1→2: minimum 6 months (CDC Table 3-2; recommended 6-18 months, product-dependent).
+  "hepa-2": { after: "hepa-1", min: { months: 6 }, recommended: { months: 6 }, source: CDC_INTERVALS, confirm: CONFIRM },
+};
+
+export const MOTHER_DOSE_INTERVALS: Record<string, DoseInterval> = {
+  // Tetanus (VAT/Td) 1→2 in pregnancy: "Ít nhất 1 tháng sau lần 1" (NIHE); WHO 2017: at least 4 weeks,
+  // second dose at least 2 weeks (NIHE: 1 month) before birth.
+  "tetanus-2": { after: "tetanus-1", min: { months: 1 }, recommended: { months: 1 }, source: `${NIHE_TCMR} ; ${WHO_TETANUS_2017}` },
+};

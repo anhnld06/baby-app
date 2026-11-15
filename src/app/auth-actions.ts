@@ -1,10 +1,19 @@
 "use server";
 
-import { createHash, timingSafeEqual } from "node:crypto";
+import { headers } from "next/headers";
 import { redirect, RedirectType } from "next/navigation";
 import { z } from "zod";
-import { createSession, deleteSession } from "@/lib/auth";
+import { createSession, deleteAllSessions, deleteSession, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import {
+  clearLoginFailures,
+  clientIp,
+  isLoginRateLimited,
+  loginAttemptKey,
+  loginFailureDelay,
+  recordLoginFailure,
+} from "@/lib/login-rate-limit";
+import { equalSecret } from "@/lib/secret-compare";
 
 const loginSchema = z.object({
   username: z.string().trim().min(1).max(64),
@@ -12,12 +21,6 @@ const loginSchema = z.object({
 });
 
 export type AuthFormState = { error?: string } | undefined;
-
-function equalSecret(actual: string, expected: string) {
-  const actualHash = createHash("sha256").update(actual).digest();
-  const expectedHash = createHash("sha256").update(expected).digest();
-  return timingSafeEqual(actualHash, expectedHash);
-}
 
 export async function loginAction(
   _state: AuthFormState,
@@ -38,14 +41,23 @@ export async function loginAction(
     return { error: "Ứng dụng chưa cấu hình APP_USERNAME và APP_PASSWORD." };
   }
 
+  const attemptKey = loginAttemptKey(clientIp(await headers()));
+  if (await isLoginRateLimited(attemptKey)) {
+    await loginFailureDelay();
+    return { error: "Đăng nhập sai quá nhiều lần. Thử lại sau ít phút." };
+  }
+
   const usernameMatches = equalSecret(
     parsed.data.username.toLowerCase(),
     configuredUsername,
   );
   const passwordMatches = equalSecret(parsed.data.password, configuredPassword);
   if (!usernameMatches || !passwordMatches) {
+    await recordLoginFailure(attemptKey);
+    await loginFailureDelay();
     return { error: "Tên đăng nhập hoặc mật khẩu không đúng." };
   }
+  await clearLoginFailures(attemptKey);
 
   const user = await db.user.upsert({
     where: { username: configuredUsername },
@@ -62,5 +74,12 @@ export async function loginAction(
 
 export async function logoutAction() {
   await deleteSession();
+  redirect("/login", RedirectType.replace);
+}
+
+// Ends every session of the shared family account (e.g. a lost phone); both parents must log in again.
+export async function logoutAllDevicesAction() {
+  const user = await requireUser();
+  await deleteAllSessions(user.id);
   redirect("/login", RedirectType.replace);
 }

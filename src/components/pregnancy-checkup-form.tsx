@@ -11,6 +11,7 @@ import { savePregnancyCheckupAction } from "@/app/actions";
 import { Field, SelectField, TextAreaField } from "@/components/form-fields";
 import { OcrScanField } from "@/components/ocr-scan-field";
 import { formatDateInputDisplay, toDateInputValue, toDateTimeLocal } from "@/lib/date";
+import { asFormAction } from "@/lib/form-action";
 
 type VisitType = "PRENATAL_VISIT" | "ULTRASOUND" | "COMBINED";
 type FetalMovement = "" | "PRESENT" | "ABSENT";
@@ -114,7 +115,7 @@ export function PregnancyCheckupForm({ pregnancyId, editing, estimatedDueDate, l
     placentaGrade: editing?.placentaGrade?.toString() ?? "",
     amnioticFluid: editing?.amnioticFluid ?? "",
     cervicalLengthMm: editing?.cervicalLengthMm?.toString() ?? "",
-    ultrasoundDueDate: editing?.ultrasoundDueDate ? toDateInputValue(editing.ultrasoundDueDate) : "",
+    ultrasoundDueDate: editing?.ultrasoundDueDate ? toDateInputValue(editing.ultrasoundDueDate, "UTC") : "",
     fetalAnatomy: editing?.fetalAnatomy ?? "",
     otherFindings: editing?.otherFindings ?? "",
     facility: editing?.facility ?? "",
@@ -145,7 +146,7 @@ export function PregnancyCheckupForm({ pregnancyId, editing, estimatedDueDate, l
   }
 
   return (
-    <form id="checkup-form" action={savePregnancyCheckupAction} className="space-y-5">
+    <form id="checkup-form" action={asFormAction(savePregnancyCheckupAction)} className="space-y-5">
       <input type="hidden" name="pregnancyId" value={pregnancyId} />
       <input type="hidden" name="source" value={source} />
       {editing && <input type="hidden" name="id" value={editing.id} />}
@@ -153,7 +154,6 @@ export function PregnancyCheckupForm({ pregnancyId, editing, estimatedDueDate, l
       <FormSection title="Quét phiếu khám hoặc siêu âm" description="Ảnh chỉ dùng để tự điền. Luôn đối chiếu lại với phiếu do cơ sở y tế cung cấp trước khi lưu.">
         <OcrScanField
           recordType="pregnancyCheckup"
-          locale="vi"
           scanLabel="Chọn ảnh phiếu để tự điền"
           scanningLabel="Đang nhận diện…"
           unavailableLabel="Chưa đọc được ảnh này. Vui lòng chụp thẳng phiếu, tránh lóa hoặc nhập tay."

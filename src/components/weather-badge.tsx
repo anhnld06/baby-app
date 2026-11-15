@@ -46,11 +46,19 @@ const WEATHER_ICON: Record<number, typeof Sun> = {
   99: CloudLightning,
 };
 
-async function reverseGeocode(latitude: number, longitude: number): Promise<string | null> {
+// The place name is optional: on 401 (signed out), 429 (shared lookup throttle) or any failure,
+// the badge still shows the weather with the generic "current location" label.
+async function reverseGeocode(latitude: number, longitude: number, retries = 1): Promise<string | null> {
   try {
     const response = await fetch(
       `/api/location?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`,
     );
+    if (response.status === 429 && retries > 0) {
+      const retryAfter = Number(response.headers.get("Retry-After"));
+      const delay = Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(retryAfter, 3) * 1000 : 1000;
+      await new Promise((resolve) => setTimeout(resolve, delay + 100));
+      return reverseGeocode(latitude, longitude, retries - 1);
+    }
     if (!response.ok) return null;
     const data = (await response.json()) as { name?: unknown };
     return typeof data.name === "string" && data.name.trim() ? data.name : null;

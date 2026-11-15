@@ -6,6 +6,16 @@ const optionalText = z.preprocess((value) => value === "" || value === null ? un
 const dateValue = z.preprocess((value) => value instanceof Date ? value : new Date(String(value)), z.date());
 const optionalDate = z.preprocess((value) => value === "" || value === null || value === undefined ? undefined : new Date(String(value)), z.date().optional());
 
+// Timestamps arrive as UTC instants (form values are converted from the
+// account timezone before parsing), so they compare directly with "now".
+// A few minutes of slack absorbs clock drift between the phone and server.
+export const FUTURE_TOLERANCE_MS = 5 * 60_000;
+export const MAX_FEEDING_MS = 6 * 3_600_000;
+export const MAX_SLEEP_MS = 24 * 3_600_000;
+const notInFuture = (date: Date) => date.getTime() <= Date.now() + FUTURE_TOLERANCE_MS;
+const pastDate = (message: string) => dateValue.refine(notInFuture, message);
+const optionalPastDate = (message: string) => optionalDate.refine((value) => value === undefined || notInFuture(value), message);
+
 export const babySchema = z.object({
   pregnancyId: z.preprocess((value) => value === "" ? null : value, z.string().min(1).nullable().optional()),
   id: optionalText,
@@ -84,7 +94,7 @@ export const motherDailyHealthLogSchema = z.object({
     (value) => value === "" || value === null ? undefined : value,
     z.enum(["NEGATIVE", "POSITIVE", "PEAK"]).optional(),
   ),
-  weightKg: optionalNumber,
+  weightKg: optionalNumber.refine((value) => value === undefined || value <= 300, "Cân nặng không hợp lệ"),
   waterGlasses: optionalInteger.refine((value) => value === undefined || value <= 100, "Lượng nước không hợp lệ"),
   notes: optionalText,
 });
@@ -224,15 +234,16 @@ export const feedingSchema = z.object({
   id: optionalText,
   babyId: z.string().min(1),
   type: z.enum(["BREASTFEEDING", "BOTTLE_BREAST_MILK", "FORMULA", "MIXED"]),
-  startTime: dateValue,
-  endTime: optionalDate,
-  leftBreastDuration: optionalInteger.refine((value) => value === undefined || value <= 1440, "Thời lượng bú không hợp lệ"),
-  rightBreastDuration: optionalInteger.refine((value) => value === undefined || value <= 1440, "Thời lượng bú không hợp lệ"),
+  startTime: pastDate("Giờ bắt đầu bú không thể ở tương lai"),
+  endTime: optionalPastDate("Giờ kết thúc bú không thể ở tương lai"),
+  leftBreastDuration: optionalInteger.refine((value) => value === undefined || value <= 360, "Thời lượng bú không hợp lệ"),
+  rightBreastDuration: optionalInteger.refine((value) => value === undefined || value <= 360, "Thời lượng bú không hợp lệ"),
   firstSide: z.preprocess((value) => value === "" ? undefined : value, z.enum(["LEFT", "RIGHT"]).optional()),
   amountMl: optionalNumber.refine((value) => value === undefined || value <= 3000, "Lượng sữa không hợp lệ"),
   milkType: optionalText,
   notes: optionalText,
 }).refine((value) => !value.endTime || value.endTime >= value.startTime, { message: "Giờ kết thúc phải sau giờ bắt đầu", path: ["endTime"] })
+  .refine((value) => !value.endTime || value.endTime.getTime() - value.startTime.getTime() <= MAX_FEEDING_MS, { message: "Một cữ bú không thể kéo dài quá 6 giờ. Hãy kiểm tra lại giờ kết thúc.", path: ["endTime"] })
   .transform((value) => {
     const breast = value.type === "BREASTFEEDING" || value.type === "MIXED";
     return {
@@ -249,17 +260,18 @@ export const feedingSchema = z.object({
 export const sleepSchema = z.object({
   id: optionalText,
   babyId: z.string().min(1),
-  startTime: dateValue,
-  endTime: optionalDate,
+  startTime: pastDate("Giờ bắt đầu ngủ không thể ở tương lai"),
+  endTime: optionalPastDate("Giờ thức dậy không thể ở tương lai"),
   type: z.enum(["NAP", "NIGHT"]),
   location: optionalText,
   notes: optionalText,
-}).refine((value) => !value.endTime || value.endTime >= value.startTime, { message: "Giờ kết thúc phải sau giờ bắt đầu", path: ["endTime"] });
+}).refine((value) => !value.endTime || value.endTime >= value.startTime, { message: "Giờ kết thúc phải sau giờ bắt đầu", path: ["endTime"] })
+  .refine((value) => !value.endTime || value.endTime.getTime() - value.startTime.getTime() <= MAX_SLEEP_MS, { message: "Một giấc ngủ không thể kéo dài quá 24 giờ. Hãy kiểm tra lại giờ thức dậy.", path: ["endTime"] });
 
 export const diaperSchema = z.object({
   id: optionalText,
   babyId: z.string().min(1),
-  changedAt: dateValue,
+  changedAt: pastDate("Thời điểm thay tã không thể ở tương lai"),
   type: z.enum(["WET", "STOOL", "BOTH"]),
   stoolColor: optionalText,
   consistency: optionalText,
@@ -275,7 +287,7 @@ export const diaperSchema = z.object({
 export const growthSchema = z.object({
   id: optionalText,
   babyId: z.string().min(1),
-  measuredAt: dateValue,
+  measuredAt: pastDate("Ngày đo không thể ở tương lai"),
   weightKg: optionalNumber.refine((value) => value === undefined || value <= 300, "Cân nặng không hợp lệ"),
   heightCm: optionalNumber.refine((value) => value === undefined || value <= 250, "Chiều cao không hợp lệ"),
   headCircumferenceCm: optionalNumber.refine((value) => value === undefined || value <= 100, "Vòng đầu không hợp lệ"),
@@ -317,28 +329,6 @@ export const toothSchema = z.object({
   babyId: z.string().min(1),
   position: z.enum(TOOTH_POSITIONS),
   eruptedAt: dateValue,
-  notes: optionalText,
-});
-
-export const vaccinationSchema = z.object({
-  id: optionalText,
-  babyId: z.string().min(1),
-  vaccineName: z.string().trim().min(1).max(200),
-  doseNumber: optionalInteger,
-  administeredAt: dateValue,
-  facility: optionalText,
-  batchNumber: optionalText,
-  nextDueAt: optionalDate,
-  notes: optionalText,
-});
-
-export const motherVaccinationSchema = z.object({
-  id: optionalText,
-  motherId: z.string().min(1),
-  vaccineName: z.string().trim().min(1).max(200),
-  doseNumber: optionalInteger,
-  administeredAt: dateValue,
-  facility: optionalText,
   notes: optionalText,
 });
 

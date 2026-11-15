@@ -6,7 +6,7 @@ import {
   PrismaClient,
   SleepType,
 } from "@prisma/client";
-import { curatedArticles } from "../src/features/knowledge/articles";
+import { curatedArticles } from "./data/articles";
 import { curatedStories } from "../src/features/stories/stories";
 
 const prisma = new PrismaClient();

@@ -5,12 +5,24 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { zonedDateTimeToUtc } from "@/lib/date";
 import { db } from "@/lib/db";
+import { isUniqueConstraintError } from "@/lib/prisma-errors";
 import { feedingSchema } from "@/lib/validation";
 import { activeFeedingWhere } from "@/features/timeline/active-feeding";
 
 export type VoiceLogActionState = {
   status: "idle" | "success" | "error";
   message: string;
+};
+
+// Only one running timer per baby (enforced by partial unique indexes); a voice "start" never
+// creates a second one, matching the start buttons on the Today page.
+const FEEDING_ALREADY_RUNNING: VoiceLogActionState = {
+  status: "error",
+  message: "Đang có một cữ bú mẹ chưa kết thúc. Hãy kết thúc cữ đó trước khi bắt đầu cữ mới.",
+};
+const SLEEP_ALREADY_RUNNING: VoiceLogActionState = {
+  status: "error",
+  message: "Bé đang có một giấc ngủ chưa kết thúc. Hãy kết thúc giấc đó trước khi bắt đầu giấc mới.",
 };
 
 const optionalDate = z.preprocess(
@@ -132,17 +144,40 @@ export async function saveVoiceLogAction(
         if (data.endTime && data.endTime < openFeeding.startTime) {
           return { status: "error", message: "Giờ kết thúc phải sau lúc bắt đầu bú." };
         }
-        await db.feeding.update({
-          where: { id: openFeeding.id },
+        const closed = await db.feeding.updateMany({
+          where: { id: openFeeding.id, ...activeFeedingWhere },
           data: { endTime: data.endTime },
         });
+        if (!closed.count) {
+          return { status: "error", message: "Không có cữ bú nào đang mở để kết thúc." };
+        }
       } else {
         const feeding = feedingSchema.parse({
           ...data,
           startTime: data.startTime!,
           endTime: data.operation === "complete" ? data.endTime : undefined,
         });
-        await db.feeding.create({ data: { ...feeding, id: undefined } });
+        const startsTimer =
+          feeding.type === "BREASTFEEDING" &&
+          !feeding.endTime &&
+          feeding.leftBreastDuration === null &&
+          feeding.rightBreastDuration === null &&
+          feeding.amountMl === null;
+        if (
+          startsTimer &&
+          (await db.feeding.findFirst({
+            where: { babyId: data.babyId, ...activeFeedingWhere },
+            select: { id: true },
+          }))
+        ) {
+          return FEEDING_ALREADY_RUNNING;
+        }
+        try {
+          await db.feeding.create({ data: { ...feeding, id: undefined } });
+        } catch (error) {
+          if (startsTimer && isUniqueConstraintError(error)) return FEEDING_ALREADY_RUNNING;
+          throw error;
+        }
       }
     } else if (raw.kind === "sleep") {
       const data = sleepInput.parse(raw);
@@ -164,19 +199,40 @@ export async function saveVoiceLogAction(
             message: "Giờ thức dậy phải sau lúc bé bắt đầu ngủ.",
           };
         }
-        await db.sleepEntry.update({
-          where: { id: openSleep.id },
+        const closed = await db.sleepEntry.updateMany({
+          where: { id: openSleep.id, endTime: null },
           data: { endTime: data.endTime },
         });
+        if (!closed.count) {
+          return {
+            status: "error",
+            message: "Không có giấc ngủ nào đang mở để kết thúc.",
+          };
+        }
       } else {
-        await db.sleepEntry.create({
-          data: {
-            babyId: data.babyId,
-            startTime: data.startTime!,
-            endTime: data.operation === "complete" ? data.endTime : undefined,
-            type: data.type,
-          },
-        });
+        const startsTimer = data.operation === "start";
+        if (
+          startsTimer &&
+          (await db.sleepEntry.findFirst({
+            where: { babyId: data.babyId, endTime: null },
+            select: { id: true },
+          }))
+        ) {
+          return SLEEP_ALREADY_RUNNING;
+        }
+        try {
+          await db.sleepEntry.create({
+            data: {
+              babyId: data.babyId,
+              startTime: data.startTime!,
+              endTime: startsTimer ? undefined : data.endTime,
+              type: data.type,
+            },
+          });
+        } catch (error) {
+          if (startsTimer && isUniqueConstraintError(error)) return SLEEP_ALREADY_RUNNING;
+          throw error;
+        }
       }
     } else if (raw.kind === "diaper") {
       const data = diaperInput.parse(raw);

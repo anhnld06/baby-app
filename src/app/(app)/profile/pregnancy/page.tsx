@@ -12,6 +12,7 @@ import { selectRelevantPregnancy } from "@/features/mother/pregnancy";
 import { dueDateFromGestationalAge } from "@/features/mother/due-date";
 import { toDateTimeLocal } from "@/lib/date";
 import { getDictionary } from "@/lib/i18n";
+import { asFormAction } from "@/lib/form-action";
 
 function dateInput(date?: Date | null) {
   return date?.toISOString().slice(0, 10) ?? "";
@@ -64,7 +65,7 @@ export default async function PregnancyProfilePage() {
         <CardContent className="p-5">
           <form
             id="pregnancy-form"
-            action={savePregnancyAction}
+            action={asFormAction(savePregnancyAction)}
             className="space-y-5"
           >
             <input type="hidden" name="motherId" value={mother.id} />

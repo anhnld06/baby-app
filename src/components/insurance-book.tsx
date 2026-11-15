@@ -8,8 +8,10 @@ import { PageHeader } from "@/components/page-header";
 import { CareSummary } from "@/components/care-summary";
 import { RecordActions } from "@/components/record-actions";
 import { Card, CardContent } from "@/components/ui/card";
+import { asFormAction } from "@/lib/form-action";
 
 type FormAction = (formData: FormData) => Promise<void>;
+type SaveAction = (formData: FormData) => Promise<void | { error: string }>;
 type InsuranceView = {
   id: string;
   insuranceType: string;
@@ -25,10 +27,10 @@ type InsuranceView = {
 const dateInput = (date?: Date | null) => date?.toISOString().slice(0, 10) ?? "";
 const typeLabels: Record<string, string> = { BHYT: "Bảo hiểm y tế", PRIVATE: "Bảo hiểm tư nhân", OTHER: "Bảo hiểm khác" };
 
-export function InsuranceBook({ title, subtitle, backHref, basePath, ownerField, ownerId, items, editing, saveAction, deleteAction, locale }: {
+export function InsuranceBook({ title, subtitle, backHref, basePath, ownerField, ownerId, items, editing, saveAction, deleteAction }: {
   title: string; subtitle: string; backHref: string; basePath: string;
   ownerField: "motherId" | "babyId"; ownerId: string; items: InsuranceView[]; editing: InsuranceView | null;
-  saveAction: FormAction; deleteAction: FormAction; locale: string;
+  saveAction: SaveAction; deleteAction: FormAction;
 }) {
   return <>
     <PageHeader compact title={title} subtitle={subtitle} backHref={backHref} />
@@ -36,7 +38,7 @@ export function InsuranceBook({ title, subtitle, backHref, basePath, ownerField,
       {items.length ? `${items.length} thẻ và hợp đồng · Xem thời hạn, quyền lợi và nơi đăng ký bên dưới.` : "Thêm thẻ hoặc hợp đồng để tiện tra cứu khi cần."}
     </CareSummary>}
     <CollapsibleRecordForm prominent editingId={editing?.id} key={`${editing?.id ?? "new"}-${items.length}`} defaultOpen={!!editing} addLabel="Thêm bảo hiểm" closeLabel="Hủy">
-      <Card className="border-0 shadow-sm"><CardContent className="p-5"><form id="insurance-form" action={saveAction} className="space-y-4">
+      <Card className="border-0 shadow-sm"><CardContent className="p-5"><form id="insurance-form" action={asFormAction(saveAction)} className="space-y-4">
         <input type="hidden" name={ownerField} value={ownerId} />{editing && <input type="hidden" name="id" value={editing.id} />}
         <ChoiceFields name="insuranceType" label="Loại bảo hiểm" initialValue={editing?.insuranceType ?? "BHYT"}
           options={Object.entries(typeLabels).map(([value, label]) => ({ value, label }))}
@@ -55,7 +57,7 @@ export function InsuranceBook({ title, subtitle, backHref, basePath, ownerField,
     <h2 className="mb-3 mt-7 text-lg font-semibold">Thẻ và hợp đồng</h2>
     <div className="space-y-2">{items.map((item) => {
       const expired = item.validUntil ? item.validUntil.getTime() < new Date().setHours(0, 0, 0, 0) : false;
-      return <div key={item.id} className="flex items-start gap-3 rounded-2xl bg-card p-3 shadow-sm"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"><ShieldCheck className="size-5" /></span><div className="min-w-0 flex-1"><p className="font-medium">{typeLabels[item.insuranceType] ?? item.insuranceType}</p><p className="truncate text-xs text-muted-foreground">{item.policyNumber}{item.provider ? ` · ${item.provider}` : ""}</p>{item.validUntil && <p className={`mt-1 flex items-center gap-1 text-xs font-medium ${expired ? "text-destructive" : "text-primary"}`}><CalendarClock className="size-3" />{expired ? "Đã hết hạn" : "Hạn đến"} {new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", year: "numeric" }).format(item.validUntil)}</p>}</div><RecordActions id={item.id} editHref={`${basePath}?edit=${item.id}`} deleteAction={deleteAction} editLabel="Sửa" deleteLabel="Xóa" /></div>;
+      return <div key={item.id} className="flex items-start gap-3 rounded-2xl bg-card p-3 shadow-sm"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"><ShieldCheck className="size-5" /></span><div className="min-w-0 flex-1"><p className="font-medium">{typeLabels[item.insuranceType] ?? item.insuranceType}</p><p className="truncate text-xs text-muted-foreground">{item.policyNumber}{item.provider ? ` · ${item.provider}` : ""}</p>{item.validUntil && <p className={`mt-1 flex items-center gap-1 text-xs font-medium ${expired ? "text-destructive" : "text-primary"}`}><CalendarClock className="size-3" />{expired ? "Đã hết hạn" : "Hạn đến"} {new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "short", year: "numeric" }).format(item.validUntil)}</p>}</div><RecordActions id={item.id} editHref={`${basePath}?edit=${item.id}`} deleteAction={deleteAction} editLabel="Sửa" deleteLabel="Xóa" /></div>;
     })}{!items.length && <p className="rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground">Chưa có thông tin bảo hiểm.</p>}</div>
     <p className="mt-4 text-xs leading-5 text-muted-foreground">Chỉ lưu thông tin cần thiết. Không ghi mã OTP, mật khẩu hoặc thông tin thanh toán vào ghi chú.</p>
   </>;

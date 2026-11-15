@@ -27,6 +27,43 @@ describe("private baby mailbox", () => {
     expect(await saveMemoryAction({}, data)).toHaveProperty("error");
     expect(mocks.create).not.toHaveBeenCalled();
   });
+  it("rejects media above 4 MB before reading it and stores valid media with its type", async () => {
+    const big = form(); const file = new File([new Uint8Array(4_000_001)], "big.mp4", { type: "video/mp4" });
+    const read = vi.spyOn(file, "arrayBuffer"); big.set("media", file);
+    expect(await saveMemoryAction({}, big)).toEqual({ error: "Tệp tối đa 4 MB. Hãy chọn ảnh nhỏ hơn hoặc video ngắn hơn." });
+    expect(read).not.toHaveBeenCalled();
+    const ok = form(); ok.set("media", new File([new Uint8Array([255,216,255,224])], "photo.jpg", { type: "image/jpeg" }));
+    expect(await saveMemoryAction({}, ok)).toEqual({ saved: true });
+    expect(mocks.create).toHaveBeenCalledWith({ data: expect.objectContaining({ mediaMime: "image/jpeg", mediaData: new Uint8Array([255,216,255,224]) }) });
+  });
+  it("accepts the compressed photos the composer sends and untyped uploads with a valid signature", async () => {
+    const jpeg = new Uint8Array(1_400_000); jpeg.set([255,216,255,224]);
+    const compressed = form(); compressed.set("media", new File([jpeg], "IMG_0001.jpg", { type: "image/jpeg" }));
+    expect(await saveMemoryAction({}, compressed)).toEqual({ saved: true });
+    const untyped = form(); untyped.set("media", new File([new Uint8Array([137,80,78,71,13,10,26,10,0])], "photo", { type: "" }));
+    expect(await saveMemoryAction({}, untyped)).toEqual({ saved: true });
+    expect(mocks.create).toHaveBeenLastCalledWith({ data: expect.objectContaining({ mediaMime: "image/png" }) });
+    const fake = form(); fake.set("media", new File(["<html>"], "page", { type: "" }));
+    expect(await saveMemoryAction({}, fake)).toHaveProperty("error");
+    const heic = form(); heic.set("media", new File(["\0\0\0\x18ftypheic"], "IMG.HEIC", { type: "image/heic" }));
+    expect(await saveMemoryAction({}, heic)).toHaveProperty("error");
+    expect(mocks.create).toHaveBeenCalledTimes(2);
+  });
+  it("accepts datetime values with seconds from mobile pickers and allows small clock skew", async () => {
+    expect(await saveMemoryAction({}, form({ occurredAt: "2026-01-01T08:00:00" }))).toEqual({ saved: true });
+    expect(mocks.create).toHaveBeenLastCalledWith({ data: expect.objectContaining({ occurredAt: new Date("2026-01-01T01:00Z") }) });
+    vi.useFakeTimers({ now: new Date("2026-01-01T01:00:30Z"), toFake: ["Date"] });
+    try {
+      expect(await saveMemoryAction({}, form({ occurredAt: "2026-01-01T08:03" }))).toEqual({ saved: true });
+      expect(await saveMemoryAction({}, form({ occurredAt: "2026-01-01T08:30" }))).toHaveProperty("error");
+    } finally { vi.useRealTimers(); }
+  });
+  it("returns a visible error instead of throwing when the database write fails", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.create.mockRejectedValue(new Error("connection reset"));
+    expect(await saveMemoryAction({}, form())).toEqual({ error: expect.stringContaining("Chưa lưu được thư") });
+    log.mockRestore();
+  });
   it("scopes deletion to the authenticated family", async () => {
     await deleteMemoryAction(form({ id: "other-memory" }));
     expect(mocks.remove).toHaveBeenCalledWith({ where: { id: "other-memory", baby: { userId: "user-1" } } });

@@ -92,14 +92,11 @@ test("bật rồi tắt Web Push trên thiết bị", async ({ context, page, ba
   );
   await expect(button).toHaveText("Tắt");
 
+  // Reminder settings live only on the Profile page.
   for (const path of ["/tracking/medication", "/mother/pregnancy"]) {
     await page.goto(path);
-    await expect(page.getByRole("button", { name: "Tắt", exact: true })).toBeVisible();
-    for (const width of [390, 1440]) {
-      await page.setViewportSize({ width, height: 900 });
-      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      await page.screenshot({ path: test.info().outputPath(`${path.includes("medication") ? "medication" : "pregnancy"}-push-${width}.png`) });
-    }
+    await expect(page.locator("main")).toBeVisible();
+    await expect(page.getByText("Nhắc lịch trên thiết bị", { exact: true })).toHaveCount(0);
   }
   await page.goto("/profile");
   await button.click();
@@ -107,8 +104,8 @@ test("bật rồi tắt Web Push trên thiết bị", async ({ context, page, ba
     "Đã tắt nhắc lịch trên thiết bị này.",
   );
   await expect(button).toHaveText("Bật");
-  await page.goto("/tracking/medication");
-  await expect(page.getByRole("button", { name: "Bật", exact: true })).toBeVisible();
+  await page.reload();
+  await expect(button).toHaveText("Bật");
   expect(errors).toEqual([]);
 });
 

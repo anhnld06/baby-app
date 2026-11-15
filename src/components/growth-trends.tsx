@@ -6,6 +6,7 @@ import {
   type GrowthMeasurement,
   type GrowthMetric,
 } from "@/features/growth/trend";
+import { numberFormatter } from "@/lib/format";
 
 const WHO_URLS: Record<GrowthMetric, string> = {
   weightKg:
@@ -18,32 +19,29 @@ const WHO_URLS: Record<GrowthMetric, string> = {
 
 const metrics: Array<{
   key: GrowthMetric;
-  vi: string;
-  en: string;
+  label: string;
   unit: string;
   digits: number;
 }> = [
-  { key: "weightKg", vi: "Cân nặng", en: "Weight", unit: "kg", digits: 2 },
+  { key: "weightKg", label: "Cân nặng", unit: "kg", digits: 2 },
   {
     key: "heightCm",
-    vi: "Chiều dài / chiều cao",
-    en: "Length / height",
+    label: "Chiều dài / chiều cao",
     unit: "cm",
     digits: 1,
   },
   {
     key: "headCircumferenceCm",
-    vi: "Vòng đầu",
-    en: "Head circumference",
+    label: "Vòng đầu",
     unit: "cm",
     digits: 1,
   },
 ];
 
-function ageLabel(days: number, locale: "vi" | "en") {
-  if (days < 31) return locale === "vi" ? `${days} ngày` : `${days} days`;
+function ageLabel(days: number) {
+  if (days < 31) return `${days} ngày`;
   const months = Math.round(days / 30.4375);
-  return locale === "vi" ? `${months} tháng` : `${months} months`;
+  return `${months} tháng`;
 }
 
 function MetricChart({
@@ -51,37 +49,32 @@ function MetricChart({
   measurements,
   dateOfBirth,
   gestationalAgeAtBirth,
-  locale,
+  timeZone,
 }: {
   metric: (typeof metrics)[number];
   measurements: GrowthMeasurement[];
   dateOfBirth: Date;
   gestationalAgeAtBirth?: number | null;
-  locale: "vi" | "en";
+  timeZone: string;
 }) {
   const series = buildGrowthSeries(
     measurements,
     dateOfBirth,
     metric.key,
     gestationalAgeAtBirth,
+    timeZone,
   );
   if (series.length === 0)
     return (
       <p className="rounded-2xl border border-dashed p-5 text-sm text-muted-foreground">
-        {locale === "vi"
-          ? "Chưa có số đo cho chỉ số này."
-          : "No measurements for this metric yet."}
+        Chưa có số đo cho chỉ số này.
       </p>
     );
   const latest = series.at(-1)!;
-  const title = locale === "vi" ? metric.vi : metric.en;
-  const number = new Intl.NumberFormat(locale, {
-    maximumFractionDigits: metric.digits,
-  });
+  const title = metric.label;
+  const number = numberFormatter(metric.digits);
   const chartDescription =
-    locale === "vi"
-      ? `${title}: ${series.length} lần đo từ ${ageLabel(series[0].ageDays, locale)} đến ${ageLabel(latest.ageDays, locale)}`
-      : `${title}: ${series.length} measurements from ${ageLabel(series[0].ageDays, locale)} to ${ageLabel(latest.ageDays, locale)}`;
+    `${title}: ${series.length} lần đo từ ${ageLabel(series[0].ageDays)} đến ${ageLabel(latest.ageDays)}`;
 
   return (
     <article className="surface-panel rounded-3xl p-4 sm:p-6">
@@ -95,8 +88,8 @@ function MetricChart({
             </span>
           </p>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            {locale === "vi" ? "Lần đo gần nhất: " : "Latest measurement: "}
-            {new Intl.DateTimeFormat(locale, { timeZone: "UTC", day: "2-digit", month: "2-digit", year: "numeric" }).format(latest.measuredAt)}
+            {"Lần đo gần nhất: "}
+            {new Intl.DateTimeFormat("vi-VN", { timeZone, day: "2-digit", month: "2-digit", year: "numeric" }).format(latest.measuredAt)}
           </p>
         </div>
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300">
@@ -106,18 +99,17 @@ function MetricChart({
       <GrowthLineChart
         label={chartDescription}
         unit={metric.unit}
-        locale={locale}
         points={series.map((point, index) => ({
           key: `${point.measuredAt.toISOString()}-${index}`,
           value: point.value,
           age: point.ageDays,
-          label: new Intl.DateTimeFormat(locale, {
-            timeZone: "UTC",
+          label: new Intl.DateTimeFormat("vi-VN", {
+            timeZone,
             day: "2-digit",
             month: "2-digit",
             year: "numeric",
           }).format(point.measuredAt),
-          ageLabel: ageLabel(point.ageDays, locale),
+          ageLabel: ageLabel(point.ageDays),
         }))}
       />
       <a
@@ -126,9 +118,7 @@ function MetricChart({
         rel="noreferrer"
         className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-xs font-medium text-primary underline-offset-4 hover:underline"
       >
-        {locale === "vi"
-          ? "Mở bảng tham chiếu WHO"
-          : "Open WHO reference tables"}
+        Mở bảng tham chiếu WHO
         <ExternalLink className="size-3.5" />
       </a>
     </article>
@@ -139,12 +129,12 @@ export function GrowthTrends({
   measurements,
   dateOfBirth,
   gestationalAgeAtBirth,
-  locale,
+  timeZone,
 }: {
   measurements: GrowthMeasurement[];
   dateOfBirth: Date;
   gestationalAgeAtBirth?: number | null;
-  locale: "vi" | "en";
+  timeZone: string;
 }) {
   if (
     !measurements.some(
@@ -161,32 +151,28 @@ export function GrowthTrends({
     <section className="mt-7" aria-labelledby="growth-trend-title">
       <div className="mb-3">
         <h2 id="growth-trend-title" className="text-xl font-semibold">
-          {locale === "vi" ? "Xu hướng tăng trưởng" : "Growth trends"}
+          Xu hướng tăng trưởng
         </h2>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          {locale === "vi"
-            ? "Biểu đồ nối các số đo đã ghi. Bảng WHO mở ở liên kết riêng và không thay thế đánh giá của bác sĩ."
-            : "The chart connects recorded measurements. WHO tables open separately and do not replace clinical assessment."}
+          Biểu đồ nối các số đo đã ghi. Bảng WHO mở ở liên kết riêng và không thay thế đánh giá của bác sĩ.
         </p>
       </div>
       {premature && (
         <p className="mb-3 rounded-2xl bg-amber-50 p-3 text-xs leading-5 text-amber-900 dark:bg-amber-950 dark:text-amber-100">
-          {locale === "vi"
-            ? "Bé sinh trước 37 tuần: trục tuổi dùng tuổi hiệu chỉnh trong 2 năm đầu. Đây vẫn chỉ là thông tin tham khảo; bác sĩ có thể điều chỉnh cách đánh giá theo tình trạng riêng của bé."
-            : "Born before 37 weeks: the age axis uses corrected age during the first two years. This remains a reference; clinical assessment may differ."}
+          Bé sinh trước 37 tuần: trục tuổi dùng tuổi hiệu chỉnh trong 2 năm đầu. Đây vẫn chỉ là thông tin tham khảo; bác sĩ có thể điều chỉnh cách đánh giá theo tình trạng riêng của bé.
         </p>
       )}
       <GrowthMetricTabs
         panels={metrics.map((metric) => ({
           id: metric.key,
-          title: locale === "vi" ? metric.vi : metric.en,
+          title: metric.label,
           content: (
             <MetricChart
               metric={metric}
               measurements={measurements}
               dateOfBirth={dateOfBirth}
               gestationalAgeAtBirth={gestationalAgeAtBirth}
-              locale={locale}
+              timeZone={timeZone}
             />
           ),
         }))}

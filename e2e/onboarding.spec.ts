@@ -23,7 +23,7 @@ test("gia đình mới đi từ thai kỳ đến nhật ký của bé", async ({
   await page.getByLabel("Ngày sinh", { exact: true }).fill("01/10/2026");
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole("heading", { name: "Bé thử nghiệm", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Ghi cữ bú", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Một ngày của Bé thử nghiệm", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Bú mẹ", exact: true })).toBeVisible();
   await page.screenshot({ path: test.info().outputPath("new-family-mobile.png"), fullPage: true });
 });

@@ -14,7 +14,6 @@ const requestSchema = z.object({
   question: z.string().trim().min(3).max(1000),
   motherId: z.string().optional(),
   babyId: z.string().optional(),
-  locale: z.enum(["vi", "en"]).default("vi"),
 });
 
 export async function POST(request: Request) {
@@ -55,7 +54,7 @@ export async function POST(request: Request) {
         ])
       : [null, [], [], []];
     const context: AssistantContext = {
-      babyAgeDays: baby ? ageInDays(baby.dateOfBirth) : undefined,
+      babyAgeDays: baby ? ageInDays(baby.dateOfBirth, new Date(), user.timezone) : undefined,
       latestGrowth: growth
         ? {
             weightKg: growth.weightKg,
@@ -75,15 +74,10 @@ export async function POST(request: Request) {
     };
     const safety = assessSafety(input.question, { babyAgeDays: context.babyAgeDays });
     if (safety.level === "EMERGENCY" || safety.level === "URGENT") {
-      const isVietnamese = input.locale === "vi";
       return NextResponse.json({
-        answer: isVietnamese
-          ? safety.level === "EMERGENCY"
-            ? "Dấu hiệu bạn mô tả có thể là tình huống cấp cứu. Hãy gọi dịch vụ cấp cứu tại nơi bạn sống hoặc đưa người bệnh đến khoa cấp cứu ngay. Đừng chờ câu trả lời trực tuyến."
-            : "Với trẻ sơ sinh, dấu hiệu bạn mô tả cần được nhân viên y tế đánh giá khẩn. Hãy liên hệ cơ sở y tế hoặc đưa bé đi khám ngay."
-          : safety.level === "EMERGENCY"
-            ? "The signs you described may be an emergency. Call your local emergency service or go to an emergency department now. Do not wait for an online answer."
-            : "For a newborn, the sign you described needs urgent medical assessment. Contact a medical service or take the baby for care now.",
+        answer: safety.level === "EMERGENCY"
+          ? "Dấu hiệu bạn mô tả có thể là tình huống cấp cứu. Hãy gọi dịch vụ cấp cứu tại nơi bạn sống hoặc đưa người bệnh đến khoa cấp cứu ngay. Đừng chờ câu trả lời trực tuyến."
+          : "Với trẻ sơ sinh, dấu hiệu bạn mô tả cần được nhân viên y tế đánh giá khẩn. Hãy liên hệ cơ sở y tế hoặc đưa bé đi khám ngay.",
         evidenceLevel: "STRONG",
         sources: [{
           title: safety.level === "EMERGENCY" ? "When to get urgent medical help for babies and children under 5" : "Newborn mortality: danger signs",
@@ -103,7 +97,6 @@ export async function POST(request: Request) {
     const providerAnswer = await getAIProvider().answer({
       question: input.question,
       context,
-      locale: input.locale,
       ...retrieved,
     });
     const knowledgeFallback = providerAnswer.evidenceLevel === "INSUFFICIENT";

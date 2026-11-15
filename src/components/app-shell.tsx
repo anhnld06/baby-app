@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { ProfileLabelContext } from "@/components/profile-shortcut";
 import { NotificationCountContext } from "@/components/notification-shortcut";
 import { QuickLogSheet } from "@/components/quick-log-sheet";
@@ -11,7 +12,6 @@ import { BabyIcon as Baby, StatisticsIcon as ChartColumn, HandbookIcon as BookHe
 import { VoiceLogContext } from "@/components/voice-log-context";
 import { NavigationHistory } from "@/components/back-link";
 import { isRouteActive } from "@/lib/navigation";
-import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 type Labels = {
@@ -28,19 +28,37 @@ function NavigationHint() {
   return <span aria-hidden="true" className={cn("absolute right-2 top-2 size-1.5 rounded-full bg-current opacity-0 transition-opacity delay-150", pending && "animate-pulse opacity-100")} />;
 }
 
+/** Resolve a server-streamed count; keeps the previous value while a refresh is in flight. */
+function useStreamedCount(source: Promise<number> | undefined) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!source) return;
+    let current = true;
+    source.then((value) => {
+      if (current) setCount(value);
+    }, () => {});
+    return () => {
+      current = false;
+    };
+  }, [source]);
+  return count;
+}
+
 export function AppShell({
   children,
   labels,
   appName,
   voiceLog,
-  unreadCount = 0,
+  unreadCount,
 }: {
   children: React.ReactNode;
   labels: Labels;
   appName: string;
-  unreadCount?: number;
-  voiceLog?: { babyId: string; locale: Locale };
+  /** Streamed from the layout so notification queries never block the page. */
+  unreadCount?: Promise<number>;
+  voiceLog?: { babyId: string };
 }) {
+  const unread = useStreamedCount(unreadCount);
   const pathname = usePathname();
   const query = useSearchParams();
   const owner = query.get("owner");
@@ -53,13 +71,13 @@ export function AppShell({
     { href: "/knowledge", label: labels.handbook, icon: BookHeart, paths: ["/knowledge", "/stories", "/assistant"] },
     { href: "/profile", label: labels.profile, icon: UserRound, paths: ["/profile"] },
   ];
-  const statisticsLink = { href: "/statistics", label: voiceLog?.locale === "en" ? "Statistics" : "Thống kê", icon: ChartColumn, paths: ["/statistics"] };
+  const statisticsLink = { href: "/statistics", label: "Thống kê", icon: ChartColumn, paths: ["/statistics"] };
   const desktopLinks = [links[0], statisticsLink, ...links.slice(1)];
   const mobileLinks = [links[0], links[1], links[2], statisticsLink, links[3]];
   return (
     <ProfileLabelContext.Provider value={labels.profile}>
     <VoiceLogContext.Provider value={voiceLog}>
-    <NotificationCountContext.Provider value={unreadCount}>
+    <NotificationCountContext.Provider value={unread}>
     <div className="mx-auto min-h-dvh w-full max-w-[1440px] overflow-x-clip bg-background lg:flex lg:border-x lg:border-border/50">
       <NavigationHistory />
       {!recordEditor && <QuickLogSheet babyId={voiceLog?.babyId} />}
@@ -78,7 +96,7 @@ export function AppShell({
         <nav className="space-y-1.5" aria-label="Điều hướng chính">
           {desktopLinks.map(({ href, label, icon: Icon, paths }) => {
             const active = paths.some((path) => isRouteActive(pathname, path));
-            return <Link key={href} href={href} replace={pathname === href} aria-current={active ? "page" : undefined} className={cn("relative flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted", active && "bg-secondary text-primary shadow-[inset_3px_0_0_var(--primary)]")}><Icon className="size-8" strokeWidth={active ? 2.5 : 1.8} />{label}<NavigationHint /></Link>;
+            return <Link key={href} href={href} replace={pathname === href} aria-current={active ? "page" : undefined} className={cn("relative flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted", active && "bg-secondary font-semibold text-primary shadow-[inset_4px_0_0_var(--primary)]")}><Icon className="size-8" />{label}<NavigationHint /></Link>;
           })}
         </nav>
         <div className="mt-auto">
@@ -100,11 +118,13 @@ export function AppShell({
               replace={pathname === href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "relative flex min-h-14 min-w-0 touch-manipulation flex-col items-center justify-center gap-1 rounded-2xl px-0.5 text-[11px] font-medium text-muted-foreground transition-[color,background-color,transform] duration-150 active:scale-95",
-                active && "bg-secondary text-primary",
+                "relative flex min-h-14 min-w-0 touch-manipulation flex-col items-center justify-center gap-1 rounded-2xl px-0.5 text-xs font-medium text-muted-foreground transition-[color,background-color,transform] duration-150 active:scale-95",
+                active && "bg-secondary font-semibold text-primary",
               )}
             >
-              <Icon className="size-8" strokeWidth={active ? 2.5 : 1.8} />
+              {/* Shape cue for the current page so the state is not conveyed by colour alone. */}
+              {active && <span aria-hidden="true" className="absolute inset-x-1/4 top-0 h-1 rounded-b-full bg-primary" />}
+              <Icon className="size-8" />
               <span className="max-w-full truncate">{label}</span>
               <NavigationHint />
             </Link>

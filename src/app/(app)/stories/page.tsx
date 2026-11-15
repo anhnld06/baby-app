@@ -9,7 +9,7 @@ import { getDictionary } from "@/lib/i18n";
 
 export default async function StoriesPage() {
   await requireUser();
-  const t = await getDictionary();
+  const t = getDictionary();
   const stories = await db.story.findMany({ orderBy: { createdAt: "asc" } });
   return (
     <>

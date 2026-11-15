@@ -334,7 +334,7 @@ export function KnowledgeLibrary({
                     <span className="mt-1 line-clamp-2 text-sm leading-5 text-muted-foreground">
                       {article.summary}
                     </span>
-                    <span className="mt-2 flex flex-wrap gap-x-2 text-[11px] text-muted-foreground">
+                    <span className="mt-2 flex flex-wrap gap-x-2 text-xs text-muted-foreground">
                       <span>{stageLabels[article.stage]}</span>
                       <span>·</span>
                       <span>{evidenceLabels[article.evidenceLevel]}</span>
@@ -405,7 +405,7 @@ export function KnowledgeLibrary({
           <MessagesSquare className="size-5" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.12em] text-fuchsia-700 dark:text-fuchsia-300">
+          <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[.12em] text-fuchsia-700 dark:text-fuchsia-300">
             15 chủ đề · Facebook · TikTok · Threads
           </span>
           <strong className="mt-1 block leading-5">Cha mẹ đang quan tâm</strong>

@@ -27,7 +27,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { parseVoiceLog } from "@/features/voice-log/parse";
 import type { VoiceLogDraft } from "@/features/voice-log/types";
-import type { Locale } from "@/lib/i18n";
 
 type SpeechRecognitionResultLike = {
   isFinal: boolean;
@@ -60,97 +59,51 @@ type SpeechWindow = Window & {
 const initialActionState: VoiceLogActionState = { status: "idle", message: "" };
 const SILENCE_TIMEOUT_MS = 4_000;
 
-const copy = {
-  vi: {
-    title: "Ghi nhanh bằng giọng nói",
-    description: "Nói một câu, kiểm tra lại rồi lưu vào nhật ký.",
-    listening: "Đang nghe… Tự dừng sau 4 giây yên lặng",
-    start: "Chạm để nói",
-    livePlaceholder: "Hãy nói về cữ bú, giấc ngủ hoặc lần thay tã…",
-    placeholder: "Ví dụ: Bé bú mẹ bên trái 10 phút",
-    interpret: "Hiểu câu này",
-    examples: "Thử nói: “Bé vừa ngủ” · “Thay tã ướt” · “Bé uống 90 ml sữa công thức”",
-    privacy: "Trình duyệt có thể dùng dịch vụ nhận dạng giọng nói của nhà cung cấp thiết bị.",
-    unsupported: "Trình duyệt này chưa hỗ trợ nhận giọng nói. Bạn vẫn có thể nhập câu bên dưới.",
-    denied: "Chưa được cấp quyền dùng micro. Hãy cho phép micro trong cài đặt trình duyệt.",
-    noSpeech: "Mình chưa nghe rõ. Hãy thử nói lại hoặc nhập câu bên dưới.",
-    understood: "Mình đã hiểu như sau",
-    feeding: "Cữ bú",
-    sleep: "Giấc ngủ",
-    diaper: "Thay tã",
-    type: "Loại",
-    startTime: "Bắt đầu",
-    endTime: "Kết thúc",
-    changedAt: "Thời điểm thay",
-    leftMinutes: "Bên trái (phút)",
-    rightMinutes: "Bên phải (phút)",
-    amountMl: "Lượng sữa (ml)",
-    milkType: "Loại / nhãn sữa",
-    firstSide: "Bên bú trước",
-    left: "Trái",
-    right: "Phải",
-    breastfeeding: "Bú mẹ",
-    breastMilkBottle: "Sữa mẹ bằng bình",
-    formula: "Sữa công thức",
-    mixed: "Kết hợp",
-    nap: "Ngủ ngày",
-    night: "Ngủ đêm",
-    wet: "Tã ướt",
-    stool: "Đi ngoài",
-    both: "Cả hai",
-    finishFeeding: "Kết thúc cữ bú đang mở",
-    finishSleep: "Kết thúc giấc ngủ đang mở",
-    confirm: "Xác nhận và lưu",
-    retry: "Nói lại",
-    open: "Ghi nhật ký bằng giọng nói",
-  },
-  en: {
-    title: "Quick log by voice",
-    description: "Say one sentence, review it, then save it to the journal.",
-    listening: "Listening… Stops after 4 seconds of silence",
-    start: "Tap to speak",
-    livePlaceholder: "Say something about feeding, sleep, or a diaper change…",
-    placeholder: "Example: Baby drank 90 ml of formula",
-    interpret: "Interpret this",
-    examples: "Try: “Baby just fell asleep” · “Wet diaper” · “Baby drank 90 ml of formula”",
-    privacy: "Your browser may use the device provider's speech recognition service.",
-    unsupported: "Voice recognition is not supported in this browser. You can still type below.",
-    denied: "Microphone permission was not granted. Allow it in your browser settings.",
-    noSpeech: "I couldn't hear that clearly. Try again or type below.",
-    understood: "Here's what I understood",
-    feeding: "Feeding",
-    sleep: "Sleep",
-    diaper: "Diaper",
-    type: "Type",
-    startTime: "Start",
-    endTime: "End",
-    changedAt: "Changed at",
-    leftMinutes: "Left (minutes)",
-    rightMinutes: "Right (minutes)",
-    amountMl: "Milk amount (ml)",
-    milkType: "Milk type / brand",
-    firstSide: "First side",
-    left: "Left",
-    right: "Right",
-    breastfeeding: "Breastfeeding",
-    breastMilkBottle: "Breast milk bottle",
-    formula: "Formula",
-    mixed: "Mixed",
-    nap: "Nap",
-    night: "Night sleep",
-    wet: "Wet",
-    stool: "Stool",
-    both: "Both",
-    finishFeeding: "Finish the active feeding session",
-    finishSleep: "Finish the active sleep session",
-    confirm: "Confirm and save",
-    retry: "Try again",
-    open: "Log by voice",
-  },
+const t = {
+  title: "Ghi nhanh bằng giọng nói",
+  description: "Nói một câu, kiểm tra lại rồi lưu vào nhật ký.",
+  listening: "Đang nghe… Tự dừng sau 4 giây yên lặng",
+  start: "Chạm để nói",
+  livePlaceholder: "Hãy nói về cữ bú, giấc ngủ hoặc lần thay tã…",
+  placeholder: "Ví dụ: Bé bú mẹ bên trái 10 phút",
+  interpret: "Hiểu câu này",
+  examples: "Thử nói: “Bé vừa ngủ” · “Thay tã ướt” · “Bé uống 90 ml sữa công thức”",
+  privacy: "Trình duyệt có thể dùng dịch vụ nhận dạng giọng nói của nhà cung cấp thiết bị.",
+  unsupported: "Trình duyệt này chưa hỗ trợ nhận giọng nói. Bạn vẫn có thể nhập câu bên dưới.",
+  denied: "Chưa được cấp quyền dùng micro. Hãy cho phép micro trong cài đặt trình duyệt.",
+  noSpeech: "Mình chưa nghe rõ. Hãy thử nói lại hoặc nhập câu bên dưới.",
+  understood: "Mình đã hiểu như sau",
+  feeding: "Cữ bú",
+  sleep: "Giấc ngủ",
+  diaper: "Thay tã",
+  type: "Loại",
+  startTime: "Bắt đầu",
+  endTime: "Kết thúc",
+  changedAt: "Thời điểm thay",
+  leftMinutes: "Bên trái (phút)",
+  rightMinutes: "Bên phải (phút)",
+  amountMl: "Lượng sữa (ml)",
+  milkType: "Loại / nhãn sữa",
+  firstSide: "Bên bú trước",
+  left: "Trái",
+  right: "Phải",
+  breastfeeding: "Bú mẹ",
+  breastMilkBottle: "Sữa mẹ bằng bình",
+  formula: "Sữa công thức",
+  mixed: "Kết hợp",
+  nap: "Ngủ ngày",
+  night: "Ngủ đêm",
+  wet: "Tã ướt",
+  stool: "Đi ngoài",
+  both: "Cả hai",
+  finishFeeding: "Kết thúc cữ bú đang mở",
+  finishSleep: "Kết thúc giấc ngủ đang mở",
+  confirm: "Xác nhận và lưu",
+  retry: "Nói lại",
+  open: "Ghi nhật ký bằng giọng nói",
 } as const;
 
-function DraftFields({ draft, locale }: { draft: VoiceLogDraft; locale: Locale }) {
-  const t = copy[locale];
+function DraftFields({ draft }: { draft: VoiceLogDraft }) {
   if (draft.kind === "feeding") {
     return (
       <>
@@ -166,7 +119,7 @@ function DraftFields({ draft, locale }: { draft: VoiceLogDraft; locale: Locale }
           </>
         ) : (
           <>
-            <FeedingFields initial={draft} locale={locale} labels={t}
+            <FeedingFields initial={draft} labels={t}
               typeLabels={{ BREASTFEEDING: t.breastfeeding, BOTTLE_BREAST_MILK: t.breastMilkBottle, FORMULA: t.formula, MIXED: t.mixed }}>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field name="startTime" type="datetime-local" required label={t.startTime} defaultValue={draft.startTime} />
@@ -218,9 +171,15 @@ function DraftFields({ draft, locale }: { draft: VoiceLogDraft; locale: Locale }
   );
 }
 
-export function VoiceQuickLog({ babyId, locale }: { babyId: string; locale: Locale }) {
-  const t = copy[locale];
-  const [open, setOpen] = useState(false);
+export function VoiceQuickLog({
+  babyId,
+  autoStart = false,
+}: {
+  babyId: string;
+  /** Open the sheet and start listening on mount (lazy-loaded after the first tap). */
+  autoStart?: boolean;
+}) {
+  const [open, setOpen] = useState(autoStart);
   const [transcript, setTranscript] = useState("");
   const [draft, setDraft] = useState<VoiceLogDraft | null>(null);
   const [message, setMessage] = useState("");
@@ -289,7 +248,7 @@ export function VoiceQuickLog({ babyId, locale }: { babyId: string; locale: Loca
     }
 
     const recognition = new Recognition();
-    recognition.lang = locale === "vi" ? "vi-VN" : "en-US";
+    recognition.lang = "vi-VN";
     recognition.continuous = true;
     recognition.interimResults = true;
     recognitionRef.current = recognition;
@@ -371,6 +330,17 @@ export function VoiceQuickLog({ babyId, locale }: { babyId: string; locale: Loca
       setPending(false);
     }
   }
+
+  // The first tap happened on a lightweight placeholder while this module loaded;
+  // replay what the trigger's click does (the sheet is already open via initial state).
+  useEffect(() => {
+    if (!autoStart) return;
+    // Scheduled (and cancellable) so a Strict Mode re-mount starts only one session.
+    const timer = window.setTimeout(startListening, 0);
+    return () => window.clearTimeout(timer);
+    // Runs once on mount only; later prop changes must not restart recognition.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const activityLabel = draft
     ? draft.kind === "feeding"
@@ -469,7 +439,7 @@ export function VoiceQuickLog({ babyId, locale }: { babyId: string; locale: Loca
                   </Button>
                 )}
                 <p className="mt-4 text-center text-xs text-muted-foreground">{t.examples}</p>
-                <p className="mt-2 text-center text-[11px] text-muted-foreground/80">{t.privacy}</p>
+                <p className="mt-2 text-center text-xs text-muted-foreground">{t.privacy}</p>
               </div>
             </>
           ) : (
@@ -494,7 +464,7 @@ export function VoiceQuickLog({ babyId, locale }: { babyId: string; locale: Loca
                   {t.retry}
                 </Button>
               </div>
-              <DraftFields draft={draft} locale={locale} />
+              <DraftFields draft={draft} />
               <Button type="submit" size="lg" className="h-12 w-full rounded-xl" disabled={pending}>
                 {pending ? <LoaderCircle className="animate-spin" /> : <Check />}
                 {t.confirm}

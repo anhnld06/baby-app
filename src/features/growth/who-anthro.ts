@@ -1,6 +1,7 @@
 import "server-only";
 
 import { z } from "zod";
+import { ageInDays } from "@/lib/date";
 import { db } from "@/lib/db";
 
 const responseSchema = z.object({
@@ -14,7 +15,13 @@ const responseSchema = z.object({
   flags: z.array(z.string().max(100)).max(20).default([]),
 });
 
-export function growthAgeInDays(dateOfBirth: Date, measuredAt: Date) {
+/**
+ * Completed days of age at the measurement. With the account timezone the
+ * measurement's calendar day (not the UTC instant) is compared with the birth
+ * date, so a measurement at 06:00 in Vietnam is not counted as the day before.
+ */
+export function growthAgeInDays(dateOfBirth: Date, measuredAt: Date, timeZone?: string) {
+  if (timeZone) return ageInDays(dateOfBirth, measuredAt, timeZone);
   return Math.max(
     0,
     Math.floor((measuredAt.getTime() - dateOfBirth.getTime()) / 86_400_000),
@@ -43,12 +50,24 @@ export async function refreshWhoGrowthAssessment(growthEntryId: string) {
 
   const entry = await db.growthEntry.findUnique({
     where: { id: growthEntryId },
-    include: { baby: { select: { gender: true, dateOfBirth: true } } },
+    include: {
+      baby: {
+        select: {
+          gender: true,
+          dateOfBirth: true,
+          user: { select: { timezone: true } },
+        },
+      },
+    },
   });
   if (!entry) return { status: "missing" as const };
   const sex = whoSex(entry.baby.gender);
-  const ageInDays = growthAgeInDays(entry.baby.dateOfBirth, entry.measuredAt);
-  if (!sex || ageInDays >= 1_857) return { status: "unsupported" as const };
+  const ageDays = growthAgeInDays(
+    entry.baby.dateOfBirth,
+    entry.measuredAt,
+    entry.baby.user.timezone,
+  );
+  if (!sex || ageDays >= 1_857) return { status: "unsupported" as const };
 
   const response = await fetch(`${baseUrl}/assess`, {
     method: "POST",
@@ -58,7 +77,7 @@ export async function refreshWhoGrowthAssessment(growthEntryId: string) {
     },
     body: JSON.stringify({
       sex,
-      ageInDays,
+      ageInDays: ageDays,
       weightKg: entry.weightKg,
       lengthHeightCm: entry.heightCm,
       measure:

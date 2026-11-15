@@ -15,23 +15,20 @@ import { requireUser } from "@/lib/auth";
 import { getSelectedBaby } from "@/lib/data";
 import { getLocalDayRange, toDateTimeLocal } from "@/lib/date";
 import { db } from "@/lib/db";
-import { getDictionary, getLocale } from "@/lib/i18n";
+import { getDictionary } from "@/lib/i18n";
 import { parseHistoryLimit } from "@/lib/pagination";
+import { asFormAction } from "@/lib/form-action";
 
-const labels = {
-  vi: { WET: "Tã ướt", STOOL: "Đi ngoài", BOTH: "Cả hai" },
-  en: { WET: "Wet", STOOL: "Stool", BOTH: "Both" },
-} as const;
+const labels = { WET: "Tã ướt", STOOL: "Đi ngoài", BOTH: "Cả hai" } as const;
 
 export default async function DiaperPage({
   searchParams,
 }: {
   searchParams: Promise<{ edit?: string; limit?: string; new?: string }>;
 }) {
-  const [user, t, locale, params] = await Promise.all([
+  const [user, t, params] = await Promise.all([
     requireUser(),
     getDictionary(),
-    getLocale(),
     searchParams,
   ]);
   const baby = await getSelectedBaby(user.id);
@@ -92,20 +89,20 @@ export default async function DiaperPage({
         <CardContent className="p-5">
           <form
             id="diaper-form"
-            action={saveDiaperAction}
+            action={asFormAction(saveDiaperAction)}
             className="space-y-4"
           >
             <input type="hidden" name="babyId" value={baby.id} />
             {editing && <input type="hidden" name="id" value={editing.id} />}
             <ChoiceFields
               name="type" label={t.tracking.type} initialValue={editing?.type ?? "WET"}
-              options={Object.entries(labels[locale]).map(([value, label]) => ({ value, label }))}
+              options={Object.entries(labels).map(([value, label]) => ({ value, label }))}
               groups={[{ values: ["STOOL", "BOTH"], fields: <>
                 <div className="grid min-w-0 gap-4 sm:grid-cols-2">
                   <Field name="stoolColor" label={t.tracking.stoolColor} defaultValue={editing?.stoolColor ?? ""} />
                   <Field name="consistency" label={t.tracking.consistency} defaultValue={editing?.consistency ?? ""} />
                 </div>
-                <Field name="amount" label={locale === "vi" ? "Lượng phân" : "Stool amount"} defaultValue={editing?.amount ?? ""} />
+                <Field name="amount" label="Lượng phân" defaultValue={editing?.amount ?? ""} />
               </> }]}
             >
               <Field name="changedAt" type="datetime-local" required label={t.tracking.changedAt} defaultValue={toDateTimeLocal(editing?.changedAt, user.timezone)} />
@@ -121,7 +118,7 @@ export default async function DiaperPage({
       <FormActionBar
         formId="diaper-form"
         saveAction={saveDiaperAction}
-        saveLabel={editing ? t.common.update : locale === "vi" ? "Lưu thay tã" : t.common.save}
+        saveLabel={editing ? t.common.update : "Lưu thay tã"}
         cancelHref={editing || params.new === "1" ? "/tracking/diaper" : undefined}
         cancelLabel={t.common.cancel}
         deleteAction={editing ? deleteDiaperAction : undefined}
@@ -134,7 +131,7 @@ export default async function DiaperPage({
       <h2 className="mb-2 mt-7 text-lg font-semibold">{t.tracking.history}</h2>
       <div className="space-y-2">
         {items.map((item) => (
-          <HistoryTimelineItem key={item.id} at={item.changedAt} timeZone={user.timezone} locale={locale} showDate>
+          <HistoryTimelineItem key={item.id} at={item.changedAt} timeZone={user.timezone} showDate>
           <div
             data-history-card
             key={item.id}
@@ -144,9 +141,9 @@ export default async function DiaperPage({
               <Shell className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="font-medium">{labels[locale][item.type]}</p>
+              <p className="font-medium">{labels[item.type]}</p>
               <p className="truncate text-sm text-muted-foreground">
-                {new Intl.DateTimeFormat(locale, {
+                {new Intl.DateTimeFormat("vi-VN", {
                   timeZone: user.timezone,
                   day: "2-digit",
                   month: "short",

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { curatedArticles } from "@/features/knowledge/articles";
+import { curatedArticles } from "../../../prisma/data/articles";
 import {
   getArticleSectionGuide,
   getKnowledgeVisual,

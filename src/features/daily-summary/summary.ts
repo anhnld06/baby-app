@@ -1,4 +1,4 @@
-import { differenceInMonths } from "date-fns";
+import { differenceInMonths } from "date-fns/differenceInMonths";
 
 export function loggedSleepMinutes(entries: { startTime: Date; endTime: Date | null }[], start: Date, end: Date) {
   const intervals = entries.map((entry) => [Math.max(start.getTime(), entry.startTime.getTime()), Math.min(end.getTime(), (entry.endTime ?? end).getTime())])

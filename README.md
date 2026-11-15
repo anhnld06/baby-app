@@ -124,6 +124,18 @@ Deploy Next.js lên Vercel, trỏ `DATABASE_URL` tới PostgreSQL có pgvector (
 
 Prisma migration dùng `DATABASE_URL_UNPOOLED` (kết nối trực tiếp, hostname Neon không có `-pooler`); ứng dụng dùng `DATABASE_URL` (có thể dùng pooler). Cấu hình cả hai trong môi trường deploy để tránh lỗi advisory lock khi migration qua pooler. Local không có biến riêng sẽ dùng cùng `DATABASE_URL`.
 
+### Migration viết tay
+
+Prisma không biểu diễn được partial unique index, nên các index sau chỉ có trong SQL migration viết tay (không có trong `schema.prisma`):
+
+- `PumpingEntry_one_running_per_mother` — mỗi mẹ một cữ hút đang bấm giờ (`20261102110000_add_pumping_timer`).
+- `SleepEntry_one_open_per_baby` — mỗi bé một giấc ngủ chưa có `endTime` (`20261109100000_timer_guards_login_attempts`).
+- `Feeding_one_active_breastfeeding_per_baby` — mỗi bé một cữ bú mẹ đang bấm giờ, cùng điều kiện với `activeFeedingWhere` (cùng migration trên).
+
+Chúng chặn việc hai điện thoại cùng bấm “Bắt đầu” tạo hai đồng hồ; action bắt lỗi P2002 và coi như đồng hồ đã chạy. Khi chạy `npm run db:migrate` (`prisma migrate dev`), Prisma có thể sinh `DROP INDEX` cho các index này: luôn xem SQL được sinh ra, xóa các lệnh đó trước khi áp dụng. Nếu đổi `activeFeedingWhere`, phải viết migration cập nhật điều kiện index tương ứng. Migration `20261109100000_timer_guards_login_attempts` dừng với thông báo rõ ràng nếu dữ liệu đang có bản ghi mở bị trùng; xử lý bản trùng rồi chạy lại, migration không tự xóa dữ liệu.
+
+Migration này cũng thêm bảng `LoginAttempt` (giới hạn 5 lần đăng nhập sai mỗi IP và 30 lần toàn hệ thống trong 15 phút; chỉ lưu HMAC của IP) và index cho các khóa ngoại `Baby.pregnancyId`, `PrescriptionItem.prescriptionId`, `KnowledgeSource.articleId`. Cron nhắc lịch dọn `ReminderDelivery` quá 180 ngày, `OfflineMutationReceipt` quá 60 ngày, `LoginAttempt` quá 1 ngày, và mở lại các delivery chưa gửi quá 15 phút để lần chạy sau gửi lại. Trang Hồ sơ có nút “Đăng xuất mọi thiết bị” để xóa toàn bộ session.
+
 ### Web Push
 
 Chạy `npm run push:keys` một lần rồi lưu public/private key vào

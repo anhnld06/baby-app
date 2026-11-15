@@ -254,6 +254,7 @@ model Baby {
   coverImage               BabyProfileCover?
 
   @@index([userId])
+  @@index([pregnancyId])
 }
 
 model BabyProfileCover {
@@ -369,6 +370,9 @@ model MotherVaccinationRecord {
   administeredAt DateTime
   facility       String?
   notes          String?
+  // Lịch hẹn mà thao tác "Đã tiêm" đã tạo ra bản ghi này (xem features/vaccination/completion.ts).
+  // NULL = bản ghi có từ trước (tích danh sách, ghi lần tiêm cũ): bỏ đánh dấu chỉ gỡ liên kết.
+  createdByAppointmentId String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   mother         Mother   @relation(fields: [motherId], references: [id], onDelete: Cascade)
@@ -454,6 +458,11 @@ model BabyInsurancePolicy {
   @@index([babyId, validUntil])
 }
 
+// MIGRATION VIẾT TAY — partial unique index "Feeding_one_active_breastfeeding_per_baby":
+// ("babyId") WHERE type = 'BREASTFEEDING' AND endTime, leftBreastDuration, rightBreastDuration,
+// amountMl đều NULL (khớp activeFeedingWhere): mỗi bé chỉ một cữ bú mẹ đang bấm giờ.
+// Prisma không biểu diễn được partial index; `prisma migrate dev` có thể sinh DROP INDEX
+// cho nó — luôn xem SQL sinh ra và xóa lệnh đó (README, mục "Migration viết tay").
 model Feeding {
   id                  String      @id @default(cuid())
   babyId              String
@@ -473,6 +482,9 @@ model Feeding {
   @@index([babyId, startTime])
 }
 
+// MIGRATION VIẾT TAY — partial unique index "SleepEntry_one_open_per_baby":
+// ("babyId") WHERE endTime IS NULL: mỗi bé chỉ một giấc ngủ đang chạy.
+// Prisma không biểu diễn được partial index; không để `prisma migrate dev` xóa index này.
 model SleepEntry {
   id        String    @id @default(cuid())
   babyId    String
@@ -563,6 +575,16 @@ model ReminderDelivery {
   @@index([scheduledAt, sentAt])
 }
 
+// Lần đăng nhập sai, khóa theo HMAC của IP (không lưu IP gốc). Cron xóa bản ghi quá 1 ngày.
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  keyHash   String
+  createdAt DateTime @default(now())
+
+  @@index([keyHash, createdAt])
+  @@index([createdAt])
+}
+
 model OfflineMutationReceipt {
   id        String   @id
   userId    String
@@ -585,6 +607,9 @@ model VaccinationRecord {
   nextDueAt      DateTime?    @db.Date
   notes          String?
   source         RecordSource @default(MANUAL)
+  // Lịch hẹn mà thao tác "Đã tiêm" đã tạo ra bản ghi này (xem features/vaccination/completion.ts).
+  // NULL = bản ghi có từ trước (tích danh sách, ghi lần tiêm cũ): bỏ đánh dấu chỉ gỡ liên kết.
+  createdByAppointmentId String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   baby           Baby         @relation(fields: [babyId], references: [id], onDelete: Cascade)
@@ -640,6 +665,8 @@ model PrescriptionItem {
   durationDays   Int?
   instructions   String?
   prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+
+  @@index([prescriptionId])
 }
 
 model ToothRecord {
@@ -700,6 +727,8 @@ model KnowledgeSource {
   publicationDate DateTime?        @db.Date
   evidenceTier    String
   article         KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
 }
 
 model KnowledgeChunk {
@@ -713,6 +742,8 @@ model KnowledgeChunk {
   @@index([articleId])
 }
 
+// MIGRATION VIẾT TAY — partial unique index "PumpingEntry_one_running_per_mother":
+// ("motherId") WHERE isRunning = true. Không để `prisma migrate dev` xóa index này.
 model PumpingEntry {
   id              String   @id @default(cuid())
   motherId        String

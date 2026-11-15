@@ -28,6 +28,7 @@ import {
   getLocalDayRange,
   zonedDateTimeToUtc,
 } from "@/lib/date";
+import { asFormAction } from "@/lib/form-action";
 
 export default async function CarePage({
   params,
@@ -44,15 +45,15 @@ export default async function CarePage({
     new?: string;
   }>;
 }) {
-  const { section } = await params;
-  if (!isCareSection(section)) notFound();
-  const config = careSections[section];
-  const user = await requireUser();
-  const [babies, selected, query] = await Promise.all([
-    listBabies(user.id),
+  const [{ section }, user, selected, query] = await Promise.all([
+    params,
+    requireUser(),
     getSelectedBabyId(),
     searchParams,
   ]);
+  if (!isCareSection(section)) notFound();
+  const config = careSections[section];
+  const babies = await listBabies(user.id);
   const baby = pickSelectedBaby(babies, selected);
   if (!baby)
     return (
@@ -192,7 +193,7 @@ export default async function CarePage({
         <RecordScene enabled={section === "meals"} kind="meal" initialValues={{title: edit?.title ?? ""}} timeZone={user.timezone}>
         <form
           id="care-form"
-          action={saveCareAction}
+          action={asFormAction(saveCareAction)}
           className="mt-4 grid gap-4"
         >
           {scope}
@@ -381,7 +382,6 @@ export default async function CarePage({
               {formatDateTime(
                 entry.occurredAt,
                 user.timezone,
-                user.locale === "en" ? "en" : "vi",
               )}
             </time>
             <h3 className="mt-2 font-semibold">{entry.title}</h3>

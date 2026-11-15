@@ -10,7 +10,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     background_color: "#f6f8fb",
-    theme_color: "#087c9c",
+    // Matches the light `themeColor` in the root layout viewport.
+    theme_color: "#f6f8fb",
     orientation: "portrait-primary",
     lang: "vi",
     icons: [

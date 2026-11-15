@@ -22,18 +22,18 @@ import { requireUser } from "@/lib/auth";
 import { getSelectedBaby } from "@/lib/data";
 import { toDateTimeLocal } from "@/lib/date";
 import { db } from "@/lib/db";
-import { getDictionary, getLocale } from "@/lib/i18n";
+import { getDictionary } from "@/lib/i18n";
 import { parseHistoryLimit } from "@/lib/pagination";
+import { asFormAction } from "@/lib/form-action";
 
 export default async function GrowthPage({
   searchParams,
 }: {
   searchParams: Promise<{ edit?: string; new?: string; limit?: string }>;
 }) {
-  const [user, t, locale, params] = await Promise.all([
+  const [user, t, params] = await Promise.all([
     requireUser(),
     getDictionary(),
-    getLocale(),
     searchParams,
   ]);
   const baby = await getSelectedBaby(user.id);
@@ -75,26 +75,26 @@ export default async function GrowthPage({
     <>
       <PageHeader
         compact
-        title={editing ? t.tracking.editGrowth : params.new === "1" ? t.tracking.newGrowth : locale === "en" ? "Growth" : "Tăng trưởng của con"}
+        title={editing ? t.tracking.editGrowth : params.new === "1" ? t.tracking.newGrowth : "Tăng trưởng của con"}
         subtitle={baby.name}
         backHref="/baby"
       />
-      {!editing && params.new !== "1" && <PrenatalGrowthBaseline baby={baby} userId={user.id} timeZone={user.timezone} locale={locale} />}
+      {!editing && params.new !== "1" && <PrenatalGrowthBaseline baby={baby} userId={user.id} timeZone={user.timezone} />}
       {!editing && params.new !== "1" && (
-        <GrowthSummary measurements={measurements} dateOfBirth={baby.dateOfBirth} locale={locale} timeZone={user.timezone} />
+        <GrowthSummary measurements={measurements} dateOfBirth={baby.dateOfBirth} timeZone={user.timezone} />
       )}
       <CollapsibleRecordForm editingId={editing?.id}
         prominent
         key={`${editing?.id ?? "new"}-${items.length}`}
         defaultOpen={!!editing || params.new === "1"}
-        addLabel={locale === "vi" ? "Thêm chỉ số" : "Add measurement"}
+        addLabel="Thêm chỉ số"
         closeLabel={t.common.cancel}
       >
         <Card className="border-0 shadow-sm">
           <CardContent className="p-5">
             <form
               id="growth-form"
-              action={saveGrowthAction}
+              action={asFormAction(saveGrowthAction)}
               className="space-y-4"
             >
               <input type="hidden" name="babyId" value={baby.id} />
@@ -150,7 +150,7 @@ export default async function GrowthPage({
         measurements={measurements}
         dateOfBirth={baby.dateOfBirth}
         gestationalAgeAtBirth={baby.gestationalAgeAtBirth}
-        locale={locale}
+        timeZone={user.timezone}
       />
       {items[0]?.assessment && (
         <section className="mt-5 rounded-2xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900 dark:bg-sky-950/50">
@@ -193,7 +193,7 @@ export default async function GrowthPage({
       <h2 className="mb-2 mt-7 text-lg font-semibold">{t.tracking.history}</h2>
       <div className="space-y-2">
         {items.map((item) => (
-          <HistoryTimelineItem key={item.id} at={item.measuredAt} timeZone={user.timezone} locale={locale} showDate>
+          <HistoryTimelineItem key={item.id} at={item.measuredAt} timeZone={user.timezone} showDate>
           <div
             data-history-card
             key={item.id}
@@ -214,7 +214,7 @@ export default async function GrowthPage({
                   .join(" · ")}
               </p>
               <p className="text-sm text-muted-foreground">
-                {new Intl.DateTimeFormat(locale, {
+                {new Intl.DateTimeFormat("vi-VN", {
                   timeZone: user.timezone,
                   day: "2-digit",
                   month: "short",
