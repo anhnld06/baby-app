@@ -124,6 +124,14 @@ Deploy Next.js lên Vercel, trỏ `DATABASE_URL` tới PostgreSQL có pgvector (
 
 Prisma migration dùng `DATABASE_URL_UNPOOLED` (kết nối trực tiếp, hostname Neon không có `-pooler`); ứng dụng dùng `DATABASE_URL` (có thể dùng pooler). Cấu hình cả hai trong môi trường deploy để tránh lỗi advisory lock khi migration qua pooler. Local không có biến riêng sẽ dùng cùng `DATABASE_URL`.
 
+### Migration tự động khi deploy
+
+`vercel.json` đặt build command là `npm run vercel-build`, chạy `scripts/migrate-on-production.mjs` rồi `next build`:
+
+- Chỉ khi `VERCEL_ENV=production` (push lên `main`) mới chạy `prisma migrate deploy` với database production. Bản preview của các nhánh khác bỏ qua migration, không thay đổi database thật.
+- Migration chạy trước khi build. Nếu migration lỗi (ví dụ bước kiểm tra dữ liệu trùng), build dừng và Vercel giữ nguyên bản đang chạy.
+- Migration cần tương thích ngược với code đang chạy (chỉ thêm bảng/cột/index), vì bản cũ vẫn phục vụ trong lúc bản mới build. Thay đổi phá dữ liệu phải tách thành nhiều lần deploy.
+
 ### Migration viết tay
 
 Prisma không biểu diễn được partial unique index, nên các index sau chỉ có trong SQL migration viết tay (không có trong `schema.prisma`):
