@@ -4,8 +4,9 @@ import { unstable_rethrow } from "next/navigation";
 import { Camera, Images, Repeat2, X, MailPlus, Heart } from "lucide-react";
 import { MILESTONES } from "@/features/journey/milestones";
 import { MemoryStamp } from "@/components/memory-stamp";
-import { saveMemoryAction } from "@/app/memory-actions";
-import { MEMORY_FRAMES, MAX_MEMORY_MEDIA, MEMORY_MEDIA_UNSUPPORTED, MEMORY_SAVE_FAILED, MEMORY_VIDEO_TOO_LARGE, memoryAge, memoryMediaKind, memoryVideoType } from "@/features/mailbox/memories";
+import { prepareMemoryUploadAction, saveMemoryAction } from "@/app/memory-actions";
+import { MEMORY_DIRECT_VIDEO_TOO_LARGE, MEMORY_FRAMES, MEMORY_MEDIA_TOO_LARGE, MEMORY_MEDIA_UNSUPPORTED, MEMORY_SAVE_FAILED, MEMORY_UPLOAD_FAILED, MEMORY_VIDEO_TOO_LARGE, memoryAge, memoryMediaKind, memoryMediaLimit, memoryVideoType } from "@/features/mailbox/memories";
+import { DirectUploadError, uploadToPresignedUrl } from "@/features/mailbox/direct-upload";
 import { compressImageFile, ImageCompressionError } from "@/lib/image-compress";
 import { toDateTimeLocal } from "@/lib/date";
 
@@ -20,7 +21,7 @@ function localNow(timeZone?: string, offsetMs = 0) {
   try { return toDateTimeLocal(date, timeZone); } catch { return toDateTimeLocal(date); }
 }
 
-export function MemoryComposer({ babyId, now, birth, babyName, timeZone, initialMilestone = "", openOnMount = false }: { initialMilestone?: string; openOnMount?: boolean; babyId: string; now: string; birth: string; babyName: string; timeZone?: string }) {
+export function MemoryComposer({ babyId, now, birth, babyName, timeZone, initialMilestone = "", openOnMount = false, directUpload = false }: { initialMilestone?: string; openOnMount?: boolean; babyId: string; now: string; birth: string; babyName: string; timeZone?: string; directUpload?: boolean }) {
   const [milestone, setMilestone] = useState(initialMilestone);
   const dialog = useRef<HTMLDialogElement>(null);
   const titleInput = useRef<HTMLInputElement>(null);
@@ -42,8 +43,29 @@ export function MemoryComposer({ babyId, now, birth, babyName, timeZone, initial
   const video = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const mounted = useRef(true);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [state, action, pending] = useActionState(async (previous: SaveState, data: FormData): Promise<SaveState> => {
     try {
+      const media = data.get("media");
+      if (media instanceof File && media.size) {
+        // Large photos/videos go straight to object storage; the letter then only carries its key.
+        const ticket = await prepareMemoryUploadAction(String(data.get("babyId") ?? ""), media.type, media.size);
+        if ("error" in ticket) return { error: ticket.error };
+        if (ticket.mode === "direct") {
+          setUploadProgress(0);
+          try {
+            await uploadToPresignedUrl(ticket.url, media, ticket.headers, fraction => { if (mounted.current) setUploadProgress(fraction); });
+          } catch (reason) {
+            if (!(reason instanceof DirectUploadError)) throw reason;
+            console.error("Could not upload memory media", reason);
+            return { error: typeof navigator !== "undefined" && navigator.onLine === false ? OFFLINE_MESSAGE : MEMORY_UPLOAD_FAILED };
+          }
+          data.delete("media");
+          data.set("mediaKey", ticket.key);
+        } else if (media.size > memoryMediaLimit(media.type.startsWith("video/") ? "video" : "image", false)) {
+          return { error: media.type.startsWith("video/") ? MEMORY_VIDEO_TOO_LARGE : MEMORY_MEDIA_TOO_LARGE };
+        }
+      }
       const result = await saveMemoryAction(previous, data);
       if (result.saved) {
         selection.current++;
@@ -59,6 +81,8 @@ export function MemoryComposer({ babyId, now, birth, babyName, timeZone, initial
       console.error("Could not save memory", reason);
       // A failed request (network, body too large, new deployment) must not crash the page or leave the dialog stuck.
       return { error: typeof navigator !== "undefined" && navigator.onLine === false ? OFFLINE_MESSAGE : MEMORY_SAVE_FAILED };
+    } finally {
+      if (mounted.current) setUploadProgress(null);
     }
   }, {});
   // An error from an earlier attempt is hidden once the dialog is reopened.
@@ -93,7 +117,7 @@ export function MemoryComposer({ babyId, now, birth, babyName, timeZone, initial
     const kind = memoryMediaKind(next);
     if (!kind) { setError(MEMORY_MEDIA_UNSUPPORTED); clearFileInputs(); return; }
     if (kind === "video") {
-      if (next.size > MAX_MEMORY_MEDIA) { setError(MEMORY_VIDEO_TOO_LARGE); clearFileInputs(); return; }
+      if (next.size > memoryMediaLimit("video", directUpload)) { setError(directUpload ? MEMORY_DIRECT_VIDEO_TOO_LARGE : MEMORY_VIDEO_TOO_LARGE); clearFileInputs(); return; }
       const type = memoryVideoType(next);
       showFile(type === next.type ? next : new File([next], next.name || "video", { type, lastModified: next.lastModified }));
       return;
@@ -103,7 +127,7 @@ export function MemoryComposer({ babyId, now, birth, babyName, timeZone, initial
     try {
       const compressed = await compressImageFile(next);
       if (token !== selection.current || !mounted.current) return;
-      if (compressed.size > MAX_MEMORY_MEDIA) throw new ImageCompressionError("Không thể nén ảnh đủ nhỏ. Hãy chọn ảnh khác.");
+      if (compressed.size > memoryMediaLimit("image", directUpload)) throw new ImageCompressionError("Không thể nén ảnh đủ nhỏ. Hãy chọn ảnh khác.");
       showFile(compressed);
     } catch (reason) {
       if (token !== selection.current || !mounted.current) return;
@@ -124,7 +148,8 @@ export function MemoryComposer({ babyId, now, birth, babyName, timeZone, initial
     if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(day)) { setError("Hãy chọn ngày lưu dấu."); return; }
     if (day.slice(0, 16) > localNow(timeZone, FUTURE_GRACE_MS)) { setError("Ngày lưu dấu không thể ở tương lai."); return; }
     if (!letter.trim() && !file) { setError("Thêm ảnh/video hoặc viết một lời nhắn cho con nhé."); return; }
-    if (file && file.size > MAX_MEMORY_MEDIA) { setError(MEMORY_VIDEO_TOO_LARGE); return; }
+    const fileKind = file ? memoryMediaKind(file) ?? "image" : "image";
+    if (file && file.size > memoryMediaLimit(fileKind, directUpload)) { setError(fileKind === "image" ? MEMORY_MEDIA_TOO_LARGE : directUpload ? MEMORY_DIRECT_VIDEO_TOO_LARGE : MEMORY_VIDEO_TOO_LARGE); return; }
     const data = new FormData(event.currentTarget);
     if (file) data.set("media", file);
     startTransition(() => action(data));
@@ -187,7 +212,7 @@ export function MemoryComposer({ babyId, now, birth, babyName, timeZone, initial
           <video ref={video} muted playsInline className={recording ? "mx-auto mt-4 aspect-square w-full max-w-xs rounded-2xl object-cover" : "hidden"} />
           {processing && <p role="status" className="mt-3 text-center text-xs text-primary">Đang thu nhỏ ảnh…</p>}
           {file && !processing && <button type="button" disabled={pending} onClick={() => { void selectFile(null); clearFileInputs(); }} className="mt-3 min-h-11 w-full text-center text-xs text-muted-foreground underline">Bỏ ảnh/video đã chọn</button>}
-          <p className="mt-4 text-center text-xs leading-5 text-muted-foreground">Ảnh JPG, PNG, WebP được tự thu nhỏ trước khi gửi · Video MP4, MOV, WebM tối đa 4 MB<br />Boomerang quay 1,5 giây, tạo vòng lặp xuôi và ngược.</p>
+          <p className="mt-4 text-center text-xs leading-5 text-muted-foreground">Ảnh JPG, PNG, WebP được tự thu nhỏ trước khi gửi · Video MP4, MOV, WebM tối đa {directUpload ? "50 MB (khoảng 20–30 giây)" : "4 MB"}<br />Boomerang quay 1,5 giây, tạo vòng lặp xuôi và ngược.</p>
         </div>
         <div className="memory-composer-letter">
           <div className="mb-6 flex items-center gap-3"><span className="flex size-10 items-center justify-center rounded-full bg-secondary text-primary"><Heart className="size-4" /></span><div><h3 className="font-semibold">Đôi dòng gửi con</h3><p className="mt-1 text-xs text-muted-foreground">Để mai này, con biết mình được yêu thế nào.</p></div></div>
@@ -198,7 +223,7 @@ export function MemoryComposer({ babyId, now, birth, babyName, timeZone, initial
           <label className="mt-5 block text-sm font-medium">Thư tay gửi con<textarea name="letter" maxLength={6000} rows={7} value={letter} onChange={e => setLetter(e.target.value)} className={`${field} memory-letter-paper font-serif leading-8`} placeholder="Con yêu, hôm nay…" /></label>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">Chỉ một lá thư cũng đủ làm nên kỷ niệm. Ảnh và video là tùy chọn.</p>
           {message && <p role="alert" className="mt-4 text-sm text-destructive">{message}</p>}
-          <button type="submit" disabled={busy} className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 font-medium text-primary-foreground shadow-lg shadow-primary/15 disabled:opacity-50"><MailPlus className="size-4" />{pending ? "Đang cất kỷ niệm…" : processing ? "Đang thu nhỏ ảnh…" : "Cất vào hộp thư của con"}</button>
+          <button type="submit" disabled={busy} className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 font-medium text-primary-foreground shadow-lg shadow-primary/15 disabled:opacity-50"><MailPlus className="size-4" />{uploadProgress !== null && uploadProgress < 1 ? `Đang tải lên… ${Math.round(uploadProgress * 100)}%` : pending ? "Đang cất kỷ niệm…" : processing ? "Đang thu nhỏ ảnh…" : "Cất vào hộp thư của con"}</button>
         </div>
       </form>
     </dialog>

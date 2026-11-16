@@ -857,8 +857,12 @@ model BabyMemory {
   milestoneKey String?
   frame String
   occurredAt DateTime
+  /// Legacy inline media (≤ 4 MB). New media lives in object storage (mediaKey).
   mediaData Bytes?
   mediaMime String?
+  /// Object-storage key (Neon Object Storage) for photos/videos uploaded directly from the device.
+  mediaKey String? @unique
+  mediaSize Int?
   createdAt DateTime @default(now())
   baby Baby @relation(fields: [babyId], references: [id], onDelete: Cascade)
   @@index([babyId, occurredAt])

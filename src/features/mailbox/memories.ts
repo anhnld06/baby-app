@@ -7,11 +7,40 @@ export const MEMORY_FRAMES = [
   { key: "garden", name: "Mầm nhỏ lớn lên", emoji: "🌱", className: "bg-emerald-100 text-emerald-950 dark:bg-emerald-950 dark:text-emerald-100" },
 ] as const;
 /**
- * New memory photos/videos are capped at 4 MB (shared by the composer and the server action).
+ * Without object storage, media travels inside the Server Action body and is capped at 4 MB.
  * Older memories stored before this limit (up to 10 MB) are still served by /api/memories/[id].
  */
 export const MAX_MEMORY_MEDIA = MAX_UPLOAD_BYTES;
 export const MEMORY_MEDIA_TOO_LARGE = "Tệp tối đa 4 MB. Hãy chọn ảnh nhỏ hơn hoặc video ngắn hơn.";
+
+/**
+ * With object storage (Neon Object Storage) the device uploads straight to the bucket, bypassing the
+ * 4.5 MB request limit of Vercel functions. Photos are still shrunk on the device first.
+ */
+export const MAX_MEMORY_DIRECT_IMAGE = 10_000_000;
+export const MAX_MEMORY_DIRECT_VIDEO = 50_000_000;
+export const MEMORY_DIRECT_VIDEO_TOO_LARGE = "Video tối đa 50 MB (khoảng 20–30 giây). Hãy cắt ngắn video rồi chọn lại nhé.";
+export const MEMORY_UPLOAD_FAILED = "Chưa tải được ảnh/video lên. Hãy kiểm tra kết nối mạng rồi thử lại nhé.";
+
+/** Largest file allowed for this kind of media, depending on whether direct upload is available. */
+export function memoryMediaLimit(kind: "image" | "video", direct: boolean) {
+  if (!direct) return MAX_MEMORY_MEDIA;
+  return kind === "video" ? MAX_MEMORY_DIRECT_VIDEO : MAX_MEMORY_DIRECT_IMAGE;
+}
+
+const MEDIA_EXTENSIONS: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "video/mp4": "mp4", "video/quicktime": "mov", "video/webm": "webm" };
+/** File extension used in object keys, so a downloaded file opens with the right app. */
+export function memoryMediaExtension(mime: string) {
+  return MEDIA_EXTENSIONS[mime] ?? "bin";
+}
+/** Keys are always `memories/<babyId>/<random>.<ext>`; the prefix ties an upload to one baby. */
+export function memoryMediaKeyPrefix(babyId: string) {
+  return `memories/${babyId}/`;
+}
+export function isMemoryMediaKey(key: string, babyId: string) {
+  const prefix = memoryMediaKeyPrefix(babyId);
+  return key.startsWith(prefix) && /^[A-Za-z0-9_-]{16,64}\.(jpg|png|webp|mp4|mov|webm)$/.test(key.slice(prefix.length));
+}
 export const MEMORY_MEDIA_TYPES: readonly string[] = [...IMAGE_MIME_TYPES, ...VIDEO_MIME_TYPES];
 export function isMemoryMediaType(mime: string) {
   return MEMORY_MEDIA_TYPES.includes(mime);

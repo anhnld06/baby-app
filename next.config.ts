@@ -2,6 +2,18 @@ import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
 
+// Memory photos/videos upload straight to Neon Object Storage (presigned PUT) and are shown from
+// presigned links (src/lib/object-storage.ts). Read at build time: redeploy after changing it.
+function objectStorageOrigin() {
+  const endpoint = process.env.OBJECT_STORAGE_ENDPOINT?.trim();
+  try {
+    return endpoint ? new URL(endpoint).origin : "";
+  } catch {
+    return "";
+  }
+}
+const storage = objectStorageOrigin();
+
 // Static CSP (no nonce): a nonce-based policy needs a proxy and forces every page to render
 // dynamically (see node_modules/next/dist/docs/01-app/02-guides/content-security-policy.md).
 // 'unsafe-inline' is therefore required for Next's inline bootstrap scripts and the theme script
@@ -19,17 +31,19 @@ const contentSecurityPolicy = [
     isDev ? "'unsafe-eval'" : "",
   ].filter(Boolean).join(" "),
   "style-src 'self' 'unsafe-inline'",
-  // blob: previews for memory photos/covers; data: for small inline images.
-  "img-src 'self' data: blob:",
-  // blob: previews for memory videos/Boomerang; lullabies and memory media are same-origin.
-  "media-src 'self' blob:",
+  // blob: previews for memory photos/covers; data: for small inline images; object storage for stored memories.
+  ["img-src 'self' data: blob:", storage].filter(Boolean).join(" "),
+  // blob: previews for memory videos/Boomerang; lullabies are same-origin; object storage for stored memories.
+  ["media-src 'self' blob:", storage].filter(Boolean).join(" "),
   [
     "connect-src 'self'",
+    // Direct memory uploads (presigned PUT to object storage).
+    storage,
     // Weather badge (src/components/weather-badge.tsx) calls Open-Meteo directly from the browser.
     "https://api.open-meteo.com",
     // tesseract.js downloads vie/eng traineddata from jsDelivr inside the OCR worker.
     "https://cdn.jsdelivr.net",
-  ].join(" "),
+  ].filter(Boolean).join(" "),
   // tesseract.js spawns its worker from a blob: URL; /sw.js is same-origin.
   "worker-src 'self' blob:",
   "font-src 'self' data:",

@@ -3,22 +3,29 @@ import { db } from "@/lib/db";
 import { isMemoryMediaType } from "@/features/mailbox/memories";
 import { byteRangeStream, parseByteRange } from "@/features/mailbox/media-range";
 
-type MediaInfo = { mime: string | null; size: number | null };
+import { presignDownload, objectStorageConfigured } from "@/lib/object-storage";
+
+type MediaInfo = { mime: string | null; size: number | null; key: string | null };
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
   // Ownership and length only: never load the bytea here (iOS issues many Range requests per video).
   const [info] = await db.$queryRaw<MediaInfo[]>`
-    SELECT m."mediaMime" AS mime, octet_length(m."mediaData")::int AS size
+    SELECT m."mediaMime" AS mime, octet_length(m."mediaData")::int AS size, m."mediaKey" AS key
     FROM "BabyMemory" m
     JOIN "Baby" b ON b."id" = m."babyId"
     WHERE m."id" = ${id} AND b."userId" = ${user.id}
     LIMIT 1`;
-  const size = info?.size == null ? null : Number(info.size);
-  if (!info?.mime || size === null || !Number.isSafeInteger(size)) return new Response(null, { status: 404 });
   // Only serve types we accept on upload, so stored content can never be rendered as HTML/SVG.
-  if (!isMemoryMediaType(info.mime)) return new Response(null, { status: 404 });
+  if (!info?.mime || !isMemoryMediaType(info.mime)) return new Response(null, { status: 404 });
+  if (info.key && objectStorageConfigured()) {
+    // Object storage serves the bytes (and video Range requests) itself, via a short-lived private link.
+    return new Response(null, { status: 302, headers: { Location: await presignDownload(info.key), "Cache-Control": "private, no-store" } });
+  }
+  // Legacy inline media (also the fallback while a migrated copy still keeps its database bytes).
+  const size = info.size == null ? null : Number(info.size);
+  if (size === null || !Number.isSafeInteger(size)) return new Response(null, { status: 404 });
 
   const headers = new Headers({ "Content-Type": info.mime, "Cache-Control": "private, no-store", "Accept-Ranges": "bytes" });
   const range = parseByteRange(request.headers.get("range"), size);

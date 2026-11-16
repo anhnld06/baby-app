@@ -10,6 +10,7 @@ import { requireUser } from "@/lib/auth";
 import { getSelectedBabyId, listBabies, pickSelectedBaby } from "@/lib/data";
 import { db } from "@/lib/db";
 import { toDateTimeLocal } from "@/lib/date";
+import { objectStorageConfigured } from "@/lib/object-storage";
 
 
 export default async function MailboxPage({ searchParams }: { searchParams: Promise<{ milestone?: string; new?: string }> }) {
@@ -30,7 +31,7 @@ export default async function MailboxPage({ searchParams }: { searchParams: Prom
       <div aria-hidden="true" className="memory-welcome-art"><div className="memory-art-stamp"><Sparkles className="size-8" strokeWidth={1} /><span>GỬI CON ♡</span></div><div className="memory-art-envelope"><Heart className="size-6" fill="currentColor" /></div><span className="memory-art-sparkle">✧</span></div>
     </section>
     {milestone && <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card p-4"><p className="text-sm text-primary">{milestone.icon} Thư gắn mốc: <strong>{milestone.title}</strong></p><Link href="/baby/mailbox" className="inline-flex min-h-11 items-center text-xs underline">Xem tất cả thư</Link></div>}
-    <MemoryComposer key={`composer-${baby.id}-${milestone?.key ?? ""}-${query.new ?? ""}`} initialMilestone={milestone?.key} openOnMount={query.new === "1"} babyId={baby.id} babyName={baby.name} birth={birth} now={now} timeZone={user.timezone} />
+    <MemoryComposer key={`composer-${baby.id}-${milestone?.key ?? ""}-${query.new ?? ""}`} initialMilestone={milestone?.key} openOnMount={query.new === "1"} babyId={baby.id} babyName={baby.name} birth={birth} now={now} timeZone={user.timezone} directUpload={objectStorageConfigured()} />
     <form action="/baby/mailbox" className="mt-6 flex flex-wrap items-end gap-2"><label className="min-w-0 flex-1 text-xs text-muted-foreground">Tìm thư theo mốc phát triển<select name="milestone" defaultValue={milestone?.key ?? ""} className="mt-2 block w-full rounded-xl border bg-card p-3 text-sm text-foreground"><option value="">Tất cả mốc</option>{MILESTONES.map(m => <option key={m.key} value={m.key}>{m.icon} {m.title}</option>)}</select></label><button className="min-h-11 rounded-xl border bg-card px-4 text-sm text-primary">Lọc thư</button></form>
     <MemoryGallery key={`gallery-${baby.id}-${milestone?.key ?? ""}`} babyName={baby.name} birth={birth} memories={memories.map(memory => ({ ...memory, occurredAt: memory.occurredAt.toISOString(), localDay: toDateTimeLocal(memory.occurredAt, user.timezone).slice(0,10) }))} />
   </>;

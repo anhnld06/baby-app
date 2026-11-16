@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { memoryMonth, validMemoryMedia, memoryAge, MAX_MEMORY_MEDIA, MEMORY_MEDIA_TOO_LARGE, memoryMediaKind, memoryVideoType, sniffMemoryMediaType } from "./memories";
+import { memoryMonth, validMemoryMedia, memoryAge, MAX_MEMORY_MEDIA, MEMORY_MEDIA_TOO_LARGE, memoryMediaKind, memoryVideoType, sniffMemoryMediaType, memoryMediaLimit, memoryMediaExtension, isMemoryMediaKey } from "./memories";
 describe("memory envelopes and media", () => {
   it("groups by the family's local month across UTC boundaries", () => {
     expect(memoryMonth(new Date("2026-10-31T18:00:00Z"), "Asia/Ho_Chi_Minh")).toBe("2026-11");
@@ -55,5 +55,22 @@ describe("envelopes by baby age", () => {
   it("keeps pregnancy memories separate and handles an empty date draft", () => {
     expect(memoryAge("2026-08-22", "2026-08-21").month).toBe(-1);
     expect(memoryAge("2026-08-22", "").label).toBe("Kỷ niệm của con");
+  });
+});
+
+describe("direct upload limits and keys", () => {
+  it("allows 50 MB videos and 10 MB photos only with direct upload", () => {
+    expect(memoryMediaLimit("video", true)).toBe(50_000_000);
+    expect(memoryMediaLimit("image", true)).toBe(10_000_000);
+    expect(memoryMediaLimit("video", false)).toBe(MAX_MEMORY_MEDIA);
+    expect(memoryMediaLimit("image", false)).toBe(MAX_MEMORY_MEDIA);
+  });
+  it("accepts only random keys under the baby's own prefix", () => {
+    expect(memoryMediaExtension("video/quicktime")).toBe("mov");
+    expect(isMemoryMediaKey("memories/baby-1/abcdefghijklmnopqrstuvwx.mov", "baby-1")).toBe(true);
+    expect(isMemoryMediaKey("memories/baby-2/abcdefghijklmnopqrstuvwx.mov", "baby-1")).toBe(false);
+    expect(isMemoryMediaKey("memories/baby-1/../baby-2/abcdefghijklmnop.mov", "baby-1")).toBe(false);
+    expect(isMemoryMediaKey("memories/baby-1/short.mov", "baby-1")).toBe(false);
+    expect(isMemoryMediaKey("memories/baby-1/abcdefghijklmnopqrstuvwx.html", "baby-1")).toBe(false);
   });
 });

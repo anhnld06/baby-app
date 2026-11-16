@@ -1,15 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ user: vi.fn(), baby: vi.fn(), create: vi.fn(), remove: vi.fn(), update: vi.fn() }));
+const mocks = vi.hoisted(() => ({ user: vi.fn(), baby: vi.fn(), create: vi.fn(), remove: vi.fn(), update: vi.fn(), find: vi.fn(), storage: { configured: vi.fn(), presign: vi.fn(), head: vi.fn(), read: vi.fn(), remove: vi.fn() } }));
 vi.mock("@/lib/auth", () => ({ requireUser: mocks.user }));
-vi.mock("@/lib/db", () => ({ db: { baby: { findFirst: mocks.baby }, babyMemory: { create: mocks.create, deleteMany: mocks.remove, updateMany: mocks.update } } }));
+vi.mock("@/lib/db", () => ({ db: { baby: { findFirst: mocks.baby }, babyMemory: { create: mocks.create, deleteMany: mocks.remove, updateMany: mocks.update, findFirst: mocks.find } } }));
+vi.mock("@/lib/object-storage", () => ({ objectStorageConfigured: mocks.storage.configured, presignUpload: mocks.storage.presign, headObject: mocks.storage.head, readObjectStart: mocks.storage.read, deleteObject: mocks.storage.remove }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
-import { saveMemoryAction, deleteMemoryAction, updateMemoryMilestoneAction } from "./memory-actions";
+import { saveMemoryAction, deleteMemoryAction, prepareMemoryUploadAction, updateMemoryMilestoneAction } from "./memory-actions";
 function form(extra: Record<string, string> = {}) {
   const data = new FormData();
   Object.entries({ babyId: "baby-1", title: "Nụ cười đầu tiên", letter: "Con yêu!", frame: "blossom", occurredAt: "2026-01-01T08:00", ...extra }).forEach(([k,v]) => data.set(k,v));
   return data;
 }
-beforeEach(() => { vi.resetAllMocks(); mocks.user.mockResolvedValue({ id: "user-1", timezone: "Asia/Ho_Chi_Minh" }); mocks.baby.mockResolvedValue({ id: "baby-1" }); });
+beforeEach(() => { vi.resetAllMocks(); mocks.user.mockResolvedValue({ id: "user-1", timezone: "Asia/Ho_Chi_Minh" }); mocks.baby.mockResolvedValue({ id: "baby-1" }); mocks.storage.configured.mockReturnValue(false); mocks.storage.remove.mockResolvedValue(undefined); mocks.find.mockResolvedValue(null); });
 describe("private baby mailbox", () => {
   it("checks baby ownership before writing", async () => {
     mocks.baby.mockResolvedValue(null);
@@ -66,7 +67,84 @@ describe("private baby mailbox", () => {
   });
   it("scopes deletion to the authenticated family", async () => {
     await deleteMemoryAction(form({ id: "other-memory" }));
+    expect(mocks.find).toHaveBeenCalledWith({ where: { id: "other-memory", baby: { userId: "user-1" } }, select: { mediaKey: true } });
     expect(mocks.remove).toHaveBeenCalledWith({ where: { id: "other-memory", baby: { userId: "user-1" } } });
+    expect(mocks.storage.remove).not.toHaveBeenCalled();
+  });
+  it("deletes the stored file only after the letter row", async () => {
+    mocks.find.mockResolvedValue({ mediaKey: KEY });
+    await deleteMemoryAction(form({ id: "memory-1" }));
+    expect(mocks.storage.remove).toHaveBeenCalledWith(KEY);
+    expect(mocks.remove.mock.invocationCallOrder[0]).toBeLessThan(mocks.storage.remove.mock.invocationCallOrder[0]);
+  });
+});
+
+const KEY = "memories/baby-1/abcdefghijklmnopqrstuvwx.mp4";
+const MP4_START = new Uint8Array([0, 0, 0, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, 0, 0, 0, 0]);
+
+describe("direct uploads to object storage", () => {
+  beforeEach(() => {
+    mocks.storage.configured.mockReturnValue(true);
+    mocks.storage.presign.mockResolvedValue({ url: "https://storage.example/presigned", headers: { "Content-Type": "video/mp4" } });
+    mocks.storage.head.mockResolvedValue({ size: 30_000_000, contentType: "video/mp4" });
+    mocks.storage.read.mockResolvedValue(MP4_START);
+  });
+
+  it("falls back to inline uploads when object storage is not configured", async () => {
+    mocks.storage.configured.mockReturnValue(false);
+    expect(await prepareMemoryUploadAction("baby-1", "video/mp4", 3_000_000)).toEqual({ mode: "inline" });
+    expect(mocks.storage.presign).not.toHaveBeenCalled();
+  });
+
+  it("signs a 30 MB video under the baby's prefix and refuses foreign babies, bad types and videos above 50 MB", async () => {
+    const ticket = await prepareMemoryUploadAction("baby-1", "video/mp4", 30_000_000);
+    expect(ticket).toMatchObject({ mode: "direct", url: "https://storage.example/presigned" });
+    const key = (ticket as { key: string }).key;
+    expect(key).toMatch(/^memories\/baby-1\/[A-Za-z0-9_-]{24}\.mp4$/);
+    expect(mocks.storage.presign).toHaveBeenCalledWith(key, "video/mp4", 30_000_000);
+    expect(await prepareMemoryUploadAction("baby-1", "video/mp4", 50_000_001)).toEqual({ error: expect.stringContaining("50 MB") });
+    expect(await prepareMemoryUploadAction("baby-1", "text/html", 100)).toHaveProperty("error");
+    expect(await prepareMemoryUploadAction("baby-1", "image/jpeg", 10_000_001)).toHaveProperty("error");
+    mocks.baby.mockResolvedValue(null);
+    expect(await prepareMemoryUploadAction("baby-2", "video/mp4", 1000)).toHaveProperty("error");
+    expect(mocks.storage.presign).toHaveBeenCalledTimes(1);
+  });
+
+  it("saves a verified upload by key without media bytes in the database", async () => {
+    expect(await saveMemoryAction({}, form({ mediaKey: KEY }))).toEqual({ saved: true });
+    expect(mocks.storage.read).toHaveBeenCalledWith(KEY, 16);
+    expect(mocks.create).toHaveBeenCalledWith({ data: expect.objectContaining({ mediaKey: KEY, mediaMime: "video/mp4", mediaSize: 30_000_000, mediaData: null }) });
+    expect(mocks.storage.remove).not.toHaveBeenCalled();
+  });
+
+  it("rejects and removes uploads that are missing, disguised or too large", async () => {
+    mocks.storage.read.mockResolvedValueOnce(new TextEncoder().encode("<html><body>....."));
+    expect(await saveMemoryAction({}, form({ mediaKey: KEY }))).toHaveProperty("error");
+    mocks.storage.head.mockResolvedValueOnce({ size: 60_000_000, contentType: "video/mp4" });
+    expect(await saveMemoryAction({}, form({ mediaKey: KEY }))).toEqual({ error: expect.stringContaining("50 MB") });
+    mocks.storage.head.mockResolvedValueOnce({ size: 1000, contentType: "text/html" });
+    expect(await saveMemoryAction({}, form({ mediaKey: KEY }))).toHaveProperty("error");
+    mocks.storage.head.mockResolvedValueOnce(null);
+    expect(await saveMemoryAction({}, form({ mediaKey: KEY }))).toHaveProperty("error");
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(mocks.storage.remove).toHaveBeenCalledTimes(4);
+  });
+
+  it("never accepts or deletes a key belonging to another baby or already used by a letter", async () => {
+    expect(await saveMemoryAction({}, form({ mediaKey: "memories/baby-2/abcdefghijklmnopqrstuvwx.mp4" }))).toHaveProperty("error");
+    expect(await saveMemoryAction({}, form({ mediaKey: "memories/baby-1/../baby-2/abcdefghijklmnop.mp4" }))).toHaveProperty("error");
+    expect(mocks.storage.head).not.toHaveBeenCalled();
+    mocks.find.mockResolvedValue({ id: "existing" });
+    mocks.create.mockRejectedValueOnce(new Error("Unique constraint failed on mediaKey"));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await saveMemoryAction({}, form({ mediaKey: KEY }))).toHaveProperty("error");
+    log.mockRestore();
+    expect(mocks.storage.remove).not.toHaveBeenCalled();
+  });
+
+  it("removes the upload when the letter itself is invalid", async () => {
+    expect(await saveMemoryAction({}, form({ mediaKey: KEY, title: "" }))).toHaveProperty("error");
+    expect(mocks.storage.remove).toHaveBeenCalledWith(KEY);
   });
 });
 

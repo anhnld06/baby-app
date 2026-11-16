@@ -142,12 +142,69 @@ test("thu nhỏ ảnh điện thoại lớn trước khi gửi", async ({ page }
   await expect(dialog.getByRole("alert")).toHaveCount(0);
   await dialog.getByLabel("Tên khoảnh khắc").fill(title);
   created.push(title);
-  const upload = page.waitForRequest(request => request.method() === "POST" && Boolean(request.headers()["next-action"]));
   await dialog.getByRole("button", { name: "Cất vào hộp thư của con" }).click();
-  const body = (await upload).postDataBuffer();
-  expect(body?.length ?? 0).toBeLessThan(2_000_000);
   await expect(dialog).toBeHidden({ timeout: 30_000 });
   const item = await expectInGallery(page, title);
   const image = item.locator('img[src^="/api/memories/"]');
   await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete ? img.naturalWidth : 0)).toBe(1920);
+  // Stored (in Postgres or object storage) as the shrunk photo, not the 4000×3000 original.
+  const stored = await page.request.get((await image.getAttribute("src"))!, { headers: { range: "bytes=0-0" } });
+  expect(stored.status()).toBe(206);
+  expect(Number(stored.headers()["content-range"]?.split("/")[1])).toBeLessThan(2_000_000);
+});
+
+/** A file that passes the MP4 signature check (bytes 4–8 are "ftyp"); browsers cannot play it. */
+function fakeMp4(size: number) {
+  const buffer = Buffer.alloc(size);
+  buffer.write("\0\0\0\x18ftypisom", 0, "latin1");
+  return buffer;
+}
+
+async function directUploadEnabled(page: Page) {
+  return (await page.getByText(/Video MP4, MOV, WebM tối đa 50 MB/).count()) > 0;
+}
+
+test("tải video 6 MB thẳng lên kho lưu trữ và xem lại được", async ({ page }) => {
+  test.setTimeout(90_000);
+  const dialog = await openComposer(page);
+  test.skip(!await directUploadEnabled(page), "Chỉ chạy khi đã cấu hình kho lưu trữ (Neon Object Storage).");
+  const title = `E2E video lớn ${Date.now()}`;
+  const video = fakeMp4(6_000_000);
+  await page.getByLabel("Chọn ảnh hoặc video kỷ niệm").setInputFiles({ name: "clip-10s.mp4", mimeType: "video/mp4", buffer: video });
+  await expect(dialog.locator('video[src^="blob:"]')).toHaveCount(1);
+  await expect(dialog.getByRole("alert")).toHaveCount(0);
+  await dialog.getByLabel("Tên khoảnh khắc").fill(title);
+  created.push(title);
+  const put = page.waitForRequest(request => request.method() === "PUT");
+  const actionBodies: number[] = [];
+  page.on("request", request => { if (request.method() === "POST" && request.headers()["next-action"]) actionBodies.push(request.postDataBuffer()?.length ?? 0); });
+  await dialog.getByRole("button", { name: "Cất vào hộp thư của con" }).click();
+  const upload = await put;
+  // (Playwright does not expose File request bodies; the stored size is checked below.)
+  expect(new URL(upload.url()).searchParams.get("X-Amz-SignedHeaders")).toBe("content-length;content-type;host");
+  expect((await upload.response())?.status()).toBe(200);
+  await expect(dialog).toBeHidden({ timeout: 30_000 });
+  // The video never goes through the Server Action (Vercel caps those at 4.5 MB).
+  expect(Math.max(...actionBodies)).toBeLessThan(100_000);
+
+  const item = await expectInGallery(page, title);
+  const src = await item.locator('video[src^="/api/memories/"]').getAttribute("src");
+  const redirect = await page.request.get(src!, { maxRedirects: 0 });
+  expect(redirect.status()).toBe(302);
+  expect(redirect.headers()["cache-control"]).toBe("private, no-store");
+  const stored = await page.request.get(src!, { headers: { range: "bytes=0-11" } });
+  expect(stored.status()).toBe(206);
+  expect((await stored.body()).toString("latin1")).toBe("\0\0\0\x18ftypisom");
+  expect(stored.headers()["content-range"]).toBe(`bytes 0-11/${video.length}`);
+});
+
+test("từ chối video trên 50 MB ngay khi chọn", async ({ page }) => {
+  const dialog = await openComposer(page);
+  test.skip(!await directUploadEnabled(page), "Chỉ chạy khi đã cấu hình kho lưu trữ (Neon Object Storage).");
+  let uploads = 0;
+  page.on("request", request => { if (request.method() === "PUT") uploads++; });
+  await page.getByLabel("Chọn ảnh hoặc video kỷ niệm").setInputFiles({ name: "clip-1min.mp4", mimeType: "video/mp4", buffer: fakeMp4(50_000_001) });
+  await expect(dialog.getByRole("alert")).toHaveText("Video tối đa 50 MB (khoảng 20–30 giây). Hãy cắt ngắn video rồi chọn lại nhé.");
+  await expect(dialog.locator('video[src^="blob:"]')).toHaveCount(0);
+  expect(uploads).toBe(0);
 });
