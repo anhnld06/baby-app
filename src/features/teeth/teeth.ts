@@ -77,3 +77,19 @@ export function toothJaw(position: ToothPosition) {
 export function toothSide(position: ToothPosition) {
   return position.includes("_RIGHT_") ? "right" : "left";
 }
+
+/** Whole months between two calendar dates given as yyyy-mm-dd (never negative). */
+export function monthsBetween(fromIso: string, toIso: string) {
+  const [fromYear, fromMonth, fromDay] = fromIso.split("-").map(Number);
+  const [toYear, toMonth, toDay] = toIso.split("-").map(Number);
+  const months = (toYear - fromYear) * 12 + (toMonth - fromMonth) - (toDay < fromDay ? 1 : 0);
+  return Math.max(0, months);
+}
+
+export type ToothStatus = "erupted" | "due" | "waiting";
+
+/** "due" means the baby has reached the start of the usual eruption window. */
+export function toothStatus(position: ToothPosition, erupted: boolean, ageMonths: number): ToothStatus {
+  if (erupted) return "erupted";
+  return ageMonths >= TOOTH_ERUPTION_INFO[position].expectedMonths[0] ? "due" : "waiting";
+}

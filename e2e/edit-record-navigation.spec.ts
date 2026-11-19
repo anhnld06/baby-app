@@ -71,4 +71,8 @@ test("chọn răng đưa đến đúng form và đặt lại bản nháp", async
   await page.locator(`a[href="${second}"]`).click();
   await expectEditTarget(page, second);
   await expect(page.locator('#tooth-form [name="notes"]')).not.toHaveValue("Unsaved tooth draft");
+  // The bubble is a popover: Escape closes it and clears the selection from the URL.
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#record-edit-form")).toHaveCount(0);
+  await expect(page).not.toHaveURL(/position=/);
 });
