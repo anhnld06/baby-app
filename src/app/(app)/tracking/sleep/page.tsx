@@ -1,3 +1,4 @@
+import { CareBentoHero, CareEmptyState } from "@/components/care-bento-hero";
 import { HistoryTimelineItem } from "@/components/history-timeline-item";
 import { RecordScene } from "@/components/record-scene";
 import { SleepIcon as BedDouble } from "@/components/app-icons";
@@ -72,155 +73,243 @@ export default async function SleepPage({
       ? (now.getTime() - latest.endTime.getTime()) / 60_000
       : 0
     : 0;
+  const totalSleepToday = totalDurationWithinRangeMinutes(today, start, end, now);
+  const isCurrentlySleeping = Boolean(latest && !latest.endTime);
+
   return (
     <>
-      <PageHeader compact
+      <PageHeader
+        compact
         title={editing ? t.tracking.editSleep : t.tracking.newSleep}
         subtitle={baby.name}
         backHref="/baby"
       />
-      {!(params.new === "1" || editing) && <MetricGrid
-        items={[
-          {
-            label: t.dashboard.sleepToday,
-            value: formatDuration(
-              totalDurationWithinRangeMinutes(today, start, end, now),
-            ),
-          },
-          { label: t.tracking.sleepCount, value: String(today.length) },
-          {
-            label: t.tracking.averageNap,
-            value: formatDuration(
-              averageCompletedDurationMinutes(naps),
-            ),
-          },
-          {
-            label: t.tracking.longestSleep,
-            value: formatDuration(
-              longestDurationWithinRangeMinutes(today, start, end, now),
-            ),
-          },
-          {
-            label: latest?.endTime ? t.tracking.awakeFor : t.dashboard.sleeping,
-            value: latest?.endTime
-              ? formatDuration(awakeMinutes)
-              : latest
-                ? formatDuration(durationMinutes(latest.startTime, null, now))
-                : "—",
-          },
-        ]}
-      />}
-      <CollapsibleRecordForm prominent editingId={editing?.id}
+      {!(params.new === "1" || editing) && (
+        <CareBentoHero
+          kind="sleep"
+          tone="violet"
+          eyebrow={isCurrentlySleeping ? "Bé đang say giấc" : "Giấc ngủ hôm nay"}
+          title={
+            today.length > 0
+              ? `Ngủ ${formatDuration(totalSleepToday)} hôm nay`
+              : "Lưu giấc ngày & giấc đêm của con"
+          }
+          description={
+            isCurrentlySleeping && latest
+              ? `Đang bấm giờ ngủ được ${formatDuration(durationMinutes(latest.startTime, null, now))}.`
+              : "Theo dõi nhịp thức - ngủ giúp bố mẹ nhận ra tín hiệu buồn ngủ của con dễ hơn."
+          }
+        >
+          <MetricGrid
+            embedded
+            items={[
+              {
+                label: t.dashboard.sleepToday,
+                value: formatDuration(totalSleepToday),
+              },
+              { label: t.tracking.sleepCount, value: String(today.length) },
+              {
+                label: t.tracking.averageNap,
+                value: formatDuration(averageCompletedDurationMinutes(naps)),
+              },
+              {
+                label: t.tracking.longestSleep,
+                value: formatDuration(
+                  longestDurationWithinRangeMinutes(today, start, end, now),
+                ),
+              },
+              {
+                label: latest?.endTime ? t.tracking.awakeFor : t.dashboard.sleeping,
+                value: latest?.endTime
+                  ? formatDuration(awakeMinutes)
+                  : latest
+                    ? formatDuration(durationMinutes(latest.startTime, null, now))
+                    : "—",
+              },
+            ]}
+          />
+        </CareBentoHero>
+      )}
+      <CollapsibleRecordForm
+        prominent
+        editingId={editing?.id}
         key={`${editing?.id ?? "new"}-${params.new ?? ""}-${items.length}`}
         defaultOpen={!!editing || params.new === "1"}
         addLabel={t.tracking.newSleep}
         closeLabel={t.common.cancel}
       >
-      <RecordScene kind="sleep" timeZone={user.timezone} initialValues={{startTime: toDateTimeLocal(editing?.startTime, user.timezone), endTime: editing?.endTime ? toDateTimeLocal(editing.endTime, user.timezone) : ""}}>
-      <Card className="border-0 shadow-sm">
-        <CardContent className="p-5">
-          <form id="sleep-form" action={asFormAction(saveSleepAction)} className="space-y-4">
-            <input type="hidden" name="babyId" value={baby.id} />
-            {editing && <input type="hidden" name="id" value={editing.id} />}
-            <SelectField
-              name="type"
-              label={t.tracking.type}
-              defaultValue={editing?.type ?? "NAP"}
-            >
-              <option value="NAP">{t.tracking.nap}</option>
-              <option value="NIGHT">{t.tracking.night}</option>
-            </SelectField>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field
-                name="startTime"
-                type="datetime-local"
-                required
-                label={t.tracking.startTime}
-                defaultValue={toDateTimeLocal(editing?.startTime, user.timezone)}
-              />
-              <Field
-                name="endTime"
-                type="datetime-local"
-                label={t.tracking.endTime}
-                defaultValue={
-                  editing?.endTime ? toDateTimeLocal(editing.endTime, user.timezone) : ""
-                }
-              />
-            </div>
-            <Field
-              name="location"
-              label={t.tracking.location}
-              defaultValue={editing?.location ?? ""}
-            />
-            <TextAreaField
-              name="notes"
-              label={t.common.notes}
-              defaultValue={editing?.notes ?? ""}
-            />
-          </form>
-        </CardContent>
-      </Card>
-      <FormActionBar
-        formId="sleep-form"
-        saveAction={saveSleepAction}
-        saveLabel={editing ? t.common.update : "Lưu giấc ngủ"}
-        cancelHref={editing || params.new === "1" ? "/tracking/sleep" : undefined}
-        cancelLabel={t.common.cancel}
-        deleteAction={editing ? deleteSleepAction : undefined}
-        deleteId={editing?.id}
-        deleteLabel={t.common.delete}
-        offlineMutationType={editing ? undefined : "CREATE_SLEEP"}
-      />
-      </RecordScene>
+        <RecordScene
+          kind="sleep"
+          timeZone={user.timezone}
+          initialValues={{
+            startTime: toDateTimeLocal(editing?.startTime, user.timezone),
+            endTime: editing?.endTime
+              ? toDateTimeLocal(editing.endTime, user.timezone)
+              : "",
+          }}
+        >
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-5">
+              <form
+                id="sleep-form"
+                action={asFormAction(saveSleepAction)}
+                className="space-y-4"
+              >
+                <input type="hidden" name="babyId" value={baby.id} />
+                {editing && <input type="hidden" name="id" value={editing.id} />}
+                <SelectField
+                  name="type"
+                  label={t.tracking.type}
+                  defaultValue={editing?.type ?? "NAP"}
+                >
+                  <option value="NAP">{t.tracking.nap}</option>
+                  <option value="NIGHT">{t.tracking.night}</option>
+                </SelectField>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field
+                    name="startTime"
+                    type="datetime-local"
+                    required
+                    label={t.tracking.startTime}
+                    defaultValue={toDateTimeLocal(editing?.startTime, user.timezone)}
+                  />
+                  <Field
+                    name="endTime"
+                    type="datetime-local"
+                    label={t.tracking.endTime}
+                    defaultValue={
+                      editing?.endTime
+                        ? toDateTimeLocal(editing.endTime, user.timezone)
+                        : ""
+                    }
+                  />
+                </div>
+                <Field
+                  name="location"
+                  label={t.tracking.location}
+                  defaultValue={editing?.location ?? ""}
+                />
+                <TextAreaField
+                  name="notes"
+                  label={t.common.notes}
+                  defaultValue={editing?.notes ?? ""}
+                />
+              </form>
+            </CardContent>
+          </Card>
+          <FormActionBar
+            formId="sleep-form"
+            saveAction={saveSleepAction}
+            saveLabel={editing ? t.common.update : "Lưu giấc ngủ"}
+            cancelHref={
+              editing || params.new === "1" ? "/tracking/sleep" : undefined
+            }
+            cancelLabel={t.common.cancel}
+            deleteAction={editing ? deleteSleepAction : undefined}
+            deleteId={editing?.id}
+            deleteLabel={t.common.delete}
+            offlineMutationType={editing ? undefined : "CREATE_SLEEP"}
+          />
+        </RecordScene>
       </CollapsibleRecordForm>
-      <h2 className="mb-2 mt-7 text-lg font-semibold">{t.tracking.history}</h2>
-      <div className="space-y-2">
-        {items.map((item) => (
-          <HistoryTimelineItem key={item.id} at={item.startTime} timeZone={user.timezone} showDate>
-          <div
-            data-history-card
-            key={item.id}
-            className="flex items-center gap-3 rounded-2xl bg-card p-3 shadow-sm"
-          >
-            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
-              <BedDouble className="size-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="font-medium">
-                {item.type === "NAP" ? t.tracking.nap : t.tracking.night}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {new Intl.DateTimeFormat("vi-VN", {
-                  timeZone: user.timezone,
-                  day: "2-digit",
-                  month: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }).format(item.startTime)}{" "}
-                ·{" "}
-                {item.endTime
-                  ? formatDuration(
-                      (item.endTime.getTime() - item.startTime.getTime()) /
-                        60_000,
-                    )
-                  : t.tracking.openSession}
-              </p>
-            </div>
-            <RecordActions
-              id={item.id}
-              editHref={`/tracking/sleep?edit=${item.id}`}
-              deleteAction={deleteSleepAction}
-              editLabel={t.common.edit}
-              deleteLabel={t.common.delete}
-            />
-          </div>
-          </HistoryTimelineItem>
-        ))}
-        {items.length === 0 && (
-          <p className="text-sm text-muted-foreground">{t.common.noData}</p>
+      <div className="mb-3 mt-7 flex items-center justify-between">
+        <h2 className="text-lg font-semibold">{t.tracking.history}</h2>
+        {items.length > 0 && (
+          <span className="text-xs text-muted-foreground">
+            {items.length} giấc gần đây
+          </span>
         )}
       </div>
-      <HistoryLoadMore href="/tracking/sleep" currentLimit={limit} hasMore={hasMore} />
+      <div className="space-y-2">
+        {items.map((item) => {
+          const isOpen = !item.endTime;
+          const isNight = item.type === "NIGHT";
+          const mins = item.endTime
+            ? (item.endTime.getTime() - item.startTime.getTime()) / 60_000
+            : null;
+          return (
+            <HistoryTimelineItem
+              key={item.id}
+              at={item.startTime}
+              timeZone={user.timezone}
+              tone="violet"
+              active={isOpen}
+              showDate
+            >
+              <div
+                data-history-card
+                className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card p-3.5 shadow-xs transition-colors hover:border-indigo-200 dark:hover:border-indigo-900/60"
+              >
+                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#eeedf8] dark:bg-[#302e46]">
+                  <BedDouble className="size-9" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold">
+                      {item.type === "NAP" ? t.tracking.nap : t.tracking.night}
+                    </p>
+                    <span
+                      className={
+                        isOpen
+                          ? "rounded-full bg-indigo-600 px-2 py-0.5 text-[11px] font-semibold text-white"
+                          : "summary-chip summary-chip-sleep text-xs"
+                      }
+                    >
+                      {mins != null ? formatDuration(mins) : t.tracking.openSession}
+                    </span>
+                    {isNight && (
+                      <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-200">
+                        Ban đêm
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {new Intl.DateTimeFormat("vi-VN", {
+                      timeZone: user.timezone,
+                      day: "2-digit",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }).format(item.startTime)}
+                    {item.endTime
+                      ? ` → ${new Intl.DateTimeFormat("vi-VN", {
+                          timeZone: user.timezone,
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }).format(item.endTime)}`
+                      : ""}
+                    {item.location ? ` · ${item.location}` : ""}
+                  </p>
+                  {item.notes && (
+                    <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">
+                      {item.notes}
+                    </p>
+                  )}
+                </div>
+                <RecordActions
+                  id={item.id}
+                  editHref={`/tracking/sleep?edit=${item.id}`}
+                  deleteAction={deleteSleepAction}
+                  editLabel={t.common.edit}
+                  deleteLabel={t.common.delete}
+                />
+              </div>
+            </HistoryTimelineItem>
+          );
+        })}
+        {items.length === 0 && (
+          <CareEmptyState
+            kind="sleep"
+            title={t.common.noData}
+            description="Bấm giờ trên Trang chủ hoặc thêm giấc ngủ đầu tiên để theo dõi giấc ngày và giấc đêm của con."
+          />
+        )}
+      </div>
+      <HistoryLoadMore
+        href="/tracking/sleep"
+        currentLimit={limit}
+        hasMore={hasMore}
+      />
     </>
   );
 }

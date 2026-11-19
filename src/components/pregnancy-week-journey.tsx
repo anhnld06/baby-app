@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Heart, Sparkles, Leaf } from "lucide-react";
@@ -9,16 +10,21 @@ import styles from "./pregnancy.module.css";
 import { PregnancyJourneyCare, type JourneyCareData } from "./pregnancy-journey-care";
 import { formatNumber } from "@/lib/format";
 
+const PregnancyAuraCanvas = dynamic(() => import("./pregnancy-aura-canvas"), {
+  ssr: false,
+});
+
 export function PregnancyWeekJourney({ initialWeek, currentWeek, days = 0, active, dueDate, deliveredOn, compact = false, care }: {
   initialWeek?: number; currentWeek?: number; days?: number; active: boolean; dueDate?: string; deliveredOn?: string; compact?: boolean; care?: JourneyCareData;
 }) {
   const [week, setWeek] = useState(Math.min(41, Math.max(1, initialWeek ?? 20)));
   const sameWeek = currentWeek === week;
   const first = Math.min(35, Math.max(1, week - 3));
-  const trimester = week <= 12 ? 1 : week <= 27 ? 2 : 3;
+  const trimester: 1 | 2 | 3 = week <= 12 ? 1 : week <= 27 ? 2 : 3;
   const source = `https://www.nhs.uk/best-start-in-life/pregnancy/week-by-week-guide-to-pregnancy/${trimester === 1 ? "1st" : trimester === 2 ? "2nd" : "3rd"}-trimester/week-${Math.max(4, week)}/`;
   const reference = references.find((entry) => entry.week === week);
   return <><section className={styles.hero} aria-label="Hành trình theo tuần">
+    <PregnancyAuraCanvas week={week} trimester={trimester} className={styles.heroCanvas} />
     <div className={styles.heroTop}><span className={styles.eyebrow}>{active ? "Mỗi ngày, gần con hơn" : "Một hành trình yêu thương"}</span><span className={styles.badge}><Sparkles size={12} />{active && sameWeek ? "Tuần hiện tại" : "Khám phá tuần thai"}</span></div>
     <div className={styles.heroBody}>
       <div><h2 className={styles.heroTitle}>Tuần {week}<em>{sameWeek && active ? `${days} ngày bên con` : "con lớn từng ngày"}</em></h2>

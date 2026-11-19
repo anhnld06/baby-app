@@ -37,16 +37,16 @@ export default async function MotherHubPage() {
       <PageHeader title="Của mẹ" subtitle={`${mother.name} · Sức khỏe và hành trình làm mẹ`} />
       <section
         className={cn(
-          "mb-6 rounded-3xl p-5 text-white shadow-lg shadow-rose-500/15",
-          coverImageUrl ? "bg-cover bg-center" : "bg-gradient-to-br from-rose-500 to-fuchsia-600",
+          "mb-6 rounded-3xl p-5 text-white shadow-lg shadow-rose-900/10",
+          coverImageUrl ? "bg-cover bg-center" : "bg-gradient-to-br from-[#7d2e46] via-[#963b56] to-[#ad4b63]",
         )}
         style={coverImageUrl
-          ? { backgroundImage: `linear-gradient(90deg, rgb(92 20 54 / 84%), rgb(126 34 206 / 45%)), url(${JSON.stringify(coverImageUrl)})` }
+          ? { backgroundImage: `linear-gradient(90deg, rgb(92 20 54 / 86%), rgb(126 36 68 / 55%)), url(${JSON.stringify(coverImageUrl)})` }
           : undefined}
       >
-        <p className="text-xs font-medium uppercase tracking-[.16em] opacity-80">Không gian riêng của mẹ</p>
+        <p className="text-xs font-medium uppercase tracking-[.16em] text-rose-50/95">Không gian riêng của mẹ</p>
         <h2 className="mt-2 text-2xl font-semibold">Theo dõi cơ thể, lưu hồ sơ gọn một nơi</h2>
-        <p className="mt-2 text-sm leading-6 opacity-85">Dữ liệu của mẹ được tách hoàn toàn khỏi nhật ký của bé.</p>
+        <p className="mt-2 text-sm leading-6 text-rose-50/95">Dữ liệu của mẹ được tách hoàn toàn khỏi nhật ký của bé.</p>
       </section>
       <div className="space-y-3">
         <FeatureLink href="/mother/pumping" icon={Droplets} title="Nhật ký hút sữa" description="Ghi cữ hút, lượng sữa từng bên và tổng lượng theo ngày." tone="blue" />

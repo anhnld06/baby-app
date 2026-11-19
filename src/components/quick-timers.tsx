@@ -46,9 +46,9 @@ export function QuickTimers({
   ];
 
   return (
-    <section className="mt-5 grid gap-2 sm:grid-cols-2" aria-label="Hẹn giờ nhanh">
+    <section className="mt-3 grid gap-2.5 sm:grid-cols-2" aria-label="Hẹn giờ nhanh">
       {timers.map(({ key, icon: Icon, title, active, startedAt, action, startLabel, stopLabel, color }) => (
-        <div key={key} className="flex items-center gap-3 rounded-2xl bg-card p-3 shadow-sm">
+        <div key={key} className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted/45 p-3">
           <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${color}`}>
             <Icon className="size-8" />
           </span>

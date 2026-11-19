@@ -4,7 +4,8 @@ import { PageHeader } from "@/components/page-header";
 import { BabySwitcher } from "@/components/baby-switcher";
 import { MemoryComposer } from "@/components/memory-composer";
 import { MemoryGallery } from "@/components/memory-gallery";
-import { Heart, Sparkles } from "lucide-react";
+import { MailboxHeroScene } from "@/components/mailbox-hero-scene";
+import { Heart } from "lucide-react";
 import { MailboxIcon as Mail } from "@/components/app-icons";
 import { requireUser } from "@/lib/auth";
 import { getSelectedBabyId, listBabies, pickSelectedBaby } from "@/lib/data";
@@ -27,8 +28,8 @@ export default async function MailboxPage({ searchParams }: { searchParams: Prom
     <PageHeader title="Hộp thư cho bé" subtitle="Những ngày bé lớn, những điều mình thương." backHref="/baby" />
     <BabySwitcher babies={babies} selectedBabyId={baby.id} addLabel="Thêm bé" />
     <section className="memory-welcome">
-      <div className="relative z-10 max-w-sm"><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[.2em] text-primary"><span className="size-1.5 rounded-full bg-primary" />Dành riêng cho {baby.name}</p><h2 className="mt-4 text-[1.85rem] font-semibold leading-tight tracking-tight sm:text-4xl">Cất một chút hôm nay,<br /><span className="font-serif italic text-primary">thương đến tận mai sau.</span></h2><p className="mt-4 max-w-[260px] text-sm leading-6 text-muted-foreground">Từng chiếc tem nhỏ giữ lại một khoảnh khắc con lớn khôn.</p><div className="mt-6 flex flex-wrap gap-2"><span className="memory-stat"><Mail className="size-3.5" />{memories.length} thư gửi con</span><span className="memory-stat"><Heart className="size-3.5" />Một trời yêu thương</span></div></div>
-      <div aria-hidden="true" className="memory-welcome-art"><div className="memory-art-stamp"><Sparkles className="size-8" strokeWidth={1} /><span>GỬI CON ♡</span></div><div className="memory-art-envelope"><Heart className="size-6" fill="currentColor" /></div><span className="memory-art-sparkle">✧</span></div>
+      <div className="relative z-10 max-w-sm"><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[.2em] text-primary"><span className="size-1.5 rounded-full bg-primary" />Dành riêng cho {baby.name}</p><h2 className="mt-4 text-[1.85rem] font-semibold leading-tight tracking-tight sm:text-4xl">Cất một chút hôm nay,<br /><span className="[font-family:Georgia,serif] font-normal italic text-primary">thương đến tận mai sau.</span></h2><p className="mt-4 max-w-[260px] text-sm leading-6 text-muted-foreground">Từng chiếc tem nhỏ giữ lại một khoảnh khắc con lớn khôn.</p><div className="mt-6 flex flex-wrap gap-2"><span className="memory-stat"><Mail className="size-3.5" />{memories.length} thư gửi con</span><span className="memory-stat"><Heart className="size-3.5" />Một trời yêu thương</span></div></div>
+      <MailboxHeroScene />
     </section>
     {milestone && <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card p-4"><p className="text-sm text-primary">{milestone.icon} Thư gắn mốc: <strong>{milestone.title}</strong></p><Link href="/baby/mailbox" className="inline-flex min-h-11 items-center text-xs underline">Xem tất cả thư</Link></div>}
     <MemoryComposer key={`composer-${baby.id}-${milestone?.key ?? ""}-${query.new ?? ""}`} initialMilestone={milestone?.key} openOnMount={query.new === "1"} babyId={baby.id} babyName={baby.name} birth={birth} now={now} timeZone={user.timezone} directUpload={objectStorageConfigured()} />

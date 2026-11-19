@@ -42,7 +42,7 @@ export default async function KnowledgePage({
         className="mt-5 flex items-center gap-3 rounded-3xl border bg-card p-4 shadow-sm"
       >
         <span className="grid size-11 place-items-center rounded-2xl bg-secondary text-primary">
-          <Bot className="size-5" />
+          <Bot className="size-8" />
         </span>
         <span className="flex-1">
           <strong className="block">{t.assistant.title}</strong>

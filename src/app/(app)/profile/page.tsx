@@ -41,15 +41,15 @@ export default async function ProfilePage() {
       {primaryBaby && (
         <section
           className={cn(
-            "relative mb-7 overflow-hidden rounded-3xl p-5 text-primary-foreground shadow-lg shadow-primary/15",
-            primaryBabyCover ? "bg-cover bg-center" : "bg-gradient-to-br from-primary to-fuchsia-500",
+            "relative mb-7 overflow-hidden rounded-3xl p-5 text-white shadow-lg shadow-primary/15",
+            primaryBabyCover ? "bg-cover bg-center" : "bg-gradient-to-br from-[#0d4a63] via-[#0e607c] to-[#167388]",
           )}
           style={primaryBabyCover
-            ? { backgroundImage: `linear-gradient(90deg, rgb(62 24 52 / 82%), rgb(110 35 89 / 48%)), url(${JSON.stringify(primaryBabyCover)})` }
+            ? { backgroundImage: `linear-gradient(90deg, rgb(13 56 76 / 86%), rgb(18 92 114 / 56%)), url(${JSON.stringify(primaryBabyCover)})` }
             : undefined}
         >
           {!primaryBabyCover && <div className="absolute -right-8 -top-10 size-36 rounded-full bg-white/10" />}
-          <p className="text-xs font-medium uppercase tracking-[.18em] opacity-75">
+          <p className="text-xs font-medium uppercase tracking-[.18em] text-cyan-50/95">
             {t.profile.family}
           </p>
           <div className="relative mt-4 flex items-center gap-4">
@@ -61,8 +61,8 @@ export default async function ProfilePage() {
               <h2 className="truncate text-2xl font-semibold">
                 {primaryBaby.nickname ?? primaryBaby.name}
               </h2>
-              <p className="truncate text-sm opacity-90">{primaryBaby.name}</p>
-              <p className="mt-1 text-xs opacity-75">
+              <p className="truncate text-sm text-cyan-50/95">{primaryBaby.name}</p>
+              <p className="mt-1 text-xs text-cyan-50/90">
                 {formatAge(primaryBaby.dateOfBirth, new Date(), user.timezone)}
               </p>
             </div>

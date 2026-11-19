@@ -6,7 +6,7 @@ import type { LucideIcon, LucideProps } from "lucide-react";
  * The artwork is a fixed-colour external file rendered through <image>, so
  * stroke/colour props (and `text-*` classes) cannot restyle it; they are accepted
  * only for drop-in compatibility with lucide icons and are discarded here.
- * In dark mode `.dark .app-icon` (globals.css) adds a light backdrop for legibility.
+ * In dark mode `.dark .app-icon` (globals.css) adds a soft die-cut rim for legibility.
  */
 function createAppIcon(name: string): LucideIcon {
   const Icon = forwardRef<SVGSVGElement, LucideProps>(function AppIcon(

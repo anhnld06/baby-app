@@ -15,7 +15,7 @@ export function BabySwitcher({
 }) {
   if (babies.length === 0) return null;
   return (
-    <div className="mb-4 flex items-center gap-2 overflow-x-auto pb-1">
+    <div className="mb-4 flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {babies.map((baby) => {
         const active = baby.id === selectedBabyId;
         const label = baby.nickname ?? baby.name;
@@ -26,10 +26,10 @@ export function BabySwitcher({
               type="submit"
               aria-pressed={active}
               className={cn(
-                "flex min-h-11 shrink-0 items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5 text-sm font-medium transition-colors",
+                "flex min-h-11 shrink-0 items-center gap-2 rounded-full border py-1.5 pl-1.5 pr-3.5 text-sm font-medium transition-colors",
                 active
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-card text-muted-foreground",
+                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                  : "border-border/70 bg-card text-muted-foreground hover:border-primary/30",
               )}
             >
               <span
@@ -47,7 +47,7 @@ export function BabySwitcher({
       })}
       <Link
         href="/profile/baby/new"
-        className="flex min-h-11 shrink-0 items-center gap-1 rounded-full bg-card py-1.5 pl-2.5 pr-3.5 text-sm font-medium text-muted-foreground"
+        className="flex min-h-11 shrink-0 items-center gap-1 rounded-full border border-border/70 bg-card py-1.5 pl-2.5 pr-3.5 text-sm font-medium text-muted-foreground hover:border-primary/30"
       >
         <Plus className="size-4" />
         {addLabel}

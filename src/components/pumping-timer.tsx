@@ -21,9 +21,9 @@ export function PumpingTimer({ active, compact = false }: {
       setError("Chưa thể lưu cữ hút. Kiểm tra kết nối và thử lại.");
     }
   }
-  return <section className={`${compact ? "mt-2" : "mb-5"} rounded-2xl bg-card p-3 shadow-sm`} aria-label="Bấm giờ hút sữa">
+  return <section className={`${compact ? "mt-2.5 border border-border/70 bg-muted/45" : "mb-5 border border-border/70 bg-card shadow-sm"} rounded-2xl p-3`} aria-label="Bấm giờ hút sữa">
     <div className="flex items-center gap-3">
-      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"><Droplets className="size-5" /></span>
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"><Droplets className="size-8" /></span>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">Bấm giờ hút sữa</p>
         <Elapsed startTime={active?.startTime} />

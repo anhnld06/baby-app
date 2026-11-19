@@ -25,7 +25,7 @@ export function FamilyStart({ mother, name, nextVaccination, expectedVaccination
         <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium"><Heart className="size-3.5" /> Vani Family · Luôn bên gia đình</span>
         <h2 className="max-w-sm text-3xl font-semibold leading-tight tracking-tight">{pregnant ? age ? `Tuần ${age.weeks}, từng ngày thêm gần con` : "Chờ con, chăm sóc mẹ mỗi ngày" : "Những điều nhỏ bé, được chăm chút mỗi ngày."}</h2>
         <p className="mt-3 max-w-sm text-sm leading-6 text-white/80">{pregnant ? "Lưu lần khám, ghi lại thay đổi của cơ thể và chuẩn bị đón con trong một không gian riêng." : "Từ những ngày chờ con đến cữ bú đầu tiên. Bắt đầu với giai đoạn của gia đình mình."}</p>
-        {pregnant && <Link href="/mother/pregnancy" className="mt-6 inline-flex min-h-12 items-center gap-3 rounded-2xl bg-white px-4 text-sm font-semibold text-[#713649]">Mở nhật ký thai kỳ <ArrowUpRight className="size-4" /></Link>}
+        {pregnant && <Link href="/mother/pregnancy" className="mt-6 inline-flex min-h-12 items-center gap-3 rounded-2xl bg-white px-4 text-sm font-semibold text-[#0f546e]">Mở nhật ký thai kỳ <ArrowUpRight className="size-4" /></Link>}
       </section>
       <UpcomingVaccination appointment={nextVaccination} expected={expectedVaccination} />
       {pregnant ? (

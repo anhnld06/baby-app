@@ -42,7 +42,7 @@ export function QuickLogSheet({ babyId }: { babyId?: string }) {
         <Pencil className="size-4" />
         <span className="hidden sm:inline">Ghi nhanh</span>
       </DialogTrigger>
-      <DialogContent className="top-auto! bottom-0! left-1/2! max-h-[85dvh] w-full! max-w-lg! translate-y-0! overflow-y-auto rounded-t-[2rem]! rounded-b-none! p-6!">
+      <DialogContent className="max-h-[85dvh] overflow-y-auto p-6 sm:max-w-lg sm:rounded-[2rem] max-sm:top-auto max-sm:bottom-0 max-sm:w-full max-sm:max-w-none max-sm:translate-y-0 max-sm:rounded-t-[2rem] max-sm:rounded-b-none">
         <DialogTitle className="text-2xl font-semibold">Ghi nhanh</DialogTitle>
         <DialogDescription>
           Chọn hoạt động muốn ghi lại cho gia đình.
@@ -105,9 +105,9 @@ export function QuickLogSheet({ babyId }: { babyId?: string }) {
         <Link
           href="/assistant"
           onClick={() => setOpen(false)}
-          className="flex min-h-12 items-center gap-2 rounded-2xl bg-secondary p-3 text-primary"
+          className="flex min-h-12 items-center gap-2.5 rounded-2xl bg-secondary p-3 font-medium text-primary"
         >
-          <Bot className="size-5" />
+          <Bot className="size-7" />
           Tra cứu cùng trợ lý
         </Link>
         <DialogClose className="min-h-11 text-sm text-muted-foreground">

@@ -65,6 +65,7 @@ export function FormActionBar({
   deleteId,
   deleteLabel,
   offlineMutationType,
+  className,
 }: {
   formId: string;
   saveAction: FormAction;
@@ -75,6 +76,7 @@ export function FormActionBar({
   deleteId?: string;
   deleteLabel?: string;
   offlineMutationType?: OfflineMutationType;
+  className?: string;
 }) {
   const [isSaving, startSaving] = useTransition();
   const [error, setError] = useState("");
@@ -150,7 +152,13 @@ export function FormActionBar({
   }
 
   return (
-    <div data-record-actions className="mt-4 w-full rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
+    <div
+      data-record-actions
+      className={cn(
+        "mt-4 w-full rounded-2xl border border-border/70 bg-card p-3 shadow-sm",
+        className,
+      )}
+    >
       <div className="flex items-center gap-2">
         {cancelHref && (
           <Link
